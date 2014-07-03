@@ -1,25 +1,45 @@
+import Control.Monad
 import System.Environment
 import Text.ParserCombinators.Parsec
 
-data Statement = Print String
+data Expression =
+      Print Expression
+    | StringLiteral String
+    | None
     deriving(Show)
 
-statement = do
-    string "print(\""
-    content <- many (noneOf "\"")
-    string "\")"
+printExpr = do
+    string "print"
+    string "("
+    expr <- expression
+    string ")"
     spaces
-    return $ Print content
+    return $ Print expr
 
-statements = many statement
+literal = do
+    char '"'
+    content <- many (noneOf "\"")
+    char '"'
+    return $ StringLiteral content
 
-eval :: Statement -> IO ()
-eval (Print m) = print m
+expression = printExpr <|> literal
+expressions = many expression
+
+toString :: Expression -> String
+toString (StringLiteral v) = v
+
+eval :: Expression -> IO Expression
+eval (Print e) = do
+    arg <- liftM toString (eval e)
+    putStrLn arg
+    return None
+eval e = return e
+
 
 main = do
     [filename] <- getArgs
     code <- readFile filename
 
-    case parse statements filename code of
+    case parse expressions filename code of
         Left e  -> print e
         Right r -> mapM_ eval r
