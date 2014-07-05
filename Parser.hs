@@ -25,6 +25,10 @@ call = do
     char ')'
     return $ Call name expr
 
-table = [[Infix (reservedOp "+" >> return (Add)) AssocLeft]]
+table = [
+    [Infix (reservedOp "*" >> return (Mul)) AssocLeft],
+    [Infix (reservedOp "/" >> return (Div)) AssocLeft],
+    [Infix (reservedOp "+" >> return (Add)) AssocLeft],
+    [Infix (reservedOp "-" >> return (Sub)) AssocLeft]]
 
 terminator = lexeme (char '\n')

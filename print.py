@@ -1,3 +1,7 @@
 print(1)
 print("hello")
 print(1+1)
+print(4-1)
+print(2*2)
+print(8/1)
+print(4*2+1)

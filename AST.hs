@@ -1,9 +1,11 @@
 module AST where
 
 data Expression =
-    Seq [Expression]
-    | Call String Expression
+    Call String Expression
     | Add Expression Expression
+    | Sub Expression Expression
+    | Mul Expression Expression
+    | Div Expression Expression
     | String String
     | Int Integer
     | None

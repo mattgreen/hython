@@ -21,6 +21,27 @@ eval (Add l r) = do
     result <- eval $ Add left right
     return result
 
+eval (Sub (Int l) (Int r)) = return $ Int (l - r)
+eval (Sub l r) = do
+    left <- eval l
+    right <- eval r
+    result <- eval $ Sub left right
+    return result
+
+eval (Mul (Int l) (Int r)) = return $ Int (l * r)
+eval (Mul l r) = do
+    left <- eval l
+    right <- eval r
+    result <- eval $ Mul left right
+    return result
+
+eval (Div (Int l) (Int r)) = return $ Int (quot l r)
+eval (Div l r) = do
+    left <- eval l
+    right <- eval r
+    result <- eval $ Div left right
+    return result
+
 eval (Int n) = return $ Int n
 eval (String s) = return $ String s
 
