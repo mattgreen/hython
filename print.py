@@ -1,4 +1,3 @@
-print("Hello")
-
-
-print("This is a test")
+print(1)
+print("hello")
+print(1+1)
