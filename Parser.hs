@@ -26,9 +26,9 @@ call = do
     return $ Call name expr
 
 table = [
-    [Infix (reservedOp "*" >> return (Mul)) AssocLeft],
-    [Infix (reservedOp "/" >> return (Div)) AssocLeft],
-    [Infix (reservedOp "+" >> return (Add)) AssocLeft],
-    [Infix (reservedOp "-" >> return (Sub)) AssocLeft]]
+    [Infix (reservedOp "*" >> return (BinOp Mul)) AssocLeft],
+    [Infix (reservedOp "/" >> return (BinOp Div)) AssocLeft],
+    [Infix (reservedOp "+" >> return (BinOp Add)) AssocLeft],
+    [Infix (reservedOp "-" >> return (BinOp Sub)) AssocLeft]]
 
 terminator = lexeme (char '\n')

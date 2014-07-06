@@ -10,36 +10,16 @@ eval (Call fn expr) = do
     putStrLn arg
     return None
 
-eval (Add (Int l) (Int r)) = return $ Int (l + r)
-eval (Add (String l) (String r)) = return $ String (l ++ r)
-eval (Add (Int l) (String r)) = fail "Can't add an int and a string!"
-eval (Add (String l) (Int r)) = fail "Can't add a string and an int!"
+eval (BinOp (Add) (Int l) (Int r)) = return $ Int (l + r)
+eval (BinOp (Add) (String l) (String r)) = return $ String (l ++ r)
+eval (BinOp (Sub) (Int l) (Int r)) = return $ Int (l - r)
+eval (BinOp (Mul) (Int l) (Int r)) = return $ Int (l * r)
+eval (BinOp (Div) (Int l) (Int r)) = return $ Int (quot l r)
 
-eval (Add l r) = do
+eval (BinOp op l r) = do
     left <- eval l
     right <- eval r
-    result <- eval $ Add left right
-    return result
-
-eval (Sub (Int l) (Int r)) = return $ Int (l - r)
-eval (Sub l r) = do
-    left <- eval l
-    right <- eval r
-    result <- eval $ Sub left right
-    return result
-
-eval (Mul (Int l) (Int r)) = return $ Int (l * r)
-eval (Mul l r) = do
-    left <- eval l
-    right <- eval r
-    result <- eval $ Mul left right
-    return result
-
-eval (Div (Int l) (Int r)) = return $ Int (quot l r)
-eval (Div l r) = do
-    left <- eval l
-    right <- eval r
-    result <- eval $ Div left right
+    result <- eval $ BinOp op left right
     return result
 
 eval (Int n) = return $ Int n
