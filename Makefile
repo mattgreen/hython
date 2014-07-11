@@ -1,3 +1,5 @@
-hython: Hython.hs AST.hs Lexer.hs Parser.hs
-	ghc Hython.hs -o hython
+hython: AST.hs Parser.hs Interpreter.hs
+	ghc -outputdir ./obj Interpreter.hs -o hython
 
+clean:
+	rm -f ./hython

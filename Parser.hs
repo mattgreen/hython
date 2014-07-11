@@ -3,32 +3,69 @@ module Parser where
 import Control.Monad
 import Text.Parsec
 import Text.Parsec.Expr
+import Text.Parsec.String
 
 import AST
-import Lexer
 
-parseCode code = parse program "(stuff)" code
+parseCode code = parse expressions "" code
 
-program = whiteSpace >> expressions
-
+expressions :: Parser [Expression]
 expressions = sepEndBy1 expression terminator
-expression = buildExpressionParser table terms
 
-terms = try (liftM Int integer)
-    <|> try (liftM String stringLiteral)
-    <|> try (call)
+expression :: Parser Expression
+expression = do
+    try (call)
+    <|> try (assignStmt)
+    <|> compoundExpr
+    <|> localVar
+    <|> literal
 
+call :: Parser Expression
 call = do
     name <- identifier
     char '('
-    expr <- expression
+    arg <- expression
     char ')'
-    return $ Call name expr
+    return $ Call name arg
 
-table = [
-    [Infix (reservedOp "*" >> return (BinOp Mul)) AssocLeft],
-    [Infix (reservedOp "/" >> return (BinOp Div)) AssocLeft],
-    [Infix (reservedOp "+" >> return (BinOp Add)) AssocLeft],
-    [Infix (reservedOp "-" >> return (BinOp Sub)) AssocLeft]]
+assignStmt :: Parser Expression
+assignStmt = do
+    var <- identifier
+    char '='
+    expr <- expression
+    return $ Assignment var expr
 
-terminator = lexeme (char '\n')
+localVar :: Parser Expression
+localVar = do
+    name <- identifier
+    return $ LocalVar name
+
+compoundExpr = buildExpressionParser table term
+    where
+    table = [
+        [Infix (char '*' >> return (BinOp Add)) AssocLeft],
+        [Infix (char '/' >> return (BinOp Add)) AssocLeft],
+        [Infix (char '+' >> return (BinOp Add)) AssocLeft],
+        [Infix (char '-' >> return (BinOp Add)) AssocLeft]]
+    term = literal <|> localVar
+
+literal :: Parser Expression
+literal = integerLiteral <|> stringLiteral
+    where
+    integerLiteral = do
+        num <- many1 digit
+        return $ Int (read num)
+
+    stringLiteral = do
+        char '"'
+        s <- many (noneOf "\"")
+        char '"'
+        return $ String s
+
+identifier :: Parser String
+identifier = do
+    start <- (letter <|> char '_')
+    rest <- many (alphaNum <|> char '_')
+    return $ start:rest
+
+terminator = char '\n'
