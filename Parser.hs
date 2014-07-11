@@ -1,13 +1,14 @@
 module Parser where
 
 import Control.Monad
-import Text.Parsec
+import Text.Parsec hiding (parse)
+import qualified Text.Parsec as Parsec
 import Text.Parsec.Expr
 import Text.Parsec.String
 
 import AST
 
-parseCode code = parse expressions "" code
+parse location code = Parsec.parse expressions location code
 
 expressions :: Parser [Expression]
 expressions = sepEndBy1 expression terminator

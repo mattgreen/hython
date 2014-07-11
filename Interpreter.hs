@@ -33,8 +33,6 @@ eval envRef (LocalVar var) = do
     case (Map.lookup var env) of
         Nothing -> fail $ "unknown variable " ++ var
         Just v  -> return v
-    {-value <- maybe (fail $ "unknown variable " ++ var) (id) (Map.lookup var env)-}
-    {-return value-}
 
 eval env (BinOp (Add) (Int l) (Int r)) = return $ Int (l + r)
 eval env (BinOp (Add) (String l) (String r)) = return $ String (l ++ r)
@@ -56,10 +54,10 @@ toString (String v) = v
 toString (Int v) = show v
 toString e = show e
 
-parseEval :: String -> IO ()
-parseEval code = do
+parseEval :: String -> String -> IO ()
+parseEval filename code = do
     env <- newIORef Map.empty
-    case parseCode code of
+    case parse filename code of
         Left e -> print e
         Right r -> mapM_ (eval env) r
     return ()
@@ -68,4 +66,4 @@ main = do
     [filename] <- getArgs
     code <- readFile filename
 
-    parseEval code
+    parseEval filename code
