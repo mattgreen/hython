@@ -48,6 +48,7 @@ eval env (BinOp op l r) = do
 
 eval env (Int n) = return $ Int n
 eval env (String s) = return $ String s
+eval env e = fail $ "Unimplemented: " ++ show e
 
 toString :: Expression -> String
 toString (String v) = v
