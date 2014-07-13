@@ -7,17 +7,12 @@ import Text.Parsec.String
 
 import AST
 
-parse location code = Parsec.parse program location code
+parse = Parsec.parse program
 
-program = do
-    statements <- sepEndBy1 statement terminator
-    return statements
+program = sepEndBy1 statement terminator
 
 statement :: Parser Statement
-statement = do
-    try (assignment)
-    <|> ifStatement
-    <|> expr
+statement = try assignment <|> ifStatement <|> expr
 
 assignment = do
     var <- identifier
@@ -31,6 +26,7 @@ ifStatement = do
     guard <- expression
     char ':'
     terminator
+
     s <- statement
     return $ If guard s
 
@@ -48,10 +44,7 @@ expression = buildExpressionParser table term
             [Infix (string "!=" >> return (BinOp NotEq)) AssocLeft],
             [Infix (string "==" >> return (BinOp Eq)) AssocLeft]]
 
-        term = do
-            try (call)
-            <|> variable
-            <|> literal
+        term = try call <|> literal <|> variable
 
 call = do
     name <- identifier
@@ -77,8 +70,8 @@ literal = integerLiteral <|> stringLiteral
             return $ String s
 
 identifier = do
-    start <- (letter <|> char '_')
+    start <- letter <|> char '_'
     rest <- many (alphaNum <|> char '_')
     return $ start:rest
 
-terminator = char '\n'
+terminator = char '\r' <|> char '\n'
