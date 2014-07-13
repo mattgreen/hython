@@ -2,16 +2,20 @@ module AST where
 
 data Expression =
     Call String Expression
-    | Block [Expression]
-    | Assignment String Expression
-    | LocalVar String
-    | BinOp Operator Expression Expression
     | String String
     | Int Integer
-    | True
-    | False
+    | Bool Bool
+    | Variable String
+    | BinOp Operator Expression Expression
     | None
-    deriving(Show)
+    deriving(Eq, Show)
 
 data Operator = Add | Sub | Mul | Div | Eq | NotEq
-    deriving(Show)
+    deriving(Eq, Show)
+
+data Statement =
+    Assignment String Expression
+    | Block [Statement]
+    | Expression Expression
+    | If Expression Statement
+    deriving(Eq, Show)

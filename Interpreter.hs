@@ -7,48 +7,57 @@ import System.Environment
 import AST
 import Parser
 
-type EnvOld = IORef[(String, IORef Expression)]
 type Env = IORef (Map String Expression)
 
-eval :: Env -> Expression -> IO Expression
-
-eval env (Block expressions) = do
-    mapM_ (eval env) expressions
-    return None
-
-eval env (Call fn expr) = do
-    arg <- liftM toString (eval env expr)
-    putStrLn arg
-    return None
+eval :: Env -> Statement -> IO ()
+eval env (Block statements) = do
+    mapM_ (eval env) statements
 
 eval envRef (Assignment var expr) = do
-    value <- eval envRef expr
+    value <- evalExpr envRef expr
     env <- readIORef envRef
     writeIORef envRef (Map.insert var value env)
 
-    return value
+eval env (If guard statement) = do
+    condition <- evalExpr env guard
+    case (condition) of
+        Bool False  -> return ()
+        otherwise   -> eval env statement
+    return ()
 
-eval envRef (LocalVar var) = do
+eval env (Expression e) = do
+    evalExpr env e
+    return ()
+
+evalExpr :: Env -> Expression -> IO Expression
+evalExpr _ (BinOp (Add) (Int l) (Int r)) = return $ Int (l + r)
+evalExpr _ (BinOp (Add) (String l) (String r)) = return $ String (l ++ r)
+evalExpr _ (BinOp (Sub) (Int l) (Int r)) = return $ Int (l - r)
+evalExpr _ (BinOp (Mul) (Int l) (Int r)) = return $ Int (l * r)
+evalExpr _ (BinOp (Div) (Int l) (Int r)) = return $ Int (quot l r)
+evalExpr _ (BinOp (Eq) (Int l) (Int r)) = return $ Bool (l == r)
+evalExpr _ (BinOp (NotEq) (Int l) (Int r)) = return $ Bool (l /= r)
+
+evalExpr env (BinOp op l r) = do
+    left <- evalExpr env l
+    right <- evalExpr env r
+    result <- evalExpr env $ BinOp op left right
+    return result
+
+evalExpr env (Call _ expr) = do
+    arg <- liftM toString (evalExpr env expr)
+    putStrLn arg
+    return None
+
+evalExpr envRef (Variable var) = do
     env <- readIORef envRef
     case (Map.lookup var env) of
         Nothing -> fail $ "unknown variable " ++ var
         Just v  -> return v
 
-eval env (BinOp (Add) (Int l) (Int r)) = return $ Int (l + r)
-eval env (BinOp (Add) (String l) (String r)) = return $ String (l ++ r)
-eval env (BinOp (Sub) (Int l) (Int r)) = return $ Int (l - r)
-eval env (BinOp (Mul) (Int l) (Int r)) = return $ Int (l * r)
-eval env (BinOp (Div) (Int l) (Int r)) = return $ Int (quot l r)
-
-eval env (BinOp op l r) = do
-    left <- eval env l
-    right <- eval env r
-    result <- eval env $ BinOp op left right
-    return result
-
-eval env (Int n) = return $ Int n
-eval env (String s) = return $ String s
-eval env e = fail $ "Unimplemented: " ++ show e
+evalExpr _ (Int n) = return $ Int n
+evalExpr _ (String s) = return $ String s
+evalExpr _ e = fail $ "Unimplemented: " ++ show e
 
 toString :: Expression -> String
 toString (String v) = v
@@ -63,6 +72,7 @@ parseEval filename code = do
         Right r -> mapM_ (eval env) r
     return ()
 
+main :: IO ()
 main = do
     [filename] <- getArgs
     code <- readFile filename

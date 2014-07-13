@@ -1,6 +1,5 @@
-module Parser where
+module Parser (parse) where
 
-import Control.Monad
 import Text.Parsec hiding (parse)
 import qualified Text.Parsec as Parsec
 import Text.Parsec.Expr
@@ -8,20 +7,52 @@ import Text.Parsec.String
 
 import AST
 
-parse location code = Parsec.parse expressions location code
+parse location code = Parsec.parse program location code
 
-expressions :: Parser [Expression]
-expressions = sepEndBy1 expression terminator
+program = do
+    statements <- sepEndBy1 statement terminator
+    return statements
 
-expression :: Parser Expression
-expression = do
-    try (call)
-    <|> try (assignStmt)
-    <|> compoundExpr
-    <|> localVar
-    <|> literal
+statement :: Parser Statement
+statement = do
+    try (assignment)
+    <|> ifStatement
+    <|> expr
 
-call :: Parser Expression
+assignment = do
+    var <- identifier
+    char '='
+    expr <- expression
+    return $ Assignment var expr
+
+ifStatement = do
+    string "if"
+    char ' '
+    guard <- expression
+    char ':'
+    terminator
+    s <- statement
+    return $ If guard s
+
+expr = do
+    e <- expression
+    return $ Expression e
+
+expression = buildExpressionParser table term
+    where
+        table = [
+            [Infix (char '*' >> return (BinOp Mul)) AssocLeft],
+            [Infix (char '/' >> return (BinOp Div)) AssocLeft],
+            [Infix (char '+' >> return (BinOp Add)) AssocLeft],
+            [Infix (char '-' >> return (BinOp Sub)) AssocLeft],
+            [Infix (string "!=" >> return (BinOp NotEq)) AssocLeft],
+            [Infix (string "==" >> return (BinOp Eq)) AssocLeft]]
+
+        term = do
+            try (call)
+            <|> variable
+            <|> literal
+
 call = do
     name <- identifier
     char '('
@@ -29,41 +60,22 @@ call = do
     char ')'
     return $ Call name arg
 
-assignStmt :: Parser Expression
-assignStmt = do
-    var <- identifier
-    char '='
-    expr <- expression
-    return $ Assignment var expr
-
-localVar :: Parser Expression
-localVar = do
+variable = do
     name <- identifier
-    return $ LocalVar name
+    return $ Variable name
 
-compoundExpr = buildExpressionParser table term
-    where
-    table = [
-        [Infix (char '*' >> return (BinOp Add)) AssocLeft],
-        [Infix (char '/' >> return (BinOp Add)) AssocLeft],
-        [Infix (char '+' >> return (BinOp Add)) AssocLeft],
-        [Infix (char '-' >> return (BinOp Add)) AssocLeft]]
-    term = literal <|> localVar
-
-literal :: Parser Expression
 literal = integerLiteral <|> stringLiteral
     where
-    integerLiteral = do
-        num <- many1 digit
-        return $ Int (read num)
+        integerLiteral = do
+            num <- many1 digit
+            return $ Int (read num)
 
-    stringLiteral = do
-        char '"'
-        s <- many (noneOf "\"")
-        char '"'
-        return $ String s
+        stringLiteral = do
+            char '"'
+            s <- many (noneOf "\"")
+            char '"'
+            return $ String s
 
-identifier :: Parser String
 identifier = do
     start <- (letter <|> char '_')
     rest <- many (alphaNum <|> char '_')

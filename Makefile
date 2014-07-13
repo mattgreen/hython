@@ -1,5 +1,6 @@
 hython: AST.hs Parser.hs Interpreter.hs
-	ghc -outputdir ./obj Interpreter.hs -o hython
+	ghc -Wall -outputdir ./obj Interpreter.hs -o hython
 
 clean:
+	rm -f ./obj/*
 	rm -f ./hython
