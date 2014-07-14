@@ -1,4 +1,2 @@
-*.hi
-*.o
 .cabal-sandbox
-hython
+dist

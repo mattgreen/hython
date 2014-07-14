@@ -17,5 +17,5 @@ data Statement =
     Assignment String Expression
     | Block [Statement]
     | Expression Expression
-    | If Expression Statement
+    | If Expression [Statement]
     deriving(Eq, Show)

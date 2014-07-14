@@ -5,11 +5,9 @@ cabal-version:    >= 1.2
 
 library
   hs-source-dirs: .
-  build-depends:  base, parsec, containers, indents, mtl
+  build-depends:  base, parsec, containers, indents, indentparser, mtl
 
--- The compiler binary
 executable        hython
   main-is:        Interpreter.hs
   hs-source-dirs: .
   ghc-options:    -Wall
-

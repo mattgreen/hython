@@ -20,9 +20,9 @@ eval envRef (Assignment var expr) = do
     env <- readIORef envRef
     writeIORef envRef (Map.insert var value env)
 
-eval env (If condition statement) = do
+eval env (If condition statements) = do
     result <- evalExpr env condition
-    when (isTruthy result) (eval env statement)
+    when (isTruthy result) (mapM_ (eval env) statements)
     return ()
 
 eval env (Expression e) = do
@@ -80,6 +80,7 @@ parseEval filename code = do
     env <- nullEnv
     case parse filename code of
         Left e -> print e
+        {-Right r -> print r-}
         Right r -> mapM_ (eval env) r
     return ()
 

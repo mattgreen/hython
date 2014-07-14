@@ -1,77 +1,67 @@
 module Parser (parse) where
 
+import Control.Monad.Identity
 import Text.Parsec hiding (parse)
-import qualified Text.Parsec as Parsec
 import Text.Parsec.Expr
-import Text.Parsec.String
 
+import Text.Parsec.IndentParsec.Combinator
+import Text.Parsec.IndentParsec.Prim
+
+import Lexer
 import AST
 
-parse = Parsec.parse program
+parse location code = runIdentity $ runGIPT parser () location code
 
-program = sepEndBy1 statement terminator
+type Parser a = IndentParsecT String () Identity a
 
-statement :: Parser Statement
-statement = try assignment <|> ifStatement <|> expr
+parser :: Parser [Statement]
+parser = whitespace >> statements
 
-assignment = do
-    var <- identifier
-    char '='
-    expr <- expression
-    return $ Assignment var expr
+statements = many1 statement
+statement = ifStatement <|> expressionStatement
 
 ifStatement = do
-    string "if"
-    char ' '
-    guard <- expression
-    char ':'
-    terminator
+    reserved "if"
+    condition <- expression
+    colon
+    thenBlock <- blockOf statements
+    return $ If condition thenBlock
 
-    s <- statement
-    return $ If guard s
-
-expr = do
+expressionStatement = do
     e <- expression
     return $ Expression e
 
 expression = buildExpressionParser table term
     where
         table = [
-            [Infix (char '*' >> return (BinOp Mul)) AssocLeft],
-            [Infix (char '/' >> return (BinOp Div)) AssocLeft],
-            [Infix (char '+' >> return (BinOp Add)) AssocLeft],
-            [Infix (char '-' >> return (BinOp Sub)) AssocLeft],
-            [Infix (string "!=" >> return (BinOp NotEq)) AssocLeft],
-            [Infix (string "==" >> return (BinOp Eq)) AssocLeft]]
+            [Infix (operator "*" >> return (BinOp Mul)) AssocLeft],
+            [Infix (operator "/" >> return (BinOp Div)) AssocLeft],
+            [Infix (operator "+" >> return (BinOp Add)) AssocLeft],
+            [Infix (operator "-" >> return (BinOp Sub)) AssocLeft],
+            [Infix (operator "!=">> return (BinOp NotEq)) AssocLeft],
+            [Infix (operator "==">> return (BinOp Eq)) AssocLeft]]
 
-        term = try call <|> literal <|> variable
+        term = try call <|> variable <|> literal
 
-call = do
-    name <- identifier
-    char '('
-    arg <- expression
-    char ')'
-    return $ Call name arg
+        call = do
+            name <- identifier
+            char '('
+            arg <- expression
+            char ')'
+            whitespace
+            return $ Call name arg
 
-variable = do
-    name <- identifier
-    return $ Variable name
+        variable = do
+            name <- identifier
+            return $ Variable name
 
-literal = integerLiteral <|> stringLiteral
-    where
-        integerLiteral = do
-            num <- many1 digit
-            return $ Int (read num)
+        literal = integerLiteral <|> strLiteral
 
-        stringLiteral = do
-            char '"'
-            s <- many (noneOf "\"")
-            char '"'
+        strLiteral = do
+            s <- stringLiteral
             return $ String s
 
-identifier = do
-    start <- letter <|> char '_'
-    rest <- many (alphaNum <|> char '_')
-    return $ start:rest
+        integerLiteral = do
+            i <- integer
+            return $ Int i
 
-terminator = char '\r' <|> char '\n'
