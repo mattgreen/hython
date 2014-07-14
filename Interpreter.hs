@@ -13,8 +13,6 @@ nullEnv :: IO Env
 nullEnv = newIORef $ Map.fromList [("None", None), ("True", Bool True), ("False", Bool False)]
 
 eval :: Env -> Statement -> IO ()
-eval env (Block statements) = mapM_ (eval env) statements
-
 eval envRef (Assignment var expr) = do
     value <- evalExpr envRef expr
     env <- readIORef envRef
@@ -62,7 +60,6 @@ evalExpr _ (Int n) = return $ Int n
 evalExpr _ (String s) = return $ String s
 evalExpr _ (Bool b) = return $ Bool b
 evalExpr _ (None) = return None
-evalExpr _ e = fail $ "Unimplemented: " ++ show e
 
 isTruthy :: Expression -> Bool
 isTruthy (Int 0) = False
