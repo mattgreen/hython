@@ -5,7 +5,7 @@ cabal-version:    >= 1.2
 
 library
   hs-source-dirs: .
-  build-depends:  base, parsec, containers, indents, indentparser, mtl
+  build-depends:  base, parsec, containers, indentparser, mtl
 
 executable        hython
   main-is:        Interpreter.hs
