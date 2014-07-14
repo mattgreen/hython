@@ -15,7 +15,6 @@ data Operator = Add | Sub | Mul | Div | Eq | NotEq
 
 data Statement =
     Assignment String Expression
-    | Block [Statement]
     | Expression Expression
     | If Expression [Statement]
     deriving(Eq, Show)

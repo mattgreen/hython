@@ -11,4 +11,9 @@ if False:
     print("Shouldn't see this: False")
 if None:
     print("Shouldn't see this: None")
+
+if True:
+    if 1:
+        print("Nested If")
+
 print("After")

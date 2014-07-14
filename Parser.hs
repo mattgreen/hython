@@ -18,7 +18,7 @@ parser :: Parser [Statement]
 parser = whitespace >> statements
 
 statements = many1 statement
-statement = ifStatement <|> expressionStatement
+statement = choice [ifStatement, try assignmentStatement, expressionStatement]
 
 ifStatement = do
     reserved "if"
@@ -26,6 +26,12 @@ ifStatement = do
     colon
     thenBlock <- blockOf statements
     return $ If condition thenBlock
+
+assignmentStatement = do
+    variable <- identifier
+    operator "="
+    value <- expression
+    return $ Assignment variable value
 
 expressionStatement = do
     e <- expression
