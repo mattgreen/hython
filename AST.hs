@@ -1,7 +1,7 @@
 module AST where
 
 data Expression =
-    Call String Expression
+    Call String [Expression]
     | String String
     | Int Integer
     | Bool Bool

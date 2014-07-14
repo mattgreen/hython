@@ -45,11 +45,8 @@ expression = buildExpressionParser table term
 
         call = do
             name <- identifier
-            char '('
-            arg <- expression
-            char ')'
-            whitespace
-            return $ Call name arg
+            arguments <- parens (expression `sepBy` comma)
+            return $ Call name arguments
 
         variable = do
             name <- identifier

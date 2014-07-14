@@ -47,8 +47,8 @@ evalExpr env (BinOp op l r) = do
     right <- evalExpr env r
     evalExpr env $ BinOp op left right
 
-evalExpr env (Call _ expr) = do
-    arg <- liftM toString (evalExpr env expr)
+evalExpr env (Call _ args) = do
+    arg <- liftM toString (evalExpr env (head args))
     putStrLn arg
     return None
 
