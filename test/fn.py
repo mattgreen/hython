@@ -1,8 +1,11 @@
 def f():
+    if True:
+        return 0
+
     print("Hello")
 
 def g():
     print("Goodbye")
 
-f()
-g()
+print(f())
+print(g())

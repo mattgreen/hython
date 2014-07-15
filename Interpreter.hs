@@ -7,31 +7,52 @@ import System.Environment
 import AST
 import Parser
 
-type Env = IORef (Map String Value)
+type SymbolTable = Map String Value
+data ReturnValue = Unset | Value Value deriving (Eq, Show)
 
-nullEnv :: IO Env
-nullEnv = newIORef $ Map.fromList [("None", None), ("True", Bool True), ("False", Bool False)]
+data EnvironmentState = Environment {
+    symbolTable :: SymbolTable,
+    frames :: [SymbolTable],
+    returnValue :: ReturnValue
+} deriving (Show)
 
-eval :: Env -> Statement -> IO ()
+type Environment = IORef EnvironmentState
+
+defaultEnv :: IO Environment
+defaultEnv = do
+    let builtins = Map.fromList [("None", None), ("True", Bool True), ("False", Bool False)]
+    newIORef $ Environment {symbolTable = builtins, frames = [], returnValue = Unset }
+
+eval :: Environment -> Statement -> IO ()
 eval envRef (Def name params body) = do
     env <- readIORef envRef
-    writeIORef envRef (Map.insert name (Function params body) env)
+    let symbols = symbolTable env
+    writeIORef envRef env { symbolTable = (Map.insert name (Function params body) symbols) }
 
 eval envRef (Assignment var expr) = do
     value <- evalExpr envRef expr
     env <- readIORef envRef
-    writeIORef envRef (Map.insert var value env)
+    let symbols = symbolTable env
+    writeIORef envRef env { symbolTable = (Map.insert var value symbols) }
 
 eval env (If condition statements) = do
     result <- evalExpr env condition
     when (isTruthy result) (mapM_ (eval env) statements)
     return ()
 
+eval envRef (Return expression) = do
+    value <- evalExpr envRef expression
+
+    env <- readIORef envRef
+    writeIORef envRef env { returnValue = Value value }
+
+    return ()
+
 eval env (Expression e) = do
     _ <- evalExpr env e
     return ()
 
-evalExpr :: Env -> Expression -> IO Value
+evalExpr :: Environment -> Expression -> IO Value
 evalExpr _ (BinOp Add (Constant (Int l)) (Constant (Int r))) = return $ Int (l + r)
 evalExpr _ (BinOp Add (Constant (String l)) (Constant (String r))) = return $ String (l ++ r)
 evalExpr _ (BinOp Sub (Constant (Int l)) (Constant (Int r))) = return $ Int (l - r)
@@ -56,21 +77,43 @@ evalExpr env (Call "print" args) = do
 
 evalExpr envRef (Call name args) = do
     env <- readIORef envRef
-    case Map.lookup name env of
+    let symbols = symbolTable env
+
+    evalArgs <- mapM (evalExpr envRef) args
+
+    case Map.lookup name symbols of
         Nothing -> fail $ "unknown function: " ++ name
-        Just f -> evalCall envRef f args
+        Just f -> evalCall envRef f evalArgs
 
 evalExpr envRef (Variable var) = do
     env <- readIORef envRef
-    case Map.lookup var env of
+    let symbols = symbolTable env
+    case Map.lookup var symbols of
         Nothing -> fail $ "unknown variable " ++ var
         Just v  -> return v
 
 evalExpr _ (Constant c) = return c
 
-evalCall env (Function _ body) args = do
-    mapM_ (eval env) body
-    return None
+evalCall :: Environment -> Value -> [Value] -> IO Value
+evalCall envRef (Function _ body) args = do
+    env <- readIORef envRef
+    result <- evalBody envRef body
+    writeIORef envRef env { returnValue = Unset }
+    return result
+
+    where
+        evalBody envRef statements = do
+            env <- readIORef envRef
+
+            case (returnValue env) of
+                Unset -> do
+                    case statements of
+                        (s:r) -> do
+                            eval envRef s
+                            evalBody envRef r
+
+                        [] -> return None
+                Value v -> return v
 
 isTruthy :: Value -> Bool
 isTruthy (Int 0) = False
@@ -85,7 +128,7 @@ toString e = show e
 
 parseEval :: String -> String -> IO ()
 parseEval filename code = do
-    env <- nullEnv
+    env <- defaultEnv
     case parse filename code of
         Left e -> print e
         {-Right r -> print r-}

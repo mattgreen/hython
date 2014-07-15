@@ -5,6 +5,7 @@ data Statement =
     | Expression Expression
     | If Expression [Statement]
     | Def String [String] [Statement]
+    | Return Expression
     deriving(Eq, Show)
 
 data Expression =

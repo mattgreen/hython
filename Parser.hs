@@ -15,7 +15,11 @@ parse location code = runIdentity $ runGIPT program () location code
 program = whitespace >> statements
 
 statements = many1 statement
-statement = choice [defStatement, ifStatement, try assignmentStatement, expressionStatement]
+statement = choice [defStatement,
+                   returnStatement,
+                   ifStatement,
+                   try assignmentStatement,
+                   expressionStatement]
 
 ifStatement = do
     reserved "if"
@@ -37,6 +41,11 @@ defStatement = do
     colon
     body <- blockOf statements
     return $ Def name params body
+
+returnStatement = do
+    reserved "return"
+    e <- expression
+    return $ Return e
 
 expressionStatement = do
     e <- expression
