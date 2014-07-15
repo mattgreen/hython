@@ -10,15 +10,12 @@ import Text.Parsec.IndentParsec.Prim
 import Lexer
 import AST
 
-parse location code = runIdentity $ runGIPT parser () location code
+parse location code = runIdentity $ runGIPT program () location code
 
-type Parser a = IndentParsecT String () Identity a
-
-parser :: Parser [Statement]
-parser = whitespace >> statements
+program = whitespace >> statements
 
 statements = many1 statement
-statement = choice [ifStatement, try assignmentStatement, expressionStatement]
+statement = choice [defStatement, ifStatement, try assignmentStatement, expressionStatement]
 
 ifStatement = do
     reserved "if"
@@ -32,6 +29,14 @@ assignmentStatement = do
     operator "="
     value <- expression
     return $ Assignment variable value
+
+defStatement = do
+    reserved "def"
+    name <- identifier
+    params <- parens (identifier `sepBy` comma)
+    colon
+    body <- blockOf statements
+    return $ Def name params body
 
 expressionStatement = do
     e <- expression
@@ -47,7 +52,7 @@ expression = buildExpressionParser table term
             [Infix (operator "!=">> return (BinOp NotEq)) AssocLeft],
             [Infix (operator "==">> return (BinOp Eq)) AssocLeft]]
 
-        term = try call <|> variable <|> literal
+        term = choice [try call, variable, literal]
 
         call = do
             name <- identifier
@@ -62,9 +67,9 @@ expression = buildExpressionParser table term
 
         strLiteral = do
             s <- stringLiteral
-            return $ String s
+            return $ Constant (String s)
 
         integerLiteral = do
             i <- integer
-            return $ Int i
+            return $ Constant (Int i)
 
