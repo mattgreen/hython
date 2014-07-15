@@ -54,11 +54,11 @@ evalExpr env (Call "print" args) = do
     putStrLn arg
     return None
 
-evalExpr _ (Call name args) = do
+evalExpr envRef (Call name args) = do
     env <- readIORef envRef
-    case Map.lookup var env of
+    case Map.lookup name env of
         Nothing -> fail $ "unknown function: " ++ name
-        Just f -> evalCall f args
+        Just f -> evalCall envRef f args
 
 evalExpr envRef (Variable var) = do
     env <- readIORef envRef
@@ -68,7 +68,9 @@ evalExpr envRef (Variable var) = do
 
 evalExpr _ (Constant c) = return c
 
-evalCall f args = fail "what"
+evalCall env (Function _ body) args = do
+    mapM_ (eval env) body
+    return None
 
 isTruthy :: Value -> Bool
 isTruthy (Int 0) = False
