@@ -7,5 +7,9 @@ def f():
 def g():
     print("Goodbye")
 
+def h():
+    return f() + 1
+
 print(f())
 print(g())
+print(h())
