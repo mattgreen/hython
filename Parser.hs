@@ -33,8 +33,7 @@ ifStatement = do
         elseBlock = do
             reserved "else"
             colon
-            b <- blockOf statements
-            return b
+            blockOf statements
 
 assignmentStatement = do
     variable <- identifier

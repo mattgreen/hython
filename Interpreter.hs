@@ -1,5 +1,6 @@
 import Control.Monad
 import Data.IORef
+import qualified Data.List as List
 import Data.Map (Map)
 import qualified Data.Map as Map
 import System.Environment
@@ -21,26 +22,24 @@ type Environment = IORef EnvironmentState
 defaultEnv :: IO Environment
 defaultEnv = do
     let builtins = Map.fromList [("None", None), ("True", Bool True), ("False", Bool False)]
-    newIORef $ Environment {symbolTable = builtins, frames = [], returnValue = Unset }
+    newIORef Environment {symbolTable = builtins, frames = [], returnValue = Unset }
 
 eval :: Environment -> Statement -> IO ()
 eval envRef (Def name params body) = do
     env <- readIORef envRef
     let symbols = symbolTable env
-    writeIORef envRef env { symbolTable = (Map.insert name (Function params body) symbols) }
+    writeIORef envRef env { symbolTable = Map.insert name (Function params body) symbols }
 
 eval envRef (Assignment var expr) = do
     value <- evalExpr envRef expr
     env <- readIORef envRef
     let symbols = symbolTable env
-    writeIORef envRef env { symbolTable = (Map.insert var value symbols) }
+    writeIORef envRef env { symbolTable = Map.insert var value symbols }
 
 eval env (If condition thenBlock elseBlock) = do
     result <- evalExpr env condition
-    if isTruthy result
-        then (mapM_ (eval env) thenBlock)
-        else (mapM_ (eval env) elseBlock)
-    return ()
+    evalBlock (if isTruthy result then thenBlock else elseBlock)
+    where evalBlock = mapM_ $ eval env
 
 eval envRef (Return expression) = do
     value <- evalExpr envRef expression
@@ -89,7 +88,10 @@ evalExpr envRef (Call name args) = do
 
 evalExpr envRef (Variable var) = do
     env <- readIORef envRef
-    let symbols = symbolTable env
+    let symbols = if List.null (frames env)
+                      then symbolTable env
+                      else head $ frames env
+
     case Map.lookup var symbols of
         Nothing -> fail $ "unknown variable " ++ var
         Just v  -> return v
@@ -97,25 +99,33 @@ evalExpr envRef (Variable var) = do
 evalExpr _ (Constant c) = return c
 
 evalCall :: Environment -> Value -> [Value] -> IO Value
-evalCall envRef (Function _ body) args = do
-    env <- readIORef envRef
-    result <- evalBody envRef body
-    writeIORef envRef env { returnValue = Unset }
+evalCall envRef (Function params body) args = do
+    setup
+    result <- evalBody body
+    teardown
     return result
 
     where
-        evalBody envRef statements = do
+        setup = do
             env <- readIORef envRef
+            let frame = Map.union (Map.fromList $ zip params args) (symbolTable env)
+            writeIORef envRef env { frames = frame : frames env }
 
-            case (returnValue env) of
-                Unset -> do
-                    case statements of
+        evalBody statements = do
+            env <- readIORef envRef
+            let earlyReturn = returnValue env
+
+            case earlyReturn of
+                Unset -> case statements of
                         (s:r) -> do
                             eval envRef s
-                            evalBody envRef r
-
+                            evalBody r
                         [] -> return None
                 Value v -> return v
+
+        teardown = do
+            env <- readIORef envRef
+            writeIORef envRef env { frames = tail (frames env), returnValue = Unset }
 
 isTruthy :: Value -> Bool
 isTruthy (Int 0) = False
@@ -133,7 +143,6 @@ parseEval filename code = do
     env <- defaultEnv
     case parse filename code of
         Left e -> print e
-        {-Right r -> print r-}
         Right r -> mapM_ (eval env) r
     return ()
 
