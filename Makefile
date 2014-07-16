@@ -1,6 +1,6 @@
-hython: AST.hs Parser.hs Interpreter.hs
+hython: *.hs
 	cabal build
-	ln -s dist/build/hython/hython .
+	ln -sf dist/build/hython/hython .
 
 lint:
 	cabal exec hlint .
