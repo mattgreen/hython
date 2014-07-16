@@ -3,7 +3,7 @@ module AST where
 data Statement =
     Assignment String Expression
     | Expression Expression
-    | If Expression [Statement]
+    | If Expression [Statement] [Statement]
     | Def String [String] [Statement]
     | Return Expression
     deriving(Eq, Show)

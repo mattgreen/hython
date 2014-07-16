@@ -35,9 +35,11 @@ eval envRef (Assignment var expr) = do
     let symbols = symbolTable env
     writeIORef envRef env { symbolTable = (Map.insert var value symbols) }
 
-eval env (If condition statements) = do
+eval env (If condition thenBlock elseBlock) = do
     result <- evalExpr env condition
-    when (isTruthy result) (mapM_ (eval env) statements)
+    if isTruthy result
+        then (mapM_ (eval env) thenBlock)
+        else (mapM_ (eval env) elseBlock)
     return ()
 
 eval envRef (Return expression) = do

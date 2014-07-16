@@ -26,7 +26,15 @@ ifStatement = do
     condition <- expression
     colon
     thenBlock <- blockOf statements
-    return $ If condition thenBlock
+    elseBlock <- option [] (try elseBlock)
+    return $ If condition thenBlock elseBlock
+
+    where
+        elseBlock = do
+            reserved "else"
+            colon
+            b <- blockOf statements
+            return b
 
 assignmentStatement = do
     variable <- identifier

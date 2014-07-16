@@ -11,6 +11,8 @@ if False:
     print("Shouldn't see this: False")
 if None:
     print("Shouldn't see this: None")
+else:
+    print("Else")
 
 if True:
     if 1:
