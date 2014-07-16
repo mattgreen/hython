@@ -1,6 +1,8 @@
 hython: AST.hs Parser.hs Interpreter.hs
-	ghc -Wall -outputdir ./obj Interpreter.hs -o hython
+	cabal build
+
+lint:
+	cabal exec hlint .
 
 clean:
-	rm -f ./obj/*
-	rm -f ./hython
+	cabal clean
