@@ -6,6 +6,8 @@ data Statement =
     | If Expression [Statement] [Statement]
     | Def String [String] [Statement]
     | Return Expression
+    | While Expression [Statement]
+    | Break
     deriving(Eq, Show)
 
 data Expression =

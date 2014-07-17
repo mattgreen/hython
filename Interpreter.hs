@@ -38,8 +38,7 @@ eval envRef (Assignment var expr) = do
 
 eval env (If condition thenBlock elseBlock) = do
     result <- evalExpr env condition
-    evalBlock (if isTruthy result then thenBlock else elseBlock)
-    where evalBlock = mapM_ $ eval env
+    evalBlock env (if isTruthy result then thenBlock else elseBlock)
 
 eval envRef (Return expression) = do
     value <- evalExpr envRef expression
@@ -49,8 +48,20 @@ eval envRef (Return expression) = do
 
     return ()
 
+eval env (While condition block) = do
+    result <- evalExpr env condition
+    when (isTruthy result) $ do
+        evalBlock env block
+        eval env $ While condition block
+    return ()
+
 eval env (Expression e) = do
     _ <- evalExpr env e
+    return ()
+
+evalBlock :: Environment -> [Statement] -> IO ()
+evalBlock env statements = do
+    mapM_ (eval env) statements
     return ()
 
 evalExpr :: Environment -> Expression -> IO Value

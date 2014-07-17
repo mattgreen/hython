@@ -1,6 +1,6 @@
 hython: AST.hs Parser.hs Interpreter.hs
 	@cabal build
-	@./.cabal-sandbox/bin/hlint -q .
+	-@./.cabal-sandbox/bin/hlint .
 	@ln -sf dist/build/hython/hython .
 
 .PHONY: test

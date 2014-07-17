@@ -12,6 +12,7 @@ I wanted to learn Haskell, so I intentionally chose a more ambitious project to 
 * Operators: `+`, `-`, `*`, `/`, `==`, `!=`
 * Mutable variables
 * If/else statements
+* While loops
 * Functions + `return` statement
 
 ## Differences from Python 3
@@ -20,5 +21,5 @@ I wanted to learn Haskell, so I intentionally chose a more ambitious project to 
 
 ## Running
     $ cabal install
-    $ make build
+    $ make
     $ ./hython test/fib.py

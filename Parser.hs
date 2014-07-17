@@ -18,6 +18,8 @@ statements = many1 statement
 statement = choice [defStatement,
                    returnStatement,
                    ifStatement,
+                   whileStatement,
+                   breakStatement,
                    try assignmentStatement,
                    expressionStatement]
 
@@ -53,6 +55,17 @@ returnStatement = do
     reserved "return"
     e <- expression
     return $ Return e
+
+whileStatement = do
+    reserved "while"
+    e <- expression
+    colon
+    loopBlock <- blockOf statements
+    return $ While e loopBlock
+
+breakStatement = do
+    reserved "break"
+    return Break
 
 expressionStatement = do
     e <- expression

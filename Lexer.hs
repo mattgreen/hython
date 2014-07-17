@@ -15,7 +15,7 @@ definition = LanguageDef {
     identLetter = alphaNum <|> char '_',
     opStart = oneOf "-+/*=<>:",
     opLetter = oneOf "-+/*=<>:",
-    reservedNames = ["if", "else", "def", "return"],
+    reservedNames = ["if", "else", "def", "return", "while", "break"],
     reservedOpNames = ["=", "+", "-", "*", "/", ":"],
     caseSensitive = True,
     nestedComments = False
