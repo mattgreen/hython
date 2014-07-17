@@ -69,6 +69,8 @@ evalExpr _ (BinOp Add (Constant (Int l)) (Constant (Int r))) = return $ Int (l +
 evalExpr _ (BinOp Add (Constant (String l)) (Constant (String r))) = return $ String (l ++ r)
 evalExpr _ (BinOp Sub (Constant (Int l)) (Constant (Int r))) = return $ Int (l - r)
 evalExpr _ (BinOp Mul (Constant (Int l)) (Constant (Int r))) = return $ Int (l * r)
+evalExpr _ (BinOp Mul (Constant (String l)) (Constant (Int r))) = return $ String (foldl (\t _ -> t ++ s) "" [1..n])
+evalExpr _ (BinOp Mul (Constant (Int l)) (Constant (String r))) = return $ String (foldl (\t _ -> t ++ s) "" [1..n])
 evalExpr _ (BinOp Div (Constant (Int l)) (Constant (Int r))) = return $ Int (quot l r)
 evalExpr _ (BinOp Eq (Constant (Int l)) (Constant (Int r))) = return $ Bool (l == r)
 evalExpr _ (BinOp Eq (Constant (String l)) (Constant (String r))) = return $ Bool (l == r)
