@@ -1,13 +1,11 @@
 hython: *.hs
-	cabal build
-	ln -sf dist/build/hython/hython .
-
-lint:
-	cabal exec hlint .
+	@cabal build
+	@./.cabal-sandbox/bin/hlint -q .
+	@ln -sf dist/build/hython/hython .
 
 .PHONY: test
 test:
-	python3 test.py
+	@python3 test.py
 
 clean:
-	cabal clean
+	@cabal clean --verbose=0

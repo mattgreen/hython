@@ -22,4 +22,7 @@ for testcase in glob.glob("test/*.py"):
 
         exit_status = 1
 
+if exit_status == 0:
+    print("All test cases passed!")
+
 sys.exit(exit_status)
