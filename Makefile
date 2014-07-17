@@ -5,5 +5,9 @@ hython: *.hs
 lint:
 	cabal exec hlint .
 
+.PHONY: test
+test:
+	python3 test.py
+
 clean:
 	cabal clean
