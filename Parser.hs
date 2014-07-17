@@ -26,11 +26,11 @@ ifStatement = do
     condition <- expression
     colon
     thenBlock <- blockOf statements
-    elseBlock <- option [] (try elseBlock)
+    elseBlock <- option [] (try elseClause)
     return $ If condition thenBlock elseBlock
 
     where
-        elseBlock = do
+        elseClause = do
             reserved "else"
             colon
             blockOf statements
