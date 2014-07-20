@@ -1,4 +1,5 @@
 import Control.Monad
+import Control.Monad.State
 import Data.IORef
 import qualified Data.List as List
 import Data.Map (Map)
@@ -11,94 +12,92 @@ import Parser
 type SymbolTable = Map String Value
 data ReturnValue = Unset | Value Value deriving (Eq, Show)
 
-data EnvironmentState = Environment {
+data Environment = Environment {
     symbolTable :: SymbolTable,
     frames :: [SymbolTable],
     returnValue :: ReturnValue
 } deriving (Show)
 
-type Environment = IORef EnvironmentState
-
-defaultEnv :: IO Environment
+defaultEnv :: Environment
 defaultEnv = do
     let builtins = Map.fromList [("None", None), ("True", Bool True), ("False", Bool False)]
-    newIORef Environment {symbolTable = builtins, frames = [], returnValue = Unset }
+    Environment {symbolTable = builtins, frames = [], returnValue = Unset }
 
-eval :: Environment -> Statement -> IO ()
-eval envRef (Def name params body) = do
-    env <- readIORef envRef
+eval :: Statement -> StateT Environment IO ()
+eval (Def name params body) = do
+    env <- get
     let symbols = symbolTable env
-    writeIORef envRef env { symbolTable = Map.insert name (Function params body) symbols }
+    put env { symbolTable = Map.insert name (Function params body) symbols }
 
-eval envRef (Assignment var expr) = do
-    value <- evalExpr envRef expr
-    env <- readIORef envRef
+eval (Assignment var expr) = do
+    value <- evalExpr expr
+    env <- get
     let symbols = symbolTable env
-    writeIORef envRef env { symbolTable = Map.insert var value symbols }
+    put env { symbolTable = Map.insert var value symbols }
 
-eval env (If condition thenBlock elseBlock) = do
-    result <- evalExpr env condition
-    evalBlock env (if isTruthy result then thenBlock else elseBlock)
+eval (If condition thenBlock elseBlock) = do
+    result <- evalExpr condition
+    evalBlock (if isTruthy result then thenBlock else elseBlock)
 
-eval envRef (Return expression) = do
-    value <- evalExpr envRef expression
+eval (Return expression) = do
+    value <- evalExpr expression
 
-    env <- readIORef envRef
-    writeIORef envRef env { returnValue = Value value }
+    env <- get
+    put env { returnValue = Value value }
 
     return ()
 
-eval env (While condition block) = do
-    result <- evalExpr env condition
+eval (While condition block) = do
+    result <- evalExpr condition
     when (isTruthy result) $ do
-        evalBlock env block
-        eval env $ While condition block
+        evalBlock block
+        eval $ While condition block
     return ()
 
-eval env (Expression e) = do
-    _ <- evalExpr env e
+eval (Expression e) = do
+    _ <- evalExpr e
     return ()
 
-evalBlock :: Environment -> [Statement] -> IO ()
-evalBlock env statements = do
-    mapM_ (eval env) statements
+evalBlock :: [Statement] -> StateT Environment IO ()
+evalBlock statements = do
+    mapM_ eval statements
     return ()
 
-evalExpr :: Environment -> Expression -> IO Value
-evalExpr _ (BinOp Add (Constant (Int l)) (Constant (Int r))) = return $ Int (l + r)
-evalExpr _ (BinOp Add (Constant (String l)) (Constant (String r))) = return $ String (l ++ r)
-evalExpr _ (BinOp Sub (Constant (Int l)) (Constant (Int r))) = return $ Int (l - r)
-evalExpr _ (BinOp Mul (Constant (Int l)) (Constant (Int r))) = return $ Int (l * r)
-evalExpr _ (BinOp Div (Constant (Int l)) (Constant (Int r))) = return $ Int (quot l r)
-evalExpr _ (BinOp Eq (Constant (Int l)) (Constant (Int r))) = return $ Bool (l == r)
-evalExpr _ (BinOp Eq (Constant (String l)) (Constant (String r))) = return $ Bool (l == r)
-evalExpr _ (BinOp Eq (Constant (Bool l)) (Constant (Bool r))) = return $ Bool (l == r)
-evalExpr _ (BinOp NotEq (Constant (Int l)) (Constant (Int r))) = return $ Bool (l /= r)
-evalExpr _ (BinOp NotEq (Constant (String l)) (Constant (String r))) = return $ Bool (l /= r)
-evalExpr _ (BinOp NotEq (Constant (Bool l)) (Constant (Bool r))) = return $ Bool (l /= r)
+evalExpr :: Expression -> StateT Environment IO Value
+evalExpr (BinOp Add (Constant (Int l)) (Constant (Int r))) = return $ Int (l + r)
+evalExpr (BinOp Add (Constant (String l)) (Constant (String r))) = return $ String (l ++ r)
+evalExpr (BinOp Sub (Constant (Int l)) (Constant (Int r))) = return $ Int (l - r)
+evalExpr (BinOp Mul (Constant (Int l)) (Constant (Int r))) = return $ Int (l * r)
+evalExpr (BinOp Div (Constant (Int l)) (Constant (Int r))) = return $ Int (quot l r)
+evalExpr (BinOp Eq (Constant (Int l)) (Constant (Int r))) = return $ Bool (l == r)
+evalExpr (BinOp Eq (Constant (String l)) (Constant (String r))) = return $ Bool (l == r)
+evalExpr (BinOp Eq (Constant (Bool l)) (Constant (Bool r))) = return $ Bool (l == r)
+evalExpr (BinOp NotEq (Constant (Int l)) (Constant (Int r))) = return $ Bool (l /= r)
+evalExpr (BinOp NotEq (Constant (String l)) (Constant (String r))) = return $ Bool (l /= r)
+evalExpr (BinOp NotEq (Constant (Bool l)) (Constant (Bool r))) = return $ Bool (l /= r)
 
-evalExpr env (BinOp op l r) = do
-    left <- evalExpr env l
-    right <- evalExpr env r
-    evalExpr env $ BinOp op (Constant left) (Constant right)
+evalExpr (BinOp op l r) = do
+    left <- evalExpr l
+    right <- evalExpr r
+    evalExpr $ BinOp op (Constant left) (Constant right)
 
-evalExpr env (Call "print" args) = do
-    arg <- liftM toString (evalExpr env (head args))
-    putStrLn arg
+evalExpr (Call "print" args) = do
+    arg <- liftM toString (evalExpr (head args))
+    liftIO $ putStrLn arg
     return None
 
-evalExpr envRef (Call name args) = do
-    env <- readIORef envRef
+evalExpr (Call name args) = do
+    env <- get
     let symbols = symbolTable env
 
-    evalArgs <- mapM (evalExpr envRef) args
+    evalArgs <- mapM evalExpr args
 
     case Map.lookup name symbols of
         Nothing -> fail $ "unknown function: " ++ name
-        Just f -> evalCall envRef f evalArgs
+        Just f -> evalCall f evalArgs
 
-evalExpr envRef (Variable var) = do
-    env <- readIORef envRef
+evalExpr (Variable var) = do
+    env <- get
     let symbols = if List.null (frames env)
                       then symbolTable env
                       else head $ frames env
@@ -107,10 +106,10 @@ evalExpr envRef (Variable var) = do
         Nothing -> fail $ "unknown variable " ++ var
         Just v  -> return v
 
-evalExpr _ (Constant c) = return c
+evalExpr (Constant c) = return c
 
-evalCall :: Environment -> Value -> [Value] -> IO Value
-evalCall envRef (Function params body) args = do
+evalCall :: Value -> [Value] -> StateT Environment IO Value
+evalCall (Function params body) args = do
     setup
     result <- evalBody body
     teardown
@@ -118,25 +117,25 @@ evalCall envRef (Function params body) args = do
 
     where
         setup = do
-            env <- readIORef envRef
+            env <- get
             let frame = Map.union (Map.fromList $ zip params args) (symbolTable env)
-            writeIORef envRef env { frames = frame : frames env }
+            put env { frames = frame : frames env }
 
         evalBody statements = do
-            env <- readIORef envRef
+            env <- get
             let earlyReturn = returnValue env
 
             case earlyReturn of
                 Unset -> case statements of
                         (s:r) -> do
-                            eval envRef s
+                            eval s
                             evalBody r
                         [] -> return None
                 Value v -> return v
 
         teardown = do
-            env <- readIORef envRef
-            writeIORef envRef env { frames = tail (frames env), returnValue = Unset }
+            env <- get
+            put env { frames = tail (frames env), returnValue = Unset }
 
 isTruthy :: Value -> Bool
 isTruthy (Int 0) = False
@@ -149,12 +148,11 @@ toString (String v) = v
 toString (Int v) = show v
 toString e = show e
 
-parseEval :: String -> String -> IO ()
+parseEval :: String -> String -> StateT Environment IO ()
 parseEval filename code = do
-    env <- defaultEnv
     case parse filename code of
-        Left e -> print e
-        Right r -> mapM_ (eval env) r
+        Left e -> liftIO $ print e
+        Right r -> mapM_ eval r
     return ()
 
 main :: IO ()
@@ -162,4 +160,5 @@ main = do
     [filename] <- getArgs
     code <- readFile filename
 
-    parseEval filename code
+    _ <- runStateT (parseEval filename code) defaultEnv
+    return ()
