@@ -81,7 +81,7 @@ expression = buildExpressionParser table term
             [Infix (operator "!=">> return (BinOp NotEq)) AssocLeft],
             [Infix (operator "==">> return (BinOp Eq)) AssocLeft]]
 
-        term = choice [try call, variable, literal]
+        term = choice [try call, literal, variable]
 
         call = do
             name <- identifier
@@ -92,7 +92,7 @@ expression = buildExpressionParser table term
             name <- identifier
             return $ Variable name
 
-        literal = integerLiteral <|> strLiteral
+        literal = integerLiteral <|> strLiteral <|> trueLiteral <|> falseLiteral <|> noneLiteral
 
         strLiteral = do
             s <- stringLiteral
@@ -101,4 +101,16 @@ expression = buildExpressionParser table term
         integerLiteral = do
             i <- integer
             return $ Constant (Int i)
+
+        trueLiteral = do
+            reserved "True"
+            return $ Constant (Bool True)
+
+        falseLiteral = do
+            reserved "False"
+            return $ Constant (Bool False)
+
+        noneLiteral = do
+            reserved "None"
+            return $ Constant None
 

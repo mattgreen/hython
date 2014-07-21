@@ -19,9 +19,7 @@ data Environment = Environment {
 } deriving (Show)
 
 defaultEnv :: Environment
-defaultEnv = do
-    let builtins = Map.fromList [("None", None), ("True", Bool True), ("False", Bool False)]
-    Environment {globals = builtins, frames = [], flow = Next, loopLevel = 0}
+defaultEnv = Environment {globals = Map.empty, frames = [], flow = Next, loopLevel = 0}
 
 lookupSymbol :: String -> StateT Environment IO Value
 lookupSymbol name = do
