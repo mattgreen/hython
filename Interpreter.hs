@@ -9,7 +9,7 @@ import AST
 import Parser
 
 type SymbolTable = Map String Value
-data Flow = Continue | Breaking | Returning Value deriving (Eq, Show)
+data Flow = Next | Breaking | Returning Value deriving (Eq, Show)
 
 data Environment = Environment {
     globals :: SymbolTable,
@@ -21,7 +21,28 @@ data Environment = Environment {
 defaultEnv :: Environment
 defaultEnv = do
     let builtins = Map.fromList [("None", None), ("True", Bool True), ("False", Bool False)]
-    Environment {globals = builtins, frames = [], flow = Continue, loopLevel = 0}
+    Environment {globals = builtins, frames = [], flow = Next, loopLevel = 0}
+
+lookupSymbol :: String -> StateT Environment IO Value
+lookupSymbol name = do
+    env <- get
+    let symbols = if List.null (frames env)
+                      then globals env
+                      else head $ frames env
+
+    case Map.lookup name symbols of
+        Nothing -> fail $ "unknown symbol: " ++ name
+        Just v  -> return v
+
+updateSymbol :: String -> Value -> StateT Environment IO ()
+updateSymbol name value = do
+    env <- get
+    if List.null (frames env)
+        then put env { globals = Map.insert name value (globals env) }
+        else do
+            let frame = Map.insert name value (head $ frames env)
+            let rest = tail $ frames env
+            put env { frames = frame : rest }
 
 eval :: Statement -> StateT Environment IO ()
 eval (Def name params body) = do
@@ -31,9 +52,7 @@ eval (Def name params body) = do
 
 eval (Assignment var expr) = do
     value <- evalExpr expr
-    env <- get
-    let symbols = globals env
-    put env { globals = Map.insert var value symbols }
+    updateSymbol var value
 
 eval (Break) = do
     env <- get
@@ -62,7 +81,7 @@ eval (While condition block) = do
     when (isTruthy result) $ do
         continue <- evalBlock block
         when continue (eval $ While condition block)
-    put env { flow = Continue, loopLevel = level - 1 }
+    put env { flow = Next, loopLevel = level - 1 }
 
     return ()
 
@@ -94,25 +113,11 @@ evalExpr (Call "print" args) = do
     return None
 
 evalExpr (Call name args) = do
-    env <- get
-    let symbols = globals env
-
+    f <- lookupSymbol name
     evalArgs <- mapM evalExpr args
+    evalCall f evalArgs
 
-    case Map.lookup name symbols of
-        Nothing -> fail $ "unknown function: " ++ name
-        Just f -> evalCall f evalArgs
-
-evalExpr (Variable var) = do
-    env <- get
-    let symbols = if List.null (frames env)
-                      then globals env
-                      else head $ frames env
-
-    case Map.lookup var symbols of
-        Nothing -> fail $ "unknown variable " ++ var
-        Just v  -> return v
-
+evalExpr (Variable var) = lookupSymbol var
 evalExpr (Constant c) = return c
 
 evalBlock :: [Statement] -> StateT Environment IO Bool
@@ -120,7 +125,7 @@ evalBlock statements = do
     env <- get
 
     case flow env of
-        Continue -> case statements of
+        Next -> case statements of
             (s:r) -> do
                 eval s
                 evalBlock r
@@ -129,17 +134,20 @@ evalBlock statements = do
 
 evalCall :: Value -> [Value] -> StateT Environment IO Value
 evalCall (Function params body) args = do
+    env <- get
+    let level = loopLevel env
+
     setup
     _ <- evalBlock body
     result <- returnValue
-    teardown
+    teardown level
     return result
 
     where
         setup = do
             env <- get
             let frame = Map.union (Map.fromList $ zip params args) (globals env)
-            put env { frames = frame : frames env }
+            put env { frames = frame : frames env, loopLevel = 0 }
 
         returnValue = do
             env <- get
@@ -147,9 +155,10 @@ evalCall (Function params body) args = do
                 Returning v -> return v
                 _           -> return None
 
-        teardown = do
+        teardown level = do
             env <- get
-            put env { frames = tail (frames env), flow = Continue }
+            put env { frames = tail (frames env), flow = Next, loopLevel = level }
+
 evalCall v _ = fail $ "Unable to call " ++ show v
 
 isTruthy :: Value -> Bool

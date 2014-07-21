@@ -1,6 +1,7 @@
 def f():
     if True:
         return 0
+        print("Shouldn't see this")
 
     print("Hello")
 
