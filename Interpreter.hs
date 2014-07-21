@@ -1,6 +1,5 @@
 import Control.Monad
 import Control.Monad.State
-import Data.IORef
 import qualified Data.List as List
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -10,57 +9,65 @@ import AST
 import Parser
 
 type SymbolTable = Map String Value
-data ReturnValue = Unset | Value Value deriving (Eq, Show)
+data Flow = Continue | Breaking | Returning Value deriving (Eq, Show)
 
 data Environment = Environment {
-    symbolTable :: SymbolTable,
+    globals :: SymbolTable,
     frames :: [SymbolTable],
-    returnValue :: ReturnValue
+    flow :: Flow,
+    loopLevel :: Int
 } deriving (Show)
 
 defaultEnv :: Environment
 defaultEnv = do
     let builtins = Map.fromList [("None", None), ("True", Bool True), ("False", Bool False)]
-    Environment {symbolTable = builtins, frames = [], returnValue = Unset }
+    Environment {globals = builtins, frames = [], flow = Continue, loopLevel = 0}
 
 eval :: Statement -> StateT Environment IO ()
 eval (Def name params body) = do
     env <- get
-    let symbols = symbolTable env
-    put env { symbolTable = Map.insert name (Function params body) symbols }
+    let symbols = globals env
+    put env { globals = Map.insert name (Function params body) symbols }
 
 eval (Assignment var expr) = do
     value <- evalExpr expr
     env <- get
-    let symbols = symbolTable env
-    put env { symbolTable = Map.insert var value symbols }
+    let symbols = globals env
+    put env { globals = Map.insert var value symbols }
+
+eval (Break) = do
+    env <- get
+    when (loopLevel env <= 0) (fail "Can only break in a loop!")
+    put env { flow = Breaking }
 
 eval (If condition thenBlock elseBlock) = do
     result <- evalExpr condition
-    evalBlock (if isTruthy result then thenBlock else elseBlock)
+    _ <- evalBlock (if isTruthy result then thenBlock else elseBlock)
+    return ()
 
 eval (Return expression) = do
     value <- evalExpr expression
 
     env <- get
-    put env { returnValue = Value value }
+    put env { flow = Returning value }
 
     return ()
 
 eval (While condition block) = do
+    env <- get
     result <- evalExpr condition
+    let level = loopLevel env
+
+    put env { loopLevel = level + 1 }
     when (isTruthy result) $ do
-        evalBlock block
-        eval $ While condition block
+        continue <- evalBlock block
+        when continue (eval $ While condition block)
+    put env { flow = Continue, loopLevel = level - 1 }
+
     return ()
 
 eval (Expression e) = do
     _ <- evalExpr e
-    return ()
-
-evalBlock :: [Statement] -> StateT Environment IO ()
-evalBlock statements = do
-    mapM_ eval statements
     return ()
 
 evalExpr :: Expression -> StateT Environment IO Value
@@ -88,7 +95,7 @@ evalExpr (Call "print" args) = do
 
 evalExpr (Call name args) = do
     env <- get
-    let symbols = symbolTable env
+    let symbols = globals env
 
     evalArgs <- mapM evalExpr args
 
@@ -99,7 +106,7 @@ evalExpr (Call name args) = do
 evalExpr (Variable var) = do
     env <- get
     let symbols = if List.null (frames env)
-                      then symbolTable env
+                      then globals env
                       else head $ frames env
 
     case Map.lookup var symbols of
@@ -108,34 +115,42 @@ evalExpr (Variable var) = do
 
 evalExpr (Constant c) = return c
 
+evalBlock :: [Statement] -> StateT Environment IO Bool
+evalBlock statements = do
+    env <- get
+
+    case flow env of
+        Continue -> case statements of
+            (s:r) -> do
+                eval s
+                evalBlock r
+            [] -> return True
+        _ -> return False
+
 evalCall :: Value -> [Value] -> StateT Environment IO Value
 evalCall (Function params body) args = do
     setup
-    result <- evalBody body
+    _ <- evalBlock body
+    result <- returnValue
     teardown
     return result
 
     where
         setup = do
             env <- get
-            let frame = Map.union (Map.fromList $ zip params args) (symbolTable env)
+            let frame = Map.union (Map.fromList $ zip params args) (globals env)
             put env { frames = frame : frames env }
 
-        evalBody statements = do
+        returnValue = do
             env <- get
-            let earlyReturn = returnValue env
-
-            case earlyReturn of
-                Unset -> case statements of
-                        (s:r) -> do
-                            eval s
-                            evalBody r
-                        [] -> return None
-                Value v -> return v
+            case flow env of
+                Returning v -> return v
+                _           -> return None
 
         teardown = do
             env <- get
-            put env { frames = tail (frames env), returnValue = Unset }
+            put env { frames = tail (frames env), flow = Continue }
+evalCall v _ = fail $ "Unable to call " ++ show v
 
 isTruthy :: Value -> Bool
 isTruthy (Int 0) = False
