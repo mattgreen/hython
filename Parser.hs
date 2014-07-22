@@ -25,8 +25,9 @@ statement = choice [defStatement,
 
 ifStatement = do
     ifBlock <- ifClause "if"
+    elifBlocks <- many (ifClause "elif")
     elseBlock <- option [] (try elseClause)
-    return $ If [ifBlock] elseBlock
+    return $ If (ifBlock : elifBlocks) elseBlock
 
     where
         ifClause keyword = do

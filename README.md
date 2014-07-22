@@ -11,8 +11,8 @@ I wanted to learn Haskell, so I intentionally chose a more ambitious project to 
 * Basic data types: integers, strings, and booleans
 * Operators: `+`, `-`, `*`, `/`, `==`, `!=`
 * Mutable variables
-* If/else statements
-* While loops
+* If/elif/else statements
+* While/break
 * Functions + `return` statement
 
 ## Differences from Python 3

@@ -58,16 +58,16 @@ eval (Break) = do
     put env { flow = Breaking }
 
 eval (If clauses elseBlock) = do
-    evalClauses clauses elseBlock
+    _ <- evalClauses clauses
     return ()
 
     where
-          evalClauses [] elseBlock = evalBlock elseBlock
-          evalClauses (IfClause condition block : rest) elseBlock = do
+          evalClauses [] = evalBlock elseBlock
+          evalClauses (IfClause condition block : rest) = do
             result <- evalExpr condition
             if isTruthy result
                 then evalBlock block
-                else evalClauses rest elseBlock
+                else evalClauses rest
 
 eval (Return expression) = do
     value <- evalExpr expression
