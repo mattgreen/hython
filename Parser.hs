@@ -21,6 +21,7 @@ statement = choice [defStatement,
                    whileStatement,
                    breakStatement,
                    passStatement,
+                   assertStatement,
                    try assignmentStatement,
                    expressionStatement]
 
@@ -76,6 +77,11 @@ breakStatement = do
 passStatement = do
     reserved "pass"
     return Pass
+
+assertStatement = do
+    reserved "assert"
+    e <- expression
+    return $ Assert e
 
 expressionStatement = do
     e <- expression
