@@ -11,6 +11,10 @@ def g():
 def h():
     return f() + 1
 
+def i():
+    pass
+
 print(f())
 print(g())
 print(h())
+print(i())

@@ -8,6 +8,7 @@ data Statement =
     | Return Expression
     | While Expression [Statement]
     | Break
+    | Pass
     deriving(Eq, Show)
 
 data IfClause = IfClause Expression [Statement] deriving (Eq, Show)

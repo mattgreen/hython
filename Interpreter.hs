@@ -90,6 +90,8 @@ eval (While condition block) = do
 
     return ()
 
+eval (Pass) = return ()
+
 eval (Expression e) = do
     _ <- evalExpr e
     return ()

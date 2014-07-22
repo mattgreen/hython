@@ -20,6 +20,7 @@ statement = choice [defStatement,
                    ifStatement,
                    whileStatement,
                    breakStatement,
+                   passStatement,
                    try assignmentStatement,
                    expressionStatement]
 
@@ -71,6 +72,10 @@ whileStatement = do
 breakStatement = do
     reserved "break"
     return Break
+
+passStatement = do
+    reserved "pass"
+    return Pass
 
 expressionStatement = do
     e <- expression
