@@ -24,14 +24,18 @@ statement = choice [defStatement,
                    expressionStatement]
 
 ifStatement = do
-    reserved "if"
-    condition <- expression
-    colon
-    thenBlock <- blockOf statements
+    ifBlock <- ifClause "if"
     elseBlock <- option [] (try elseClause)
-    return $ If condition thenBlock elseBlock
+    return $ If [ifBlock] elseBlock
 
     where
+        ifClause keyword = do
+            reserved keyword
+            condition <- expression
+            colon
+            block <- blockOf statements
+            return $ IfClause condition block
+
         elseClause = do
             reserved "else"
             colon
@@ -92,7 +96,7 @@ expression = buildExpressionParser table term
             name <- identifier
             return $ Variable name
 
-        literal = integerLiteral <|> strLiteral <|> trueLiteral <|> falseLiteral <|> noneLiteral
+        literal = choice [integerLiteral, strLiteral, trueLiteral, falseLiteral, noneLiteral]
 
         strLiteral = do
             s <- stringLiteral

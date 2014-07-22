@@ -3,12 +3,14 @@ module AST where
 data Statement =
     Assignment String Expression
     | Expression Expression
-    | If Expression [Statement] [Statement]
+    | If [IfClause] [Statement]
     | Def String [String] [Statement]
     | Return Expression
     | While Expression [Statement]
     | Break
     deriving(Eq, Show)
+
+data IfClause = IfClause Expression [Statement] deriving (Eq, Show)
 
 data Expression =
     Call String [Expression]

@@ -57,10 +57,17 @@ eval (Break) = do
     when (loopLevel env <= 0) (fail "Can only break in a loop!")
     put env { flow = Breaking }
 
-eval (If condition thenBlock elseBlock) = do
-    result <- evalExpr condition
-    _ <- evalBlock (if isTruthy result then thenBlock else elseBlock)
+eval (If clauses elseBlock) = do
+    evalClauses clauses elseBlock
     return ()
+
+    where
+          evalClauses [] elseBlock = evalBlock elseBlock
+          evalClauses (IfClause condition block : rest) elseBlock = do
+            result <- evalExpr condition
+            if isTruthy result
+                then evalBlock block
+                else evalClauses rest elseBlock
 
 eval (Return expression) = do
     value <- evalExpr expression
