@@ -1,4 +1,4 @@
-hython: AST.hs Parser.hs Interpreter.hs
+hython: Lexer.hs Parser.hs AST.hs Interpreter.hs
 	@cabal build
 	-@./.cabal-sandbox/bin/hlint .
 	@ln -sf dist/build/hython/hython .
