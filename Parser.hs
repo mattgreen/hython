@@ -104,8 +104,17 @@ expression = buildExpressionParser table term
             return $ Constant (String s)
 
         integerLiteral = do
-            i <- integer
+            i <- try (lexeme binInteger) <|> integer
             return $ Constant (Int i)
+
+        binInteger = do
+            _ <- char '0'
+            _ <- oneOf "bB"
+            num <- many1 (oneOf "01")
+            return $ bin2dec num
+
+        --- Maybe this should go in the lexer?
+        bin2dec = foldr (\c s -> s * 2 + c) 0 . reverse . map (\c -> if c == '0' then 0 else 1)
 
         trueLiteral = do
             reserved "True"

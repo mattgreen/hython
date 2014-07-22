@@ -1,8 +1,7 @@
 print(7)
 print(2147483647)
 print(0o177)
-#TODO: implement binint literals
-#print(0b100110111)
+print(0b100110111)
 print(3)
 print(79228162514264337593543950336)
 print(0o377)

@@ -33,3 +33,4 @@ whitespace = IndentToken.whiteSpace lexer
 comma = IndentToken.comma lexer
 colon = operator ":"
 stringLiteral = IndentToken.stringLiteral lexer
+lexeme = IndentToken.lexeme lexer
