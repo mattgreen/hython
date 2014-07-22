@@ -34,3 +34,13 @@ comma = IndentToken.comma lexer
 colon = operator ":"
 stringLiteral = IndentToken.stringLiteral lexer
 lexeme = IndentToken.lexeme lexer
+
+integerLiteral = try (lexeme binInteger) <|> integer
+    where
+        binInteger = do
+            _ <- char '0'
+            _ <- oneOf "bB"
+            num <- many1 (oneOf "01")
+            return $ bin2dec num
+
+        bin2dec = foldr (\c s -> s * 2 + c) 0 . reverse . map (\c -> if c == '0' then 0 else 1)
