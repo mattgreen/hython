@@ -20,6 +20,7 @@ statement = choice [defStatement,
                    ifStatement,
                    whileStatement,
                    breakStatement,
+                   continueStatement,
                    passStatement,
                    assertStatement,
                    try assignmentStatement,
@@ -73,6 +74,10 @@ whileStatement = do
 breakStatement = do
     reserved "break"
     return Break
+
+continueStatement = do
+    reserved "continue"
+    return Continue
 
 passStatement = do
     reserved "pass"

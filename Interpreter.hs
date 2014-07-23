@@ -9,7 +9,7 @@ import AST
 import Parser
 
 type SymbolTable = Map String Value
-data Flow = Next | Breaking | Returning Value deriving (Eq, Show)
+data Flow = Next | Breaking | Continuing | Returning Value deriving (Eq, Show)
 
 data Environment = Environment {
     globals :: SymbolTable,
@@ -57,6 +57,11 @@ eval (Break) = do
     when (loopLevel env <= 0) (fail "Can only break in a loop!")
     put env { flow = Breaking }
 
+eval (Continue) = do
+    env <- get
+    when (loopLevel env <= 0) (fail "Can only continue in a loop!")
+    put env { flow = Continuing }
+
 eval (If clauses elseBlock) = do
     _ <- evalClauses clauses
     return ()
@@ -71,24 +76,43 @@ eval (If clauses elseBlock) = do
 
 eval (Return expression) = do
     value <- evalExpr expression
-
     env <- get
     put env { flow = Returning value }
 
     return ()
 
 eval (While condition block) = do
-    env <- get
-    result <- evalExpr condition
-    let level = loopLevel env
+    setup
+    loop
+    cleanup
 
-    put env { loopLevel = level + 1 }
-    when (isTruthy result) $ do
-        continue <- evalBlock block
-        when continue (eval $ While condition block)
-    put env { flow = Next, loopLevel = level - 1 }
+    where
+        setup = do
+            env <- get
+            let level = loopLevel env
+            put env { loopLevel = level + 1 }
 
-    return ()
+        loop = do
+            env <- get
+            result <- evalExpr condition
+            when (isTruthy result && flow env == Next) $ do
+                evalBlock block
+
+                -- Pretty ugly! Eat continue.
+                updatedEnv <- get
+                when (flow updatedEnv == Continuing) $ put updatedEnv { flow = Next }
+
+                loop
+
+        cleanup = do
+            env <- get
+            let level = loopLevel env
+            put env { loopLevel = level - 1 }
+
+            case flow env of
+                Breaking    -> put env { flow = Next }
+                Continuing  -> put env { flow = Next }
+                _           -> return ()
 
 eval (Pass) = return ()
 
@@ -141,6 +165,7 @@ evalBlock statements = do
                 eval s
                 evalBlock r
             [] -> return True
+        Continuing -> return True
         _ -> return False
 
 evalCall :: Value -> [Value] -> StateT Environment IO Value

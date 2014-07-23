@@ -8,6 +8,7 @@ data Statement =
     | Return Expression
     | While Expression [Statement]
     | Break
+    | Continue
     | Pass
     | Assert Expression
     deriving(Eq, Show)
