@@ -102,7 +102,7 @@ expression = buildExpressionParser table term
             [Infix (operator "!=">> return (BinOp NotEq)) AssocLeft],
             [Infix (operator "==">> return (BinOp Eq)) AssocLeft]]
 
-        term = choice [try call, literal, variable]
+        term = choice [try call, literal, variable, parenthesizedExpression]
 
         call = do
             name <- identifier
@@ -112,6 +112,8 @@ expression = buildExpressionParser table term
         variable = do
             name <- identifier
             return $ Variable name
+
+        parenthesizedExpression = parens expression
 
         literal = choice [intLiteral, strLiteral, trueLiteral, falseLiteral, noneLiteral]
 
