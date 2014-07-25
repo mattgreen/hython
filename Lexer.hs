@@ -1,3 +1,6 @@
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
+
 module Lexer
 where
 
@@ -44,3 +47,33 @@ integerLiteral = try (lexeme binInteger) <|> integer
             return $ bin2dec num
 
         bin2dec = foldr (\c s -> s * 2 + c) 0 . reverse . map (\c -> if c == '0' then 0 else 1)
+
+floatingPtLiteral = do
+    s <- lexeme (try exponentFloat <|> float)
+    return $ read s
+
+  where
+    fractionOnly = do
+        char '.'
+        fraction <- many1 digit
+        return $ "0." ++ fraction
+
+    leadingOnly = do
+        int <- many1 digit
+        char '.'
+        return $ int ++ ".0"
+
+    leadingAndFraction = do
+        int <- many1 digit
+        char '.'
+        fraction <- many1 digit
+        return $ int ++ "." ++ fraction
+
+    float = try leadingAndFraction <|> fractionOnly <|> leadingOnly
+
+    exponentFloat = do
+        num <- try float <|> many1 digit
+        oneOf "eE"
+        sign <- option '+' (oneOf "+-")
+        rest <- many1 digit
+        return $ num ++ "e" ++ [sign] ++ rest

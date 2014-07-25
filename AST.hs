@@ -25,6 +25,7 @@ data Expression =
 data Value =
     String String
     | Int Integer
+    | Float Double
     | Bool Bool
     | Function [String] [Statement]
     | None

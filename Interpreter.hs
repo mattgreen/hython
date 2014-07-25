@@ -96,7 +96,7 @@ eval (While condition block) = do
             env <- get
             result <- evalExpr condition
             when (isTruthy result && flow env == Next) $ do
-                evalBlock block
+                _ <- evalBlock block
 
                 -- Pretty ugly! Eat continue.
                 updatedEnv <- get
@@ -206,6 +206,7 @@ isTruthy _ = True
 toString :: Value -> String
 toString (String v) = v
 toString (Int v) = show v
+toString (Float v) = show v
 toString e = show e
 
 parseEval :: String -> String -> StateT Environment IO ()

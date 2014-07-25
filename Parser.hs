@@ -115,7 +115,7 @@ expression = buildExpressionParser table term
 
         parenthesizedExpression = parens expression
 
-        literal = choice [intLiteral, strLiteral, trueLiteral, falseLiteral, noneLiteral]
+        literal = choice [try floatLiteral, intLiteral, strLiteral, trueLiteral, falseLiteral, noneLiteral]
 
         strLiteral = do
             s <- stringLiteral
@@ -124,6 +124,10 @@ expression = buildExpressionParser table term
         intLiteral = do
             i <- integerLiteral
             return $ Constant (Int i)
+
+        floatLiteral = do
+            i <- floatingPtLiteral
+            return $ Constant (Float i)
 
         trueLiteral = do
             reserved "True"
