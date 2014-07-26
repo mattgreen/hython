@@ -5,6 +5,7 @@ import qualified Data.List as List
 import Data.Map (Map)
 import qualified Data.Map as Map
 import System.Environment
+import Text.Printf
 
 import AST
 import Parser
@@ -47,7 +48,7 @@ eval :: Statement -> StateT Environment IO ()
 eval (Def name params body) = do
     env <- get
     let symbols = globals env
-    put env { globals = Map.insert name (Function params body) symbols }
+    put env { globals = Map.insert name (Function name params body) symbols }
 
 eval (Assignment var expr) = do
     value <- evalExpr expr
@@ -133,7 +134,7 @@ evalExpr (BinOp (ArithOp op) (Constant (Int l)) (Constant (Int r)))
     | op == Div = return $ Float (fromInteger l / fromInteger r)
 
 evalExpr (BinOp (ArithOp op) (Constant (Float l)) (Constant (Float r))) =
-    return $ Float ((fn op) l r)
+    return $ Float (fn op l r)
   where
     fn Add = (+)
     fn Sub = (-)
@@ -141,7 +142,7 @@ evalExpr (BinOp (ArithOp op) (Constant (Float l)) (Constant (Float r))) =
     fn Div = (/)
 
 evalExpr (BinOp (ArithOp op) (Constant (String l)) (Constant (String r))) =
-    return $ String ((fn op) l r)
+    return $ String (fn op l r)
   where
     fn Add  = (++)
     fn _    = fail "Bad operator for string/string binop!"
@@ -153,7 +154,7 @@ evalExpr (BinOp (ArithOp Mul) (Constant (String l)) (Constant (Int r))) =
     return $ String (concat $ replicate (fromInteger r) l)
 
 evalExpr (BinOp (BoolOp op) (Constant (Int l)) (Constant (Int r))) =
-    return $ Bool ((fn op) l r)
+    return $ Bool (fn op l r)
   where
     fn Eq               = (==)
     fn NotEq            = (/=)
@@ -163,7 +164,7 @@ evalExpr (BinOp (BoolOp op) (Constant (Int l)) (Constant (Int r))) =
     fn GreaterThanEq    = (>=)
 
 evalExpr (BinOp (BoolOp op) (Constant (Float l)) (Constant (Float r))) =
-    return $ Bool ((fn op) l r)
+    return $ Bool (fn op l r)
   where
     fn Eq               = (==)
     fn NotEq            = (/=)
@@ -173,7 +174,7 @@ evalExpr (BinOp (BoolOp op) (Constant (Float l)) (Constant (Float r))) =
     fn GreaterThanEq    = (>=)
 
 evalExpr (BinOp (BoolOp op) (Constant l) (Constant r)) =
-    return $ Bool ((fn op) l r)
+    return $ Bool (fn op l r)
   where
     fn Eq               = (==)
     fn NotEq            = (/=)
@@ -211,7 +212,7 @@ evalBlock statements = do
         _ -> return False
 
 evalCall :: Value -> [Value] -> StateT Environment IO Value
-evalCall (Function params body) args = do
+evalCall (Function _ params body) args = do
     env <- get
     let level = loopLevel env
 
@@ -254,6 +255,7 @@ toString (Float v) = show v
 toString (Imaginary v)
     | realPart v == 0   = show (imagPart v) ++ "j"
     | otherwise         = show v
+toString (Function name _ _) = printf "<%s>" name
 
 parseEval :: String -> String -> StateT Environment IO ()
 parseEval filename code = do

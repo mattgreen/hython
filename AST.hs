@@ -30,7 +30,7 @@ data Value =
     | Float Double
     | Imaginary (Complex Double)
     | Bool Bool
-    | Function [String] [Statement]
+    | Function String [String] [Statement]
     | None
     deriving(Eq, Show)
 
