@@ -141,6 +141,13 @@ evalExpr (BinOp (ArithOp op) (Constant (Float l)) (Constant (Float r))) =
     fn Mul = (*)
     fn Div = (/)
 
+-- Promote ints to floats in binary operators
+evalExpr (BinOp op (Constant (Int l)) (Constant (Float r))) =
+    evalExpr $ BinOp op (Constant (Float (fromIntegral l))) (Constant (Float r))
+
+evalExpr (BinOp op (Constant (Float l)) (Constant (Int r))) =
+    evalExpr $ BinOp op (Constant (Float l)) (Constant (Float (fromIntegral r)))
+
 evalExpr (BinOp (ArithOp op) (Constant (String l)) (Constant (String r))) =
     return $ String (fn op l r)
   where
