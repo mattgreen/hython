@@ -8,8 +8,8 @@ I wanted to learn Haskell, so I intentionally chose a more ambitious project to 
 
 * Line comments
 * `print` function
-* Basic data types: integers, strings, and booleans
-* Operators: `+`, `-`, `*`, `/`, `==`, `!=`
+* Basic data types: integers, floats, strings, and booleans
+* Operators: `+`, `-`, `*`, `/`, `==`, `!=`, `>`, `>=`, `<`, `<=`
 * Mutable variables
 * If/elif/else statements
 * While/break/continue
