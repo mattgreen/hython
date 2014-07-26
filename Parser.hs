@@ -13,7 +13,7 @@ import AST
 
 parse location code = runIdentity $ runGIPT program () location code
 
-program = whitespace >> statements
+program = whitespace >> many statement
 
 statements = many1 statement
 statement = choice [defStatement,
