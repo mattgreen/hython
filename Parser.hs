@@ -96,12 +96,12 @@ expressionStatement = do
 expression = buildExpressionParser table term
     where
         table = [
-            [Infix (operator "*" >> return (BinOp Mul)) AssocLeft],
-            [Infix (operator "/" >> return (BinOp Div)) AssocLeft],
-            [Infix (operator "+" >> return (BinOp Add)) AssocLeft],
-            [Infix (operator "-" >> return (BinOp Sub)) AssocLeft],
-            [Infix (operator "!=">> return (BinOp NotEq)) AssocLeft],
-            [Infix (operator "==">> return (BinOp Eq)) AssocLeft]]
+            [Infix (operator "*" >> return (BinOp (ArithOp Mul))) AssocLeft],
+            [Infix (operator "/" >> return (BinOp (ArithOp Div))) AssocLeft],
+            [Infix (operator "+" >> return (BinOp (ArithOp Add))) AssocLeft],
+            [Infix (operator "-" >> return (BinOp (ArithOp Sub))) AssocLeft],
+            [Infix (operator "!=">> return (BinOp (BoolOp NotEq))) AssocLeft],
+            [Infix (operator "==">> return (BinOp (BoolOp Eq))) AssocLeft]]
 
         term = choice [try call, literal, variable, parenthesizedExpression]
 

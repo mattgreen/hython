@@ -34,6 +34,14 @@ data Value =
     | None
     deriving(Eq, Show)
 
-data Operator = Add | Sub | Mul | Div | Eq | NotEq
+data Operator
+    = ArithOp ArithmeticOperator
+    | BoolOp BooleanOperator
+    deriving(Eq, Show)
+
+data ArithmeticOperator = Add | Sub | Mul | Div
+    deriving(Eq, Show)
+
+data BooleanOperator = Eq | NotEq
     deriving(Eq, Show)
 

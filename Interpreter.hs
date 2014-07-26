@@ -126,19 +126,37 @@ eval (Expression e) = do
     return ()
 
 evalExpr :: Expression -> StateT Environment IO Value
-evalExpr (BinOp Add (Constant (Int l)) (Constant (Int r))) = return $ Int (l + r)
-evalExpr (BinOp Add (Constant (String l)) (Constant (String r))) = return $ String (l ++ r)
-evalExpr (BinOp Sub (Constant (Int l)) (Constant (Int r))) = return $ Int (l - r)
-evalExpr (BinOp Mul (Constant (Int l)) (Constant (Int r))) = return $ Int (l * r)
-evalExpr (BinOp Mul (Constant (Int l)) (Constant (String r))) = return $ String (concat $ replicate (fromInteger l) r)
-evalExpr (BinOp Mul (Constant (String l)) (Constant (Int r))) = return $ String (concat $ replicate (fromInteger r) l)
-evalExpr (BinOp Div (Constant (Int l)) (Constant (Int r))) = return $ Int (quot l r)
-evalExpr (BinOp Eq (Constant (Int l)) (Constant (Int r))) = return $ Bool (l == r)
-evalExpr (BinOp Eq (Constant (String l)) (Constant (String r))) = return $ Bool (l == r)
-evalExpr (BinOp Eq (Constant (Bool l)) (Constant (Bool r))) = return $ Bool (l == r)
-evalExpr (BinOp NotEq (Constant (Int l)) (Constant (Int r))) = return $ Bool (l /= r)
-evalExpr (BinOp NotEq (Constant (String l)) (Constant (String r))) = return $ Bool (l /= r)
-evalExpr (BinOp NotEq (Constant (Bool l)) (Constant (Bool r))) = return $ Bool (l /= r)
+evalExpr (BinOp (ArithOp op) (Constant (Int l)) (Constant (Int r)))
+    | op == Add = return $ Int (l + r)
+    | op == Sub = return $ Int (l - r)
+    | op == Mul = return $ Int (l * r)
+    | op == Div = return $ Float (fromInteger l / fromInteger r)
+
+evalExpr (BinOp (ArithOp op) (Constant (Float l)) (Constant (Float r))) =
+    return $ Float ((fn op) l r)
+  where
+    fn Add = (+)
+    fn Sub = (-)
+    fn Mul = (*)
+    fn Div = (/)
+
+evalExpr (BinOp (ArithOp op) (Constant (String l)) (Constant (String r))) =
+    return $ String ((fn op) l r)
+  where
+    fn Add  = (++)
+    fn _    = fail "Bad operator for string/string binop!"
+
+evalExpr (BinOp (ArithOp Mul) (Constant (Int l)) (Constant (String r))) =
+    return $ String (concat $ replicate (fromInteger l) r)
+
+evalExpr (BinOp (ArithOp Mul) (Constant (String l)) (Constant (Int r))) =
+    return $ String (concat $ replicate (fromInteger r) l)
+
+evalExpr (BinOp (BoolOp op) (Constant l) (Constant r)) =
+    return $ Bool ((fn op) l r)
+  where
+    fn Eq       = (==)
+    fn NotEq    = (/=)
 
 evalExpr (BinOp op l r) = do
     left <- evalExpr l
@@ -207,13 +225,14 @@ isTruthy (None) = False
 isTruthy _ = True
 
 toString :: Value -> String
+toString (None) = "None"
+toString (Bool v) = show v
 toString (String v) = v
 toString (Int v) = show v
 toString (Float v) = show v
 toString (Imaginary v)
     | realPart v == 0   = show (imagPart v) ++ "j"
     | otherwise         = show v
-toString e = show e
 
 parseEval :: String -> String -> StateT Environment IO ()
 parseEval filename code = do
