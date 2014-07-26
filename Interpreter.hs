@@ -65,7 +65,7 @@ eval (Continue) = do
     put env { flow = Continuing }
 
 eval (If clauses elseBlock) = do
-    _ <- evalClauses clauses
+    evalClauses clauses
     return ()
 
     where
@@ -98,7 +98,7 @@ eval (While condition block) = do
             env <- get
             result <- evalExpr condition
             when (isTruthy result && flow env == Next) $ do
-                _ <- evalBlock block
+                evalBlock block
 
                 -- Pretty ugly! Eat continue.
                 updatedEnv <- get
@@ -205,7 +205,7 @@ evalExpr (Call name args) = do
 evalExpr (Variable var) = lookupSymbol var
 evalExpr (Constant c) = return c
 
-evalBlock :: [Statement] -> StateT Environment IO Bool
+evalBlock :: [Statement] -> StateT Environment IO ()
 evalBlock statements = do
     env <- get
 
@@ -214,9 +214,9 @@ evalBlock statements = do
             (s:r) -> do
                 eval s
                 evalBlock r
-            [] -> return True
-        Continuing -> return True
-        _ -> return False
+            [] -> return ()
+        Continuing -> return ()
+        _ -> return ()
 
 evalCall :: Value -> [Value] -> StateT Environment IO Value
 evalCall (Function _ params body) args = do
@@ -224,7 +224,7 @@ evalCall (Function _ params body) args = do
     let level = loopLevel env
 
     setup
-    _ <- evalBlock body
+    evalBlock body
     result <- returnValue
     teardown level
     return result
