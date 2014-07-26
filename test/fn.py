@@ -23,8 +23,14 @@ def j():
         print("after")
         a = a - 1
 
+def k():
+    if True:
+        return
+    return 1
+
 print(f())
 print(g())
 print(h())
 print(i())
 print(j())
+print(k())

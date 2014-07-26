@@ -62,7 +62,7 @@ defStatement = do
 
 returnStatement = do
     reserved "return"
-    e <- expression
+    e <- option (Constant None) expression
     return $ Return e
 
 whileStatement = do
