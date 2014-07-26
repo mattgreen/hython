@@ -9,6 +9,8 @@ def output_of(args):
 exit_status = 0
 
 for testcase in glob.glob("test/*.py"):
+    print("%s..." % testcase)
+
     python_cmdline = ["python3", testcase]
     python_output = output_of(python_cmdline)
 
