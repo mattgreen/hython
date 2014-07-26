@@ -1,5 +1,7 @@
 module AST where
 
+import Data.Complex
+
 data Statement =
     Assignment String Expression
     | Expression Expression
@@ -26,6 +28,7 @@ data Value =
     String String
     | Int Integer
     | Float Double
+    | Imaginary (Complex Double)
     | Bool Bool
     | Function [String] [Statement]
     | None

@@ -1,5 +1,6 @@
 import Control.Monad
 import Control.Monad.State
+import Data.Complex
 import qualified Data.List as List
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -207,6 +208,9 @@ toString :: Value -> String
 toString (String v) = v
 toString (Int v) = show v
 toString (Float v) = show v
+toString (Imaginary v)
+    | realPart v == 0   = (show $ imagPart v) ++ "j"
+    | otherwise         = show v
 toString e = show e
 
 parseEval :: String -> String -> StateT Environment IO ()

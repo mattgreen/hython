@@ -1,0 +1,26 @@
+print(7)
+print(2147483647)
+print(0o177)
+print(0b100110111)
+print(3)
+print(79228162514264337593543950336)
+print(0o377)
+print(0x100000000)
+print(79228162514264337593543950336)
+print(0xdeadbeef)
+
+print(3.14)
+print(10.)
+# TODO: need to think more about representing Floats
+#print(.001)
+#print(1e100)
+print(3.14e-10)
+print(0e0)
+
+# TODO: better repr() for imaginary numbers
+print(3.14j)
+#print(10.j)
+#print(10j)
+#print(.001j)
+#print(1e100j)
+print(3.14e-10j)

@@ -1,6 +1,7 @@
 module Parser (parse) where
 
 import Control.Monad.Identity
+import Data.Complex
 import Text.Parsec hiding (parse)
 import Text.Parsec.Expr
 
@@ -115,7 +116,7 @@ expression = buildExpressionParser table term
 
         parenthesizedExpression = parens expression
 
-        literal = choice [try floatLiteral, intLiteral, strLiteral, trueLiteral, falseLiteral, noneLiteral]
+        literal = choice [try imaginaryLiteral, try floatLiteral, intLiteral, strLiteral, trueLiteral, falseLiteral, noneLiteral]
 
         strLiteral = do
             s <- stringLiteral
@@ -127,7 +128,11 @@ expression = buildExpressionParser table term
 
         floatLiteral = do
             i <- floatingPtLiteral
-            return $ Constant (Float i)
+            return $ Constant (Float (read i))
+
+        imaginaryLiteral = do
+            i <- imaginaryNumberLiteral
+            return $ Constant (Imaginary (0.0 :+ read i))
 
         trueLiteral = do
             reserved "True"

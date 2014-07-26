@@ -48,10 +48,7 @@ integerLiteral = try (lexeme binInteger) <|> integer
 
         bin2dec = foldr (\c s -> s * 2 + c) 0 . reverse . map (\c -> if c == '0' then 0 else 1)
 
-floatingPtLiteral = do
-    s <- lexeme (try exponentFloat <|> float)
-    return $ read s
-
+floatingPtLiteral = lexeme (try exponentFloat <|> float)
   where
     fractionOnly = do
         char '.'
@@ -77,3 +74,8 @@ floatingPtLiteral = do
         sign <- option '+' (oneOf "+-")
         rest <- many1 digit
         return $ num ++ "e" ++ [sign] ++ rest
+
+imaginaryNumberLiteral = do
+    n <- try floatingPtLiteral <|> many1 digit
+    oneOf "jJ"
+    return n
