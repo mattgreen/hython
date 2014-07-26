@@ -130,6 +130,8 @@ evalExpr (BinOp Add (Constant (Int l)) (Constant (Int r))) = return $ Int (l + r
 evalExpr (BinOp Add (Constant (String l)) (Constant (String r))) = return $ String (l ++ r)
 evalExpr (BinOp Sub (Constant (Int l)) (Constant (Int r))) = return $ Int (l - r)
 evalExpr (BinOp Mul (Constant (Int l)) (Constant (Int r))) = return $ Int (l * r)
+evalExpr (BinOp Mul (Constant (Int l)) (Constant (String r))) = return $ String (concat $ replicate (fromInteger l) r)
+evalExpr (BinOp Mul (Constant (String l)) (Constant (Int r))) = return $ String (concat $ replicate (fromInteger r) l)
 evalExpr (BinOp Div (Constant (Int l)) (Constant (Int r))) = return $ Int (quot l r)
 evalExpr (BinOp Eq (Constant (Int l)) (Constant (Int r))) = return $ Bool (l == r)
 evalExpr (BinOp Eq (Constant (String l)) (Constant (String r))) = return $ Bool (l == r)
@@ -209,7 +211,7 @@ toString (String v) = v
 toString (Int v) = show v
 toString (Float v) = show v
 toString (Imaginary v)
-    | realPart v == 0   = (show $ imagPart v) ++ "j"
+    | realPart v == 0   = show (imagPart v) ++ "j"
     | otherwise         = show v
 toString e = show e
 
