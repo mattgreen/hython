@@ -152,11 +152,32 @@ evalExpr (BinOp (ArithOp Mul) (Constant (Int l)) (Constant (String r))) =
 evalExpr (BinOp (ArithOp Mul) (Constant (String l)) (Constant (Int r))) =
     return $ String (concat $ replicate (fromInteger r) l)
 
+evalExpr (BinOp (BoolOp op) (Constant (Int l)) (Constant (Int r))) =
+    return $ Bool ((fn op) l r)
+  where
+    fn Eq               = (==)
+    fn NotEq            = (/=)
+    fn LessThan         = (<)
+    fn LessThanEq       = (<=)
+    fn GreaterThan      = (>)
+    fn GreaterThanEq    = (>=)
+
+evalExpr (BinOp (BoolOp op) (Constant (Float l)) (Constant (Float r))) =
+    return $ Bool ((fn op) l r)
+  where
+    fn Eq               = (==)
+    fn NotEq            = (/=)
+    fn LessThan         = (<)
+    fn LessThanEq       = (<=)
+    fn GreaterThan      = (>)
+    fn GreaterThanEq    = (>=)
+
 evalExpr (BinOp (BoolOp op) (Constant l) (Constant r)) =
     return $ Bool ((fn op) l r)
   where
-    fn Eq       = (==)
-    fn NotEq    = (/=)
+    fn Eq               = (==)
+    fn NotEq            = (/=)
+    fn _                = fail "Bad boolean operator!"
 
 evalExpr (BinOp op l r) = do
     left <- evalExpr l

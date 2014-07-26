@@ -101,7 +101,11 @@ expression = buildExpressionParser table term
             [Infix (operator "+" >> return (BinOp (ArithOp Add))) AssocLeft],
             [Infix (operator "-" >> return (BinOp (ArithOp Sub))) AssocLeft],
             [Infix (operator "!=">> return (BinOp (BoolOp NotEq))) AssocLeft],
-            [Infix (operator "==">> return (BinOp (BoolOp Eq))) AssocLeft]]
+            [Infix (operator "==">> return (BinOp (BoolOp Eq))) AssocLeft],
+            [Infix (operator "<" >> return (BinOp (BoolOp LessThan))) AssocLeft],
+            [Infix (operator "<=">> return (BinOp (BoolOp LessThanEq))) AssocLeft],
+            [Infix (operator ">" >> return (BinOp (BoolOp GreaterThan))) AssocLeft],
+            [Infix (operator ">=">> return (BinOp (BoolOp GreaterThanEq))) AssocLeft]]
 
         term = choice [try call, literal, variable, parenthesizedExpression]
 

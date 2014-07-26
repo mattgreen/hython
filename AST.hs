@@ -42,6 +42,6 @@ data Operator
 data ArithmeticOperator = Add | Sub | Mul | Div
     deriving(Eq, Show)
 
-data BooleanOperator = Eq | NotEq
+data BooleanOperator = Eq | NotEq | LessThan | LessThanEq | GreaterThan | GreaterThanEq
     deriving(Eq, Show)
 
