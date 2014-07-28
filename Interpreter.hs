@@ -148,11 +148,8 @@ evalExpr (BinOp op (Constant (Int l)) (Constant (Float r))) =
 evalExpr (BinOp op (Constant (Float l)) (Constant (Int r))) =
     evalExpr $ BinOp op (Constant (Float l)) (Constant (Float (fromIntegral r)))
 
-evalExpr (BinOp (ArithOp op) (Constant (String l)) (Constant (String r))) =
-    return $ String (fn op l r)
-  where
-    fn Add  = (++)
-    fn _    = fail "Bad operator for string/string binop!"
+evalExpr (BinOp (ArithOp Add) (Constant (String l)) (Constant (String r))) =
+    return $ String (l ++ r)
 
 evalExpr (BinOp (ArithOp Mul) (Constant (Int l)) (Constant (String r))) =
     return $ String (concat $ replicate (fromInteger l) r)
@@ -180,12 +177,14 @@ evalExpr (BinOp (BoolOp op) (Constant (Float l)) (Constant (Float r))) =
     fn GreaterThan      = (>)
     fn GreaterThanEq    = (>=)
 
-evalExpr (BinOp (BoolOp op) (Constant l) (Constant r)) =
-    return $ Bool (fn op l r)
-  where
-    fn Eq               = (==)
-    fn NotEq            = (/=)
-    fn _                = fail "Bad boolean operator!"
+evalExpr (BinOp (BoolOp Eq) (Constant l) (Constant r)) =
+    return $ Bool (l == r)
+
+evalExpr (BinOp (BoolOp NotEq) (Constant l) (Constant r)) =
+    return $ Bool (l /= r)
+
+evalExpr (BinOp op (Constant l) (Constant r)) =
+    fail $ printf "Unsupported operand type(s) for %s: %s %s" (show op) (toString l) (toString r)
 
 evalExpr (BinOp op l r) = do
     left <- evalExpr l

@@ -15,6 +15,9 @@ print(1.0 / 4.8)
 # Parentheses affect order of operations
 print((1+1)*4)
 
+# String concatenation
+print("Hello " + "there")
+
 # String/Int multiplication
 print(4 * "hi")
 print("hi" * 4)
