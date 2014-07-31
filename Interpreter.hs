@@ -250,10 +250,12 @@ evalBlock statements = do
         _ -> return ()
 
 evalCall :: Value -> [Value] -> StateT Environment IO Value
-evalCall (Class name dict) args = do
-    cls <- lookupSymbol name
-    --TODO: invoke ctor
-    return $ Object cls Map.empty
+evalCall (Class name classDict) args = do
+    let obj = Object (Class name classDict) Map.empty
+    case Map.lookup "__init__" classDict of
+        Just f  -> evalCall f (obj : args)
+        Nothing -> return None
+    return obj
 
 evalCall (Function _ params body) args = do
     env <- get
