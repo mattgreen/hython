@@ -19,7 +19,10 @@ data Environment = Environment {
 } deriving (Show)
 
 defaultEnv :: Environment
-defaultEnv = Environment {scopes = [Map.empty], flow = Next, loopLevel = 0}
+defaultEnv = do
+    let builtins = [("object", Class "object" Map.empty)]
+    let globals = Map.fromList builtins
+    Environment {scopes = [globals], flow = Next, loopLevel = 0}
 
 currentScope :: StateT Environment IO SymbolTable
 currentScope = do
@@ -232,6 +235,18 @@ evalExpr (MethodCall target method args) = do
         (Object (Class _ dict)  _)  -> return dict
         _                           -> fail "Methods may only be invoked on objects!"
 
+evalExpr (Attribute target name) = do
+    receiver <- lookupSymbol target
+    dict <- getInstanceDict receiver
+
+    case Map.lookup name dict of
+        Just v  -> return v
+        Nothing -> fail $ "No attribute " ++ name
+
+  where
+    getInstanceDict value = case value of
+        (Object _ dict) -> return dict
+        _               -> fail "Attributes only exist on objects!"
 
 evalExpr (Variable var) = lookupSymbol var
 evalExpr (Constant c) = return c
@@ -251,7 +266,10 @@ evalBlock statements = do
 
 evalCall :: Value -> [Value] -> StateT Environment IO Value
 evalCall (Class name classDict) args = do
-    let obj = Object (Class name classDict) Map.empty
+    let cls = Class name classDict
+    let dict = Map.fromList [("__class__", cls)]
+    let obj = Object cls dict
+
     case Map.lookup "__init__" classDict of
         Just f  -> evalCall f (obj : args)
         Nothing -> return None
@@ -301,7 +319,7 @@ toString (Imaginary v)
     | realPart v == 0   = show (imagPart v) ++ "j"
     | otherwise         = show v
 toString (Function name _ _) = printf "<%s>" name
-toString (Class name _) = printf "<class '%s'>" name
+toString (Class name _) = printf "<class '__main__.%s'>" name
 toString (Object (Class name _) _) = printf "<%s object>" name
 toString (Object _ _) = fail "Object must be associated with a class!"
 

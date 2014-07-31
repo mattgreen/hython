@@ -115,7 +115,7 @@ expression = buildExpressionParser table term
             [Infix (operator ">" >> return (BinOp (BoolOp GreaterThan))) AssocLeft],
             [Infix (operator ">=">> return (BinOp (BoolOp GreaterThanEq))) AssocLeft]]
 
-        term = choice [try call, try methodCall, literal, variable, parenthesizedExpression]
+        term = choice [try call, try methodCall, try attribute, literal, variable, parenthesizedExpression]
 
         call = do
             name <- identifier
@@ -128,6 +128,12 @@ expression = buildExpressionParser table term
             name <- identifier
             arguments <- parens (expression `sepBy` comma)
             return $ MethodCall receiver name arguments
+
+        attribute = do
+            receiver <- identifier
+            _ <- char '.'
+            name <- identifier
+            return $ Attribute receiver name
 
         variable = do
             name <- identifier
