@@ -1,5 +1,6 @@
 import difflib
 import glob
+import os.path
 import subprocess
 import sys
 
@@ -9,7 +10,7 @@ def output_of(args):
 exit_status = 0
 
 for testcase in glob.glob("test/*.py"):
-    print("%s..." % testcase)
+    print("Testing %s..." % os.path.basename(testcase))
 
     python_cmdline = ["python3", testcase]
     python_output = output_of(python_cmdline)

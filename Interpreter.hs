@@ -1,7 +1,6 @@
 import Control.Monad
 import Control.Monad.State
 import Data.Complex
-import qualified Data.List as List
 import Data.Map (Map)
 import qualified Data.Map as Map
 import System.Environment
@@ -14,41 +13,55 @@ type SymbolTable = Map String Value
 data Flow = Next | Breaking | Continuing | Returning Value deriving (Eq, Show)
 
 data Environment = Environment {
-    globals :: SymbolTable,
-    frames :: [SymbolTable],
+    scopes :: [SymbolTable],
     flow :: Flow,
     loopLevel :: Int
 } deriving (Show)
 
 defaultEnv :: Environment
-defaultEnv = Environment {globals = Map.empty, frames = [], flow = Next, loopLevel = 0}
+defaultEnv = Environment {scopes = [Map.empty], flow = Next, loopLevel = 0}
+
+currentScope :: StateT Environment IO SymbolTable
+currentScope = do
+    env <- get
+    return $ head $ scopes env
 
 lookupSymbol :: String -> StateT Environment IO Value
 lookupSymbol name = do
-    env <- get
-    let symbols = if List.null (frames env)
-                      then globals env
-                      else head $ frames env
-
-    case Map.lookup name symbols of
-        Nothing -> fail $ "unknown symbol: " ++ name
+    scope <- currentScope
+    case Map.lookup name scope of
+        Nothing -> fail $ "Unknown symbol: " ++ name
         Just v  -> return v
 
 updateSymbol :: String -> Value -> StateT Environment IO ()
 updateSymbol name value = do
+    scope <- currentScope
     env <- get
-    if List.null (frames env)
-        then put env { globals = Map.insert name value (globals env) }
-        else do
-            let frame = Map.insert name value (head $ frames env)
-            let rest = tail $ frames env
-            put env { frames = frame : rest }
+
+    let updatedScope = Map.insert name value scope
+    put env { scopes = updatedScope : tail (scopes env) }
 
 eval :: Statement -> StateT Environment IO ()
-eval (Def name params body) = do
-    env <- get
-    let symbols = globals env
-    put env { globals = Map.insert name (Function name params body) symbols }
+eval (Def name params body) = updateSymbol name $ Function name params body
+
+eval (ClassDef name statements) = do
+    pushScope
+    mapM_ eval statements
+    dict <- popScope
+
+    updateSymbol name $ Class name dict
+
+  where
+    pushScope = do
+        let dict = Map.empty
+        env <- get
+        put env { scopes = dict : scopes env }
+
+    popScope = do
+        env <- get
+        let dict = head $ scopes env
+        put env { scopes = tail $ scopes env }
+        return dict
 
 eval (Assignment var expr) = do
     value <- evalExpr expr
@@ -148,15 +161,19 @@ evalExpr (BinOp op (Constant (Int l)) (Constant (Float r))) =
 evalExpr (BinOp op (Constant (Float l)) (Constant (Int r))) =
     evalExpr $ BinOp op (Constant (Float l)) (Constant (Float (fromIntegral r)))
 
+-- String + String
 evalExpr (BinOp (ArithOp Add) (Constant (String l)) (Constant (String r))) =
     return $ String (l ++ r)
 
+-- Int * String
 evalExpr (BinOp (ArithOp Mul) (Constant (Int l)) (Constant (String r))) =
     return $ String (concat $ replicate (fromInteger l) r)
 
+-- String * Int
 evalExpr (BinOp (ArithOp Mul) (Constant (String l)) (Constant (Int r))) =
     return $ String (concat $ replicate (fromInteger r) l)
 
+-- Int [=|!=|<|<=|>|>=] Int
 evalExpr (BinOp (BoolOp op) (Constant (Int l)) (Constant (Int r))) =
     return $ Bool (fn op l r)
   where
@@ -201,6 +218,21 @@ evalExpr (Call name args) = do
     evalArgs <- mapM evalExpr args
     evalCall f evalArgs
 
+evalExpr (MethodCall target method args) = do
+    receiver <- lookupSymbol target
+    evalArgs <- mapM evalExpr args
+    classDict <- getClassDict receiver
+
+    case Map.lookup method classDict of
+        Just m  -> evalCall m (receiver : evalArgs)
+        Nothing -> fail $ "Unknown method " ++ method
+
+  where
+    getClassDict value = case value of
+        (Object (Class _ dict)  _)  -> return dict
+        _                           -> fail "Methods may only be invoked on objects!"
+
+
 evalExpr (Variable var) = lookupSymbol var
 evalExpr (Constant c) = return c
 
@@ -218,6 +250,11 @@ evalBlock statements = do
         _ -> return ()
 
 evalCall :: Value -> [Value] -> StateT Environment IO Value
+evalCall (Class name dict) args = do
+    cls <- lookupSymbol name
+    --TODO: invoke ctor
+    return $ Object cls Map.empty
+
 evalCall (Function _ params body) args = do
     env <- get
     let level = loopLevel env
@@ -231,8 +268,8 @@ evalCall (Function _ params body) args = do
     where
         setup = do
             env <- get
-            let frame = Map.union (Map.fromList $ zip params args) (globals env)
-            put env { frames = frame : frames env, loopLevel = 0 }
+            let scope = Map.union (Map.fromList $ zip params args) (last $ scopes env)
+            put env { scopes = scope : scopes env, loopLevel = 0 }
 
         returnValue = do
             env <- get
@@ -242,9 +279,9 @@ evalCall (Function _ params body) args = do
 
         teardown level = do
             env <- get
-            put env { frames = tail (frames env), flow = Next, loopLevel = level }
+            put env { scopes = tail (scopes env), flow = Next, loopLevel = level }
 
-evalCall v _ = fail $ "Unable to call " ++ show v
+evalCall v _ = fail $ "Unable to call " ++ toString v
 
 isTruthy :: Value -> Bool
 isTruthy (Int 0) = False
@@ -262,6 +299,9 @@ toString (Imaginary v)
     | realPart v == 0   = show (imagPart v) ++ "j"
     | otherwise         = show v
 toString (Function name _ _) = printf "<%s>" name
+toString (Class name _) = printf "<class '%s'>" name
+toString (Object (Class name _) _) = printf "<%s object>" name
+toString (Object _ _) = fail "Object must be associated with a class!"
 
 parseEval :: String -> String -> StateT Environment IO ()
 parseEval filename code = do

@@ -17,6 +17,7 @@ program = whitespace >> many statement
 
 statements = many1 statement
 statement = choice [defStatement,
+                   classStatement,
                    returnStatement,
                    ifStatement,
                    whileStatement,
@@ -59,6 +60,13 @@ defStatement = do
     colon
     body <- blockOf statements
     return $ Def name params body
+
+classStatement = do
+    reserved "class"
+    name <- identifier
+    colon
+    defs <- blockOf statements
+    return $ ClassDef name defs
 
 returnStatement = do
     reserved "return"
@@ -107,12 +115,19 @@ expression = buildExpressionParser table term
             [Infix (operator ">" >> return (BinOp (BoolOp GreaterThan))) AssocLeft],
             [Infix (operator ">=">> return (BinOp (BoolOp GreaterThanEq))) AssocLeft]]
 
-        term = choice [try call, literal, variable, parenthesizedExpression]
+        term = choice [try call, try methodCall, literal, variable, parenthesizedExpression]
 
         call = do
             name <- identifier
             arguments <- parens (expression `sepBy` comma)
             return $ Call name arguments
+
+        methodCall = do
+            receiver <- identifier
+            _ <- char '.'
+            name <- identifier
+            arguments <- parens (expression `sepBy` comma)
+            return $ MethodCall receiver name arguments
 
         variable = do
             name <- identifier

@@ -18,7 +18,7 @@ definition = LanguageDef {
     identLetter = alphaNum <|> char '_',
     opStart = oneOf "-+/*=<>:",
     opLetter = oneOf "-+/*=<>:",
-    reservedNames = ["True", "False", "None", "if", "elif", "else", "def", "return", "while", "break", "continue", "pass", "assert"],
+    reservedNames = ["True", "False", "None", "if", "elif", "else", "def", "return", "while", "break", "continue", "pass", "assert", "class"],
     reservedOpNames = ["=", "+", "-", "*", "/", ":"],
     caseSensitive = True,
     nestedComments = False
@@ -75,7 +75,9 @@ floatingPtLiteral = lexeme (try exponentFloat <|> float)
         rest <- many1 digit
         return $ num ++ "e" ++ [sign] ++ rest
 
-imaginaryNumberLiteral = do
-    n <- try floatingPtLiteral <|> many1 digit
-    oneOf "jJ"
-    return n
+imaginaryNumberLiteral = lexeme literal
+  where
+    literal = do
+        n <- try floatingPtLiteral <|> many1 digit
+        oneOf "jJ"
+        return n

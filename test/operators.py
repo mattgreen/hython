@@ -52,3 +52,6 @@ print(5.0 > 1)
 print(4.0 < 1)
 print(5.0 >= 5)
 print(4.0 <= 4)
+
+# Imaginary
+#print(3.14j + 1.0)
