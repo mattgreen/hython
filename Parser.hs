@@ -48,7 +48,7 @@ ifStatement = do
             blockOf statements
 
 assignmentStatement = do
-    variable <- identifier
+    variable <- expression
     operator "="
     value <- expression
     return $ Assignment variable value

@@ -5,7 +5,7 @@ import Data.IORef
 import Data.Map (Map)
 
 data Statement
-    = Assignment String Expression
+    = Assignment Expression Expression
     | Expression Expression
     | If [IfClause] [Statement]
     | Def String [String] [Statement]

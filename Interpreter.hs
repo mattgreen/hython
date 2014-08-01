@@ -49,7 +49,7 @@ updateSymbol name value = do
 eval :: Statement -> Evaluator ()
 eval (Def name params body) = updateSymbol name $ Function name params body
 
-eval (ClassDef name bases statements) = do
+eval (ClassDef name _ statements) = do
     pushScope
     mapM_ eval statements
     dict <- popScope
@@ -68,9 +68,21 @@ eval (ClassDef name bases statements) = do
         put env { scopes = tail $ scopes env }
         return dict
 
-eval (Assignment var expr) = do
+eval (Assignment (Variable var) expr) = do
     value <- evalExpr expr
     updateSymbol var value
+
+eval (Assignment (Attribute var attr) expr) = do
+    value <- evalExpr expr
+    obj <- lookupSymbol var
+    updateInstanceDict obj value
+
+  where
+    updateInstanceDict (Object _ ref) value =
+        liftIO $ modifyIORef ref (Map.insert attr value)
+    updateInstanceDict _ _ = fail "Can only update attributes of an object!"
+
+eval (Assignment{}) = fail "Syntax error!"
 
 eval (Break) = do
     env <- get
@@ -272,7 +284,7 @@ evalCall (Class name classDict) args = do
     dict <- liftIO $ newIORef (Map.fromList [("__class__", cls)])
     let obj = Object cls dict
 
-    case Map.lookup "__init__" classDict of
+    _ <- case Map.lookup "__init__" classDict of
         Just f  -> evalCall f (obj : args)
         Nothing -> return None
     return obj
