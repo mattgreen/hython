@@ -9,6 +9,7 @@ import Text.Printf
 import AST
 import Parser
 
+type Evaluator = StateT Environment IO
 type SymbolTable = Map String Value
 data Flow = Next | Breaking | Continuing | Returning Value deriving (Eq, Show)
 
@@ -24,19 +25,19 @@ defaultEnv = do
     let globals = Map.fromList builtins
     Environment {scopes = [globals], flow = Next, loopLevel = 0}
 
-currentScope :: StateT Environment IO SymbolTable
+currentScope :: Evaluator SymbolTable
 currentScope = do
     env <- get
     return $ head $ scopes env
 
-lookupSymbol :: String -> StateT Environment IO Value
+lookupSymbol :: String -> Evaluator Value
 lookupSymbol name = do
     scope <- currentScope
     case Map.lookup name scope of
         Nothing -> fail $ "Unknown symbol: " ++ name
         Just v  -> return v
 
-updateSymbol :: String -> Value -> StateT Environment IO ()
+updateSymbol :: String -> Value -> Evaluator ()
 updateSymbol name value = do
     scope <- currentScope
     env <- get
@@ -44,7 +45,7 @@ updateSymbol name value = do
     let updatedScope = Map.insert name value scope
     put env { scopes = updatedScope : tail (scopes env) }
 
-eval :: Statement -> StateT Environment IO ()
+eval :: Statement -> Evaluator ()
 eval (Def name params body) = updateSymbol name $ Function name params body
 
 eval (ClassDef name statements) = do
@@ -142,7 +143,7 @@ eval (Expression e) = do
     _ <- evalExpr e
     return ()
 
-evalExpr :: Expression -> StateT Environment IO Value
+evalExpr :: Expression -> Evaluator Value
 evalExpr (BinOp (ArithOp op) (Constant (Int l)) (Constant (Int r)))
     | op == Add = return $ Int (l + r)
     | op == Sub = return $ Int (l - r)
@@ -251,7 +252,7 @@ evalExpr (Attribute target name) = do
 evalExpr (Variable var) = lookupSymbol var
 evalExpr (Constant c) = return c
 
-evalBlock :: [Statement] -> StateT Environment IO ()
+evalBlock :: [Statement] -> Evaluator ()
 evalBlock statements = do
     env <- get
 
@@ -264,7 +265,7 @@ evalBlock statements = do
         Continuing -> return ()
         _ -> return ()
 
-evalCall :: Value -> [Value] -> StateT Environment IO Value
+evalCall :: Value -> [Value] -> Evaluator Value
 evalCall (Class name classDict) args = do
     let cls = Class name classDict
     let dict = Map.fromList [("__class__", cls)]
@@ -323,7 +324,7 @@ toString (Class name _) = printf "<class '__main__.%s'>" name
 toString (Object (Class name _) _) = printf "<%s object>" name
 toString (Object _ _) = fail "Object must be associated with a class!"
 
-parseEval :: String -> String -> StateT Environment IO ()
+parseEval :: String -> String -> Evaluator ()
 parseEval filename code = do
     case parse filename code of
         Left e -> liftIO $ print e
