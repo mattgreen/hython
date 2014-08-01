@@ -22,7 +22,7 @@ data Environment = Environment {
 
 defaultEnv :: Environment
 defaultEnv = do
-    let builtins = [("object", Class "object" Map.empty)]
+    let builtins = []
     let globals = Map.fromList builtins
     Environment {scopes = [globals], flow = Next, loopLevel = 0}
 
@@ -30,6 +30,20 @@ currentScope :: Evaluator SymbolTable
 currentScope = do
     env <- get
     return $ head $ scopes env
+
+getAttrs :: Value -> Evaluator AttributeDict
+getAttrs (Object _ ref) = liftIO $ readIORef ref
+getAttrs (Class  _ ref) = liftIO $ readIORef ref
+getAttrs _              = fail "Only objects have attrs!"
+
+getClassAttrs :: Value -> Evaluator AttributeDict
+getClassAttrs (Object cls _)    = getAttrs cls
+getClassAttrs _                 = fail "Only objects have classes!"
+
+setAttr :: String -> Value -> Value -> Evaluator ()
+setAttr attr value (Object _ ref)   = liftIO $ modifyIORef ref (Map.insert attr value)
+setAttr attr value (Class _ ref)    = liftIO $ modifyIORef ref (Map.insert attr value)
+setAttr _ _ _                       = fail "Only objects have attrs!"
 
 lookupSymbol :: String -> Evaluator Value
 lookupSymbol name = do
@@ -66,7 +80,7 @@ eval (ClassDef name _ statements) = do
         env <- get
         let dict = head $ scopes env
         put env { scopes = tail $ scopes env }
-        return dict
+        liftIO $ newIORef dict
 
 eval (Assignment (Variable var) expr) = do
     value <- evalExpr expr
@@ -75,12 +89,7 @@ eval (Assignment (Variable var) expr) = do
 eval (Assignment (Attribute var attr) expr) = do
     value <- evalExpr expr
     obj <- lookupSymbol var
-    updateInstanceDict obj value
-
-  where
-    updateInstanceDict (Object _ ref) value =
-        liftIO $ modifyIORef ref (Map.insert attr value)
-    updateInstanceDict _ _ = fail "Can only update attributes of an object!"
+    setAttr attr value obj
 
 eval (Assignment{}) = fail "Syntax error!"
 
@@ -238,29 +247,19 @@ evalExpr (Call name args) = do
 evalExpr (MethodCall target method args) = do
     receiver <- lookupSymbol target
     evalArgs <- mapM evalExpr args
-    classDict <- getClassDict receiver
+    classAttrs <- getClassAttrs receiver
 
-    case Map.lookup method classDict of
+    case Map.lookup method classAttrs of
         Just m  -> evalCall m (receiver : evalArgs)
         Nothing -> fail $ "Unknown method " ++ method
 
-  where
-    getClassDict value = case value of
-        (Object (Class _ dict)  _)  -> return dict
-        _                           -> fail "Methods may only be invoked on objects!"
-
 evalExpr (Attribute target name) = do
     receiver <- lookupSymbol target
-    dict <- getInstanceDict receiver
+    dict <- getAttrs receiver
 
     case Map.lookup name dict of
         Just v  -> return v
         Nothing -> fail $ "No attribute " ++ name
-
-  where
-    getInstanceDict value = case value of
-        (Object _ ref) -> liftIO $ readIORef ref
-        _               -> fail "Attributes only exist on objects!"
 
 evalExpr (Variable var) = lookupSymbol var
 evalExpr (Constant c) = return c
@@ -279,9 +278,10 @@ evalBlock statements = do
         _ -> return ()
 
 evalCall :: Value -> [Value] -> Evaluator Value
-evalCall (Class name classDict) args = do
-    let cls = Class name classDict
+evalCall (Class name ref) args = do
+    let cls = Class name ref
     dict <- liftIO $ newIORef (Map.fromList [("__class__", cls)])
+    classDict <- getAttrs cls
     let obj = Object cls dict
 
     _ <- case Map.lookup "__init__" classDict of

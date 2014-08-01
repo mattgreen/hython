@@ -38,10 +38,12 @@ data Value
     | Imaginary (Complex Double)
     | Bool Bool
     | Function String [String] [Statement]
-    | Class String (Map String Value)
-    | Object Value (IORef (Map String Value))
+    | Class String (IORef AttributeDict)
+    | Object Value (IORef AttributeDict)
     | None
     deriving(Eq, Show)
+
+type AttributeDict = Map String Value
 
 instance Show (IORef a) where
     show _ = "<ioref>"
