@@ -64,9 +64,10 @@ defStatement = do
 classStatement = do
     reserved "class"
     name <- identifier
+    bases <- option [] (parens (identifier `sepBy` comma))
     colon
     defs <- blockOf statements
-    return $ ClassDef name defs
+    return $ ClassDef name bases defs
 
 returnStatement = do
     reserved "return"

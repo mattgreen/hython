@@ -48,7 +48,7 @@ updateSymbol name value = do
 eval :: Statement -> Evaluator ()
 eval (Def name params body) = updateSymbol name $ Function name params body
 
-eval (ClassDef name statements) = do
+eval (ClassDef name bases statements) = do
     pushScope
     mapM_ eval statements
     dict <- popScope

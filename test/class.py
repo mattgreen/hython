@@ -8,6 +8,9 @@ class C:
     def n(self, count):
         return count + 1
 
+class D(C):
+    pass
+
 c = C(42)
 print(c.__class__)
 print(c.m())
