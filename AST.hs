@@ -1,6 +1,7 @@
 module AST where
 
 import Data.Complex
+import Data.IORef
 import Data.Map (Map)
 
 data Statement
@@ -38,9 +39,12 @@ data Value
     | Bool Bool
     | Function String [String] [Statement]
     | Class String (Map String Value)
-    | Object Value (Map String Value)
+    | Object Value (IORef (Map String Value))
     | None
     deriving(Eq, Show)
+
+instance Show (IORef a) where
+    show _ = "<ioref>"
 
 data Operator
     = ArithOp ArithmeticOperator

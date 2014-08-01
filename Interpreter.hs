@@ -1,6 +1,7 @@
 import Control.Monad
 import Control.Monad.State
 import Data.Complex
+import Data.IORef
 import Data.Map (Map)
 import qualified Data.Map as Map
 import System.Environment
@@ -246,7 +247,7 @@ evalExpr (Attribute target name) = do
 
   where
     getInstanceDict value = case value of
-        (Object _ dict) -> return dict
+        (Object _ ref) -> liftIO $ readIORef ref
         _               -> fail "Attributes only exist on objects!"
 
 evalExpr (Variable var) = lookupSymbol var
@@ -268,7 +269,7 @@ evalBlock statements = do
 evalCall :: Value -> [Value] -> Evaluator Value
 evalCall (Class name classDict) args = do
     let cls = Class name classDict
-    let dict = Map.fromList [("__class__", cls)]
+    dict <- liftIO $ newIORef (Map.fromList [("__class__", cls)])
     let obj = Object cls dict
 
     case Map.lookup "__init__" classDict of
