@@ -31,14 +31,30 @@ currentScope = do
     env <- get
     return $ head $ scopes env
 
-getAttrs :: Value -> Evaluator AttributeDict
+getAttrs :: Value -> IO AttributeDict
 getAttrs (Object _ ref) = liftIO $ readIORef ref
 getAttrs (Class  _ ref) = liftIO $ readIORef ref
 getAttrs _              = fail "Only objects have attrs!"
 
 getClassAttrs :: Value -> Evaluator AttributeDict
-getClassAttrs (Object cls _)    = getAttrs cls
+getClassAttrs (Object cls _)    = liftIO $ getAttrs cls
 getClassAttrs _                 = fail "Only objects have classes!"
+
+getAttr :: String -> Value -> Evaluator (Maybe Value)
+getAttr attr (Object _ ref) = do
+    dict <- liftIO $ readIORef ref
+    return $ Map.lookup attr dict
+getAttr attr (Class _ ref) = do
+    dict <- liftIO $ readIORef ref
+    return $ Map.lookup attr dict
+
+withAttr :: String -> Value -> (Value -> Evaluator Value) -> Evaluator ()
+withAttr attr value action = do
+    v <- getAttr attr value
+    _ <- case v of
+        Just f  -> action f
+        Nothing -> return None
+    return ()
 
 setAttr :: String -> Value -> Value -> Evaluator ()
 setAttr attr value (Object _ ref)   = liftIO $ modifyIORef ref (Map.insert attr value)
@@ -255,9 +271,8 @@ evalExpr (MethodCall target method args) = do
 
 evalExpr (Attribute target name) = do
     receiver <- lookupSymbol target
-    dict <- getAttrs receiver
-
-    case Map.lookup name dict of
+    attribute <- getAttr name receiver
+    case attribute of
         Just v  -> return v
         Nothing -> fail $ "No attribute " ++ name
 
@@ -278,15 +293,15 @@ evalBlock statements = do
         _ -> return ()
 
 evalCall :: Value -> [Value] -> Evaluator Value
-evalCall (Class name ref) args = do
-    let cls = Class name ref
+evalCall cls@(Class {}) args = do
     dict <- liftIO $ newIORef (Map.fromList [("__class__", cls)])
-    classDict <- getAttrs cls
     let obj = Object cls dict
+    ctor <- getAttr "__init__" cls
 
-    _ <- case Map.lookup "__init__" classDict of
+    case ctor of
         Just f  -> evalCall f (obj : args)
         Nothing -> return None
+
     return obj
 
 evalCall (Function _ params body) args = do
