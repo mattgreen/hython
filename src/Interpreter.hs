@@ -7,7 +7,7 @@ import qualified Data.Map as Map
 import System.Environment
 import Text.Printf
 
-import AST
+import Language
 import Parser
 
 type Evaluator = StateT Environment IO

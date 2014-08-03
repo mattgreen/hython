@@ -1,4 +1,6 @@
-module AST where
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
+module Language where
 
 import Data.Complex
 import Data.IORef

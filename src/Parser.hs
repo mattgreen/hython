@@ -9,7 +9,7 @@ import Text.Parsec.IndentParsec.Combinator
 import Text.Parsec.IndentParsec.Prim
 
 import Lexer
-import AST
+import Language
 
 parse location code = runIdentity $ runGIPT program () location code
 
@@ -126,9 +126,9 @@ expression = buildExpressionParser table term
         methodCall = do
             receiver <- identifier
             _ <- char '.'
-            name <- identifier
+            method <- identifier
             arguments <- parens (expression `sepBy` comma)
-            return $ MethodCall receiver name arguments
+            return $ MethodCall receiver method arguments
 
         attribute = do
             receiver <- identifier

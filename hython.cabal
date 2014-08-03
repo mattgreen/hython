@@ -9,5 +9,5 @@ library
 
 executable        hython
   main-is:        Interpreter.hs
-  hs-source-dirs: .
+  hs-source-dirs: src
   ghc-options:    -Wall -fno-warn-missing-signatures
