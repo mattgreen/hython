@@ -15,6 +15,8 @@ class D(C):
     pass
 
 c = C(42)
+c.other_attribute = "hello"
+print(c.other_attribute + " there")
 print(c.__class__)
 print(c.m())
 print(c.n(42))

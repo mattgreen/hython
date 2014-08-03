@@ -31,15 +31,6 @@ currentScope = do
     env <- get
     return $ head $ scopes env
 
-getAttrs :: Value -> IO AttributeDict
-getAttrs (Object _ ref) = liftIO $ readIORef ref
-getAttrs (Class  _ ref) = liftIO $ readIORef ref
-getAttrs _              = fail "Only objects have attrs!"
-
-getClassAttrs :: Value -> Evaluator AttributeDict
-getClassAttrs (Object cls _)    = liftIO $ getAttrs cls
-getClassAttrs _                 = fail "Only objects have classes!"
-
 getAttr :: String -> Value -> Evaluator (Maybe Value)
 getAttr attr (Object _ ref) = do
     dict <- liftIO $ readIORef ref
@@ -47,14 +38,11 @@ getAttr attr (Object _ ref) = do
 getAttr attr (Class _ ref) = do
     dict <- liftIO $ readIORef ref
     return $ Map.lookup attr dict
+getAttr _ _ = fail "Only classes and objects have attrs!"
 
-withAttr :: String -> Value -> (Value -> Evaluator Value) -> Evaluator ()
-withAttr attr value action = do
-    v <- getAttr attr value
-    _ <- case v of
-        Just f  -> action f
-        Nothing -> return None
-    return ()
+getClassAttr :: String -> Value -> Evaluator (Maybe Value)
+getClassAttr attr (Object cls _) = getAttr attr cls
+getClassAttr _ _ = fail "Only objects have class attrs!"
 
 setAttr :: String -> Value -> Value -> Evaluator ()
 setAttr attr value (Object _ ref)   = liftIO $ modifyIORef ref (Map.insert attr value)
@@ -260,14 +248,14 @@ evalExpr (Call name args) = do
     evalArgs <- mapM evalExpr args
     evalCall f evalArgs
 
-evalExpr (MethodCall target method args) = do
+evalExpr (MethodCall target name args) = do
     receiver <- lookupSymbol target
     evalArgs <- mapM evalExpr args
-    classAttrs <- getClassAttrs receiver
+    method <- getClassAttr name receiver
 
-    case Map.lookup method classAttrs of
-        Just m  -> evalCall m (receiver : evalArgs)
-        Nothing -> fail $ "Unknown method " ++ method
+    case method of
+        Just f  -> evalCall f (receiver : evalArgs)
+        Nothing -> fail $ "Unknown method " ++ name
 
 evalExpr (Attribute target name) = do
     receiver <- lookupSymbol target
@@ -298,7 +286,7 @@ evalCall cls@(Class {}) args = do
     let obj = Object cls dict
     ctor <- getAttr "__init__" cls
 
-    case ctor of
+    _ <- case ctor of
         Just f  -> evalCall f (obj : args)
         Nothing -> return None
 
