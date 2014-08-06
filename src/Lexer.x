@@ -41,7 +41,7 @@ tokens :-
     -- Identifiers
     [a-zA-Z_][a-zA-Z0-9_]*      { \_ s -> return $ Identifier s }
 
-    [=\(\)\,\:\+\-\*\/]         { \_ s -> return $ Punctuation s }
+    [=\(\)\,\:\+\-\*\/\.]         { \_ s -> return $ Punctuation s }
 
 
 
@@ -63,7 +63,7 @@ data AlexInput = AlexInput Char [Word8] String
      deriving Show
 alexGetByte :: AlexInput -> Maybe (Word8,AlexInput)
 alexGetByte (AlexInput c (b:bs) s) = Just (b,AlexInput c bs s)
-alexGetByte (AlexInput c [] [])    = Nothing
+alexGetByte (AlexInput _ [] [])    = Nothing
 alexGetByte (AlexInput _ [] (c:s)) = case encode [c] of
                              	   	(b:bs) -> Just (b, AlexInput c bs s)
 
@@ -73,13 +73,13 @@ alexInputPrevChar (AlexInput c _ _) = c
 -- Our state
 
 data ParseState = 
-     ParseState {input::AlexInput,
+     ParseState {alexInput::AlexInput,
                  indent_stack::[Int],
                  pending_tokens::[Token]}
                  deriving Show
 
 initialState::String -> ParseState
-initialState s = ParseState {   input = AlexInput '\n' [] s,
+initialState s = ParseState {   alexInput = AlexInput '\n' [] s,
                                 indent_stack = [1],
                                 pending_tokens = []
                                 }
@@ -108,9 +108,6 @@ startWhite n _ = do
                   error "Indents don't match"
            return Newline
 
-/*name::n->String->P Token*/
-/*identifier _ s = return (ID s)*/
-
 -- Action to read a token
 readToken::P Token
 readToken = do
@@ -119,18 +116,18 @@ readToken = do
                t:ts -> do
 			put s{pending_tokens = ts}
 			return t  
-               [] ->  case alexScan (input s) 0 of
+               [] ->  case alexScan (alexInput s) 0 of
                        AlexEOF -> do
                                     rval <- startWhite 1 ""
                                     put s{pending_tokens=(pending_tokens s)++[EOF]}
                                     return rval
                        AlexError _ -> error "!Lexical error"
                        AlexSkip inp' _ -> do    
-                          put s{input = inp'}
+                          put s{alexInput = inp'}
                           readToken
                        AlexToken inp' n act -> do 
-                          let (AlexInput _ _ buf) = input s
-                          put s{input = inp'}
+                          let (AlexInput _ _ buf) = alexInput s
+                          put s{alexInput = inp'}
                           act n (take n buf)
 
 readtoks::P [Token]

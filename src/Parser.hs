@@ -7,38 +7,54 @@ import Control.Applicative(Applicative(..))
 
 -- parser produced by Happy Version 1.19.4
 
-data HappyAbsSyn t4 t5
+data HappyAbsSyn t4 t5 t6 t7
 	= HappyTerminal (L.Token)
 	| HappyErrorToken Int
 	| HappyAbsSyn4 t4
 	| HappyAbsSyn5 t5
+	| HappyAbsSyn6 t6
+	| HappyAbsSyn7 t7
 
-action_0 (6) = happyShift action_3
-action_0 (7) = happyShift action_4
-action_0 (4) = happyGoto action_5
+action_0 (8) = happyShift action_5
+action_0 (9) = happyShift action_6
+action_0 (4) = happyGoto action_7
 action_0 (5) = happyGoto action_2
+action_0 (6) = happyGoto action_3
+action_0 (7) = happyGoto action_4
 action_0 _ = happyFail
 
-action_1 (6) = happyShift action_3
-action_1 (7) = happyShift action_4
+action_1 (8) = happyShift action_5
+action_1 (9) = happyShift action_6
 action_1 (5) = happyGoto action_2
+action_1 (6) = happyGoto action_3
+action_1 (7) = happyGoto action_4
 action_1 _ = happyFail
 
-action_2 (8) = happyShift action_6
-action_2 _ = happyFail
+action_2 _ = happyReduce_4
 
-action_3 _ = happyReduce_2
+action_3 (10) = happyShift action_8
+action_3 (11) = happyShift action_9
+action_3 _ = happyFail
 
-action_4 _ = happyReduce_3
+action_4 _ = happyReduce_5
 
-action_5 (10) = happyAccept
-action_5 _ = happyFail
+action_5 _ = happyReduce_2
 
-action_6 _ = happyReduce_1
+action_6 _ = happyReduce_3
+
+action_7 (12) = happyAccept
+action_7 _ = happyFail
+
+action_8 _ = happyReduce_1
+
+action_9 (8) = happyShift action_10
+action_9 _ = happyFail
+
+action_10 _ = happyReduce_6
 
 happyReduce_1 = happySpecReduce_2  4 happyReduction_1
 happyReduction_1 _
-	(HappyAbsSyn5  happy_var_1)
+	(HappyAbsSyn6  happy_var_1)
 	 =  HappyAbsSyn4
 		 (happy_var_1
 	)
@@ -58,19 +74,42 @@ happyReduction_3 (HappyTerminal (L.Literal happy_var_1))
 	)
 happyReduction_3 _  = notHappyAtAll 
 
+happyReduce_4 = happySpecReduce_1  6 happyReduction_4
+happyReduction_4 (HappyAbsSyn5  happy_var_1)
+	 =  HappyAbsSyn6
+		 (happy_var_1
+	)
+happyReduction_4 _  = notHappyAtAll 
+
+happyReduce_5 = happySpecReduce_1  6 happyReduction_5
+happyReduction_5 (HappyAbsSyn7  happy_var_1)
+	 =  HappyAbsSyn6
+		 (happy_var_1
+	)
+happyReduction_5 _  = notHappyAtAll 
+
+happyReduce_6 = happySpecReduce_3  7 happyReduction_6
+happyReduction_6 (HappyTerminal (L.Identifier happy_var_3))
+	_
+	(HappyAbsSyn6  happy_var_1)
+	 =  HappyAbsSyn7
+		 (Attribute happy_var_1 happy_var_3
+	)
+happyReduction_6 _ _ _  = notHappyAtAll 
+
 happyNewToken action sts stk
 	= L.lexer(\tk -> 
 	let cont i = action i i tk (HappyState action) sts stk in
 	case tk of {
-	L.EOF -> action 10 10 tk (HappyState action) sts stk;
-	L.Identifier happy_dollar_dollar -> cont 6;
-	L.Literal happy_dollar_dollar -> cont 7;
-	L.Newline -> cont 8;
-	L.EOF -> cont 9;
+	L.EOF -> action 12 12 tk (HappyState action) sts stk;
+	L.Identifier happy_dollar_dollar -> cont 8;
+	L.Literal happy_dollar_dollar -> cont 9;
+	L.Newline -> cont 10;
+	L.Punctuation "." -> cont 11;
 	_ -> happyError' tk
 	})
 
-happyError_ 10 tk = happyError' tk
+happyError_ 12 tk = happyError' tk
 happyError_ _ tk = happyError' tk
 
 happyThen :: () => L.P a -> (a -> L.P b) -> L.P b
@@ -83,11 +122,13 @@ happyReturn1 = happyReturn
 happyError' :: () => (L.Token) -> L.P a
 happyError' tk = parseError tk
 
-parse = happySomeParser where
+parseTokens = happySomeParser where
   happySomeParser = happyThen (happyParse action_0) (\x -> case x of {HappyAbsSyn4 z -> happyReturn z; _other -> notHappyAtAll })
 
 happySeq = happyDontSeq
 
+
+parse code = L.evalP parseTokens code
 
 parseError :: L.Token -> a
 parseError t = error $ "Parse error: " ++ show t
