@@ -3,6 +3,8 @@ module Lexer where
 import Control.Monad.State
 import Data.Word
 import Codec.Binary.UTF8.String (encode)
+
+import Language
 }
 
 $digit = 0-9
@@ -27,8 +29,8 @@ tokens :-
     \".*\"                   {\_ s -> return $ Literal (String s) }
 
     -- Booleans
-    False                    {\_ s -> return $ Literal (Boolean False) }
-    True                     {\_ s -> return $ Literal (Boolean True) }
+    False                    {\_ s -> return $ Literal (Bool False) }
+    True                     {\_ s -> return $ Literal (Bool True) }
 
     -- None
     None                     {\_ s -> return $ Literal None }
@@ -54,13 +56,6 @@ data Token
      | Keyword String
      | EOF
      deriving (Eq,Show)
-
-data Value
-    = Int Integer
-    | String String
-    | Boolean Bool
-    | None
-    deriving (Eq, Show)
 
 -- The functions that must be provided to Alex's basic interface
 -- The input: last character, unused bytes, remaining string

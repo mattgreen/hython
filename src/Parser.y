@@ -14,12 +14,16 @@ import Control.Monad.Error
 %token
 identifier  {L.Identifier $$}
 literal     {L.Literal $$}
+newline     {L.Newline}
 
 %%
 
+stmt : atom newline { $1 }
+
 atom : identifier   { Variable $1 }
-     --| literal      { Constant $1 }
+     | literal      { Constant $1 }
 
 {
-parseError _ = throwError "!Parse error"
+parseError :: L.Token -> a
+parseError t = error $ "Parse error: " ++ show t
 }

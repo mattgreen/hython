@@ -6,6 +6,8 @@ import Control.Monad.State
 import Data.Word
 import Codec.Binary.UTF8.String (encode)
 
+import Language
+
 #if __GLASGOW_HASKELL__ >= 603
 #include "ghcconfig.h"
 #elif defined(__GLASGOW_HASKELL__)
@@ -32,7 +34,7 @@ alex_deflt :: Array Int Int
 alex_deflt = listArray (0,65) [-1,1,-1,-1,-1,-1,-1,12,12,-1,14,14,20,20,23,23,24,24,26,26,26,1,1,1,31,31,26,-1,-1,34,34,34,-1,-1,34,-1,-1,-1,-1,-1,1,26,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]
 
 alex_accept = listArray (0::Int,65) [AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAccNone,AlexAcc (alex_action_0),AlexAccSkip,AlexAccSkip,AlexAcc (alex_action_3),AlexAcc (alex_action_3),AlexAcc (alex_action_4),AlexAcc (alex_action_5),AlexAcc (alex_action_6),AlexAcc (alex_action_7),AlexAcc (alex_action_8),AlexAcc (alex_action_9),AlexAcc (alex_action_10),AlexAcc (alex_action_11),AlexAcc (alex_action_12),AlexAcc (alex_action_13),AlexAcc (alex_action_14),AlexAcc (alex_action_14),AlexAcc (alex_action_14),AlexAcc (alex_action_14),AlexAcc (alex_action_14),AlexAcc (alex_action_14),AlexAcc (alex_action_14),AlexAcc (alex_action_14),AlexAcc (alex_action_14),AlexAcc (alex_action_14),AlexAcc (alex_action_14),AlexAcc (alex_action_14),AlexAcc (alex_action_14),AlexAcc (alex_action_14),AlexAcc (alex_action_14),AlexAcc (alex_action_14),AlexAcc (alex_action_14),AlexAcc (alex_action_14),AlexAcc (alex_action_15)]
-{-# LINE 46 "src/Lexer.x" #-}
+{-# LINE 48 "src/Lexer.x" #-}
 
 data Token
      = Newline
@@ -44,13 +46,6 @@ data Token
      | Keyword String
      | EOF
      deriving (Eq,Show)
-
-data Value
-    = Int Integer
-    | String String
-    | Boolean Bool
-    | None
-    deriving (Eq, Show)
 
 -- The functions that must be provided to Alex's basic interface
 -- The input: last character, unused bytes, remaining string
@@ -152,8 +147,8 @@ alex_action_5 =  \_ s -> return $ Literal (Int $ read s)
 alex_action_6 =  \_ s -> return $ Literal (Int $ read s) 
 alex_action_7 = \_ s -> return $ Literal (String s) 
 alex_action_8 = \_ s -> return $ Literal (String s) 
-alex_action_9 = \_ s -> return $ Literal (Boolean False) 
-alex_action_10 = \_ s -> return $ Literal (Boolean True) 
+alex_action_9 = \_ s -> return $ Literal (Bool False) 
+alex_action_10 = \_ s -> return $ Literal (Bool True) 
 alex_action_11 = \_ s -> return $ Literal None 
 alex_action_12 =  \_ s -> return $ Keyword "def" 
 alex_action_13 =  \_ s -> return $ Keyword "return" 

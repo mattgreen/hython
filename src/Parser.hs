@@ -7,41 +7,70 @@ import Control.Applicative(Applicative(..))
 
 -- parser produced by Happy Version 1.19.4
 
-data HappyAbsSyn t4
+data HappyAbsSyn t4 t5
 	= HappyTerminal (L.Token)
 	| HappyErrorToken Int
 	| HappyAbsSyn4 t4
+	| HappyAbsSyn5 t5
 
-action_0 (5) = happyShift action_2
-action_0 (4) = happyGoto action_3
+action_0 (6) = happyShift action_3
+action_0 (7) = happyShift action_4
+action_0 (4) = happyGoto action_5
+action_0 (5) = happyGoto action_2
 action_0 _ = happyFail
 
-action_1 (5) = happyShift action_2
+action_1 (6) = happyShift action_3
+action_1 (7) = happyShift action_4
+action_1 (5) = happyGoto action_2
 action_1 _ = happyFail
 
-action_2 _ = happyReduce_1
+action_2 (8) = happyShift action_6
+action_2 _ = happyFail
 
-action_3 (7) = happyAccept
-action_3 _ = happyFail
+action_3 _ = happyReduce_2
 
-happyReduce_1 = happySpecReduce_1  4 happyReduction_1
-happyReduction_1 (HappyTerminal (L.Identifier happy_var_1))
+action_4 _ = happyReduce_3
+
+action_5 (10) = happyAccept
+action_5 _ = happyFail
+
+action_6 _ = happyReduce_1
+
+happyReduce_1 = happySpecReduce_2  4 happyReduction_1
+happyReduction_1 _
+	(HappyAbsSyn5  happy_var_1)
 	 =  HappyAbsSyn4
+		 (happy_var_1
+	)
+happyReduction_1 _ _  = notHappyAtAll 
+
+happyReduce_2 = happySpecReduce_1  5 happyReduction_2
+happyReduction_2 (HappyTerminal (L.Identifier happy_var_1))
+	 =  HappyAbsSyn5
 		 (Variable happy_var_1
 	)
-happyReduction_1 _  = notHappyAtAll 
+happyReduction_2 _  = notHappyAtAll 
+
+happyReduce_3 = happySpecReduce_1  5 happyReduction_3
+happyReduction_3 (HappyTerminal (L.Literal happy_var_1))
+	 =  HappyAbsSyn5
+		 (Constant happy_var_1
+	)
+happyReduction_3 _  = notHappyAtAll 
 
 happyNewToken action sts stk
 	= L.lexer(\tk -> 
 	let cont i = action i i tk (HappyState action) sts stk in
 	case tk of {
-	L.EOF -> action 7 7 tk (HappyState action) sts stk;
-	L.Identifier happy_dollar_dollar -> cont 5;
-	L.Literal happy_dollar_dollar -> cont 6;
+	L.EOF -> action 10 10 tk (HappyState action) sts stk;
+	L.Identifier happy_dollar_dollar -> cont 6;
+	L.Literal happy_dollar_dollar -> cont 7;
+	L.Newline -> cont 8;
+	L.EOF -> cont 9;
 	_ -> happyError' tk
 	})
 
-happyError_ 7 tk = happyError' tk
+happyError_ 10 tk = happyError' tk
 happyError_ _ tk = happyError' tk
 
 happyThen :: () => L.P a -> (a -> L.P b) -> L.P b
@@ -60,7 +89,8 @@ parse = happySomeParser where
 happySeq = happyDontSeq
 
 
-parseError _ = throwError "!Parse error"
+parseError :: L.Token -> a
+parseError t = error $ "Parse error: " ++ show t
 {-# LINE 1 "templates/GenericTemplate.hs" #-}
 {-# LINE 1 "templates/GenericTemplate.hs" #-}
 {-# LINE 1 "<built-in>" #-}
