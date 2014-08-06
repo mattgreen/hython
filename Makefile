@@ -1,7 +1,13 @@
-hython: src/Lexer.hs src/Parser.hs src/Language.hs src/Interpreter.hs
+hython: Lexer Parser src/Language.hs src/Interpreter.hs
 	@cabal build
 	-@./.cabal-sandbox/bin/hlint .
 	@ln -sf dist/build/hython/hython .
+
+Lexer: src/Lexer.x
+	./.cabal-sandbox/bin/alex -o src/Lexer.hs src/Lexer.x
+
+Parser: src/Parser.y
+	./.cabal-sandbox/bin/happy -o src/Parser.hs src/Parser.y
 
 .PHONY: test
 test: hython

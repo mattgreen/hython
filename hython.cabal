@@ -4,7 +4,8 @@ build-type:       Simple
 cabal-version:    >= 1.2
 
 executable        hython
-  build-depends:  base, parsec, containers, indentparser, mtl
+  build-depends:  base, parsec, containers, indentparser, mtl, array, utf8-string
+  build-tools:    alex, happy
   hs-source-dirs: src
   main-is:        Interpreter.hs
   ghc-options:    -Wall -fno-warn-missing-signatures
