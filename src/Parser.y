@@ -26,6 +26,7 @@ indent      {L.Indent}
 dedent      {L.Dedent}
 assert      {L.Keyword "assert"}
 break       {L.Keyword "break"}
+class       {L.Keyword "class"}
 continue    {L.Keyword "continue"}
 def         {L.Keyword "def"}
 elif        {L.Keyword "elif"}
@@ -51,6 +52,7 @@ statement
     : assignment        { $1 }
     | assertion         { $1 }
     | breakStatement    { $1 }
+    | classStatement    { $1 }
     | continueStatement { $1 }
     | defStatement      { $1 }
     | ifStatement       { $1 }
@@ -68,17 +70,22 @@ assignment
 breakStatement
     : break             { Break }
 
+classStatement
+    : class identifier ":" suite                    { ClassDef $2 [] $4 }
+    | class identifier "(" parameterList ")" suite  { ClassDef $2 $4 $6 }
+
 continueStatement
     : continue          { Continue }
 
 defStatement
-    : def identifier "(" ")" ":" suite { Def $2 [] $6 }
+    : def identifier "(" parameterList ")" ":" suite { Def $2 $4 $7 }
 
 ifStatement
-    : if expression ":" suite   { If [(IfClause $2 $4)] [] }
+    : if expression ":" suite elseClause    { If [(IfClause $2 $4)] $5 }
 
-suite
-    : newline indent statements { $3 }
+elseClause
+    :                           { [] }
+    | else ":" suite            { $3 }
 
 passStatement
     : pass              { Pass }
@@ -96,6 +103,20 @@ expressionList
 expression
     : primary   { $1 }
 
+suite
+    : newline indent statements { $3 }
+
+parameterList
+    :               { [] }
+    | parameters    { $1 }
+
+parameters
+    : parameter                 { [$1] }
+    | parameter "," parameters  { $1:$3 }
+
+parameter
+    : identifier                { $1 }
+
 atom
     : identifier    { Variable $1 }
     | literal       { Constant $1 }
@@ -112,9 +133,12 @@ call
     : primary "(" argumentList ")"  { Call $1 $3 }
 
 argumentList
-    :                           { [] }
-    | argument                  { [$1] }
-    | argument "," argumentList { $1 : $3 }
+    :               { [] }
+    | arguments     { $1 }
+
+arguments
+    : argument                  { [$1] }
+    | argument "," arguments    { $1:$3 }
 
 argument
     : primary                   { $1 }
