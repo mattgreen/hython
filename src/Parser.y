@@ -16,6 +16,16 @@ import Language
 identifier  {L.Identifier $$}
 literal     {L.Literal $$}
 newline     {L.Newline}
+"+"         {L.Punctuation "+"}
+"-"         {L.Punctuation "-"}
+"*"         {L.Punctuation "*"}
+"/"         {L.Punctuation "/"}
+"=="        {L.Punctuation "=="}
+"!="        {L.Punctuation "!="}
+"<"         {L.Punctuation "<"}
+"<="        {L.Punctuation "<="}
+">"         {L.Punctuation ">"}
+">="        {L.Punctuation ">="}
 "."         {L.Punctuation "."}
 "("         {L.Punctuation "("}
 ")"         {L.Punctuation ")"}
@@ -81,7 +91,15 @@ defStatement
     : def identifier "(" parameterList ")" ":" suite { Def $2 $4 $7 }
 
 ifStatement
-    : if expression ":" suite elseClause    { If [(IfClause $2 $4)] $5 }
+    : if expression ":" suite elifClauseList elseClause { If ((IfClause $2 $4):$5) $6 }
+
+elifClauseList
+    :                   { [] }
+    | elifClauses       { $1 }
+
+elifClauses
+    : elif expression ":" suite { [IfClause $2 $4] }
+    | elif expression ":" suite elifClauses { (IfClause $2 $4):$5 }
 
 elseClause
     :                           { [] }
@@ -101,10 +119,20 @@ expressionList
     : expression        { $1 }
 
 expression
-    : primary   { $1 }
+    : primary "*" primary   { BinOp (ArithOp Mul) $1 $3 }
+    | primary "/" primary   { BinOp (ArithOp Div) $1 $3 }
+    | primary "+" primary   { BinOp (ArithOp Add) $1 $3 }
+    | primary "-" primary   { BinOp (ArithOp Sub) $1 $3 }
+    | primary "==" primary  { BinOp (BoolOp Eq) $1 $3 }
+    | primary "!=" primary  { BinOp (BoolOp NotEq) $1 $3 }
+    | primary "<" primary   { BinOp (BoolOp LessThan) $1 $3 }
+    | primary "<=" primary  { BinOp (BoolOp LessThanEq) $1 $3 }
+    | primary ">" primary   { BinOp (BoolOp GreaterThan) $1 $3 }
+    | primary ">=" primary  { BinOp (BoolOp GreaterThanEq) $1 $3 }
+    | primary   { $1 }
 
 suite
-    : newline indent statements { $3 }
+    : newline indent statements dedent { $3 }
 
 parameterList
     :               { [] }

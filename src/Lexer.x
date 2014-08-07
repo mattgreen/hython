@@ -56,7 +56,12 @@ tokens :-
     -- Identifiers
     [a-zA-Z_][a-zA-Z0-9_]*      { \_ s -> return $ Identifier s }
 
-    [=\(\)\,\:\+\-\*\/\.]         { \_ s -> return $ Punctuation s }
+    ==                          { \_ s -> return $ Punctuation s }
+    !=                          { \_ s -> return $ Punctuation s }
+    >=                          { \_ s -> return $ Punctuation s }
+    "<="                          { \_ s -> return $ Punctuation s }
+
+    [=\(\)\,\:\+\-\*\/\.\<\>]   { \_ s -> return $ Punctuation s }
 
 {
 data Token
