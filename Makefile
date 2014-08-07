@@ -1,6 +1,6 @@
 hython: src/Lexer.hs src/Parser.hs src/Language.hs src/Interpreter.hs
 	@cabal build
-	-@./.cabal-sandbox/bin/hlint .
+	#-@./.cabal-sandbox/bin/hlint .
 	@ln -sf dist/build/hython/hython .
 
 src/Lexer.hs: src/Lexer.x

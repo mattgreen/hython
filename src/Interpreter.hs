@@ -92,8 +92,8 @@ eval (Assignment (Variable var) expr) = do
 
 eval (Assignment (Attribute var attr) expr) = do
     value <- evalExpr expr
-    obj <- lookupSymbol var
-    setAttr attr value obj
+    target <- evalExpr var
+    setAttr attr value target
 
 eval (Assignment{}) = fail "Syntax error!"
 
@@ -238,13 +238,13 @@ evalExpr (BinOp op l r) = do
     right <- evalExpr r
     evalExpr $ BinOp op (Constant left) (Constant right)
 
-evalExpr (Call "print" args) = do
+evalExpr (Call (Variable "print") args) = do
     arg <- liftM toString (evalExpr (head args))
     liftIO $ putStrLn arg
     return None
 
-evalExpr (Call name args) = do
-    f <- lookupSymbol name
+evalExpr (Call e args) = do
+    f <- evalExpr e
     evalArgs <- mapM evalExpr args
     evalCall f evalArgs
 
@@ -258,7 +258,7 @@ evalExpr (MethodCall target name args) = do
         Nothing -> fail $ "Unknown method " ++ name
 
 evalExpr (Attribute target name) = do
-    receiver <- lookupSymbol target
+    receiver <- evalExpr target
     attribute <- getAttr name receiver
     case attribute of
         Just v  -> return v
@@ -341,11 +341,8 @@ toString (Object (Class name _) _) = printf "<%s object>" name
 toString (Object _ _) = fail "Object must be associated with a class!"
 
 parseEval :: String -> String -> Evaluator ()
-parseEval filename code = do
-    case parse filename code of
-        Left e -> liftIO $ print e
-        Right r -> mapM_ eval r
-    return ()
+parseEval _ code = do
+    mapM_ eval (parse code)
 
 main :: IO ()
 main = do

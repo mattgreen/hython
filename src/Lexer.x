@@ -1,4 +1,6 @@
 {
+{-# OPTIONS_GHC -w #-}
+
 module Lexer where
 import Control.Monad.State
 import Data.Word
@@ -8,10 +10,13 @@ import Language
 }
 
 $digit = 0-9
+$white = [\ ]
+$newline = \n
 
 tokens :-
     -- Whitespace handling
-    \n$white*                {startWhite}
+    \n$white*                 {startWhite}
+    $newline                ;
     $white+		            ;
 
     -- Comments
@@ -35,15 +40,23 @@ tokens :-
     -- None
     None                     {\_ s -> return $ Literal None }
 
+    -- Keywords
+    if                          { \_ s -> return $ Keyword "if" }
+    elif                        { \_ s -> return $ Keyword "elif" }
+    else                        { \_ s -> return $ Keyword "else" }
     def                         { \_ s -> return $ Keyword "def" }
-    return                  { \_ s -> return $ Keyword "return" }
+    return                      { \_ s -> return $ Keyword "return" }
+    while                       { \_ s -> return $ Keyword "while" }
+    break                       { \_ s -> return $ Keyword "break" }
+    continue                    { \_ s -> return $ Keyword "continue" }
+    pass                        { \_ s -> return $ Keyword "pass" }
+    assert                      { \_ s -> return $ Keyword "assert" }
+    class                       { \_ s -> return $ Keyword "class" }
 
     -- Identifiers
     [a-zA-Z_][a-zA-Z0-9_]*      { \_ s -> return $ Identifier s }
 
     [=\(\)\,\:\+\-\*\/\.]         { \_ s -> return $ Punctuation s }
-
-
 
 {
 data Token

@@ -25,7 +25,7 @@ type Statements = [Statement]
 data IfClause = IfClause Expression [Statement] deriving (Eq, Show)
 
 data Expression
-    = Call String [Expression]
+    = Call Expression [Expression]
     | MethodCall String String [Expression]
     | Attribute Expression String
     | Variable String
