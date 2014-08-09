@@ -23,22 +23,22 @@ tokens :-
     "#".*                    ;
 
     -- Integers
-    0+                      {\_ s -> return $ Literal (Int 0) }
-    [1-9][0-9]*             {\_ s -> return $ Literal (Int $ read s) }
-    -- 0[bB][01]+              { \_ s -> return $ Literal
-    0[oO][0-9]+             { \_ s -> return $ Literal (Int $ read s) }
-    0[xX][0-9a-fA-F]+       { \_ s -> return $ Literal (Int $ read s) }
+    0+                          { \_ s -> return $ Literal (Int 0) }
+    [1-9][0-9]*                 { \_ s -> return $ Literal (Int $ read s) }
+    -- 0[bB][01]+               { \_ s -> return $ Literal
+    0[oO][0-9]+                 { \_ s -> return $ Literal (Int $ read s) }
+    0[xX][0-9a-fA-F]+           { \_ s -> return $ Literal (Int $ read s) }
 
     -- Strings
-    '.*'                     {\_ s -> return $ Literal (String s) }
-    \".*\"                   {\_ s -> return $ Literal (String s) }
+    '.*'                        { \_ s -> return $ Literal (String s) }
+    \".*\"                      { \_ s -> return $ Literal (String s) }
 
     -- Booleans
-    False                    {\_ s -> return $ Literal (Bool False) }
-    True                     {\_ s -> return $ Literal (Bool True) }
+    False                       { \_ s -> return $ Literal (Bool False) }
+    True                        { \_ s -> return $ Literal (Bool True) }
 
     -- None
-    None                     {\_ s -> return $ Literal None }
+    None                        { \_ s -> return $ Literal None }
 
     -- Keywords
     if                          { \_ s -> return $ Keyword "if" }
@@ -59,7 +59,7 @@ tokens :-
     ==                          { \_ s -> return $ Punctuation s }
     !=                          { \_ s -> return $ Punctuation s }
     >=                          { \_ s -> return $ Punctuation s }
-    "<="                          { \_ s -> return $ Punctuation s }
+    "<="                        { \_ s -> return $ Punctuation s }
 
     [=\(\)\,\:\+\-\*\/\.\<\>]   { \_ s -> return $ Punctuation s }
 
@@ -146,7 +146,13 @@ readToken = do
                        AlexToken inp' n act -> do 
                           let (AlexInput _ _ buf) = alexInput s
                           put s{alexInput = inp'}
-                          act n (take n buf)
+                          pushToken $ act n (take n buf)
+                          readToken
+
+pushToken :: P Token -> P ()
+pushToken t = do
+    s <- get
+    put s { pending_tokens = (pending_tokens s) ++ [t] }
 
 readtoks::P [Token]
 readtoks = do

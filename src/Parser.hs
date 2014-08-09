@@ -1,1151 +1,941 @@
 {-# OPTIONS_GHC -w #-}
+{-# OPTIONS -fglasgow-exts -cpp #-}
 module Parser(parse) where
 import qualified Lexer as L
 import Control.Monad.Error
 
 import Language
+import qualified Data.Array as Happy_Data_Array
+import qualified GHC.Exts as Happy_GHC_Exts
 import Control.Applicative(Applicative(..))
 
 -- parser produced by Happy Version 1.19.4
 
-data HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32
-	= HappyTerminal (L.Token)
-	| HappyErrorToken Int
-	| HappyAbsSyn4 t4
-	| HappyAbsSyn5 t5
-	| HappyAbsSyn6 t6
-	| HappyAbsSyn7 t7
-	| HappyAbsSyn8 t8
-	| HappyAbsSyn9 t9
-	| HappyAbsSyn10 t10
-	| HappyAbsSyn11 t11
-	| HappyAbsSyn12 t12
-	| HappyAbsSyn13 t13
-	| HappyAbsSyn14 t14
-	| HappyAbsSyn15 t15
-	| HappyAbsSyn16 t16
-	| HappyAbsSyn17 t17
-	| HappyAbsSyn18 t18
-	| HappyAbsSyn19 t19
-	| HappyAbsSyn20 t20
-	| HappyAbsSyn21 t21
-	| HappyAbsSyn22 t22
-	| HappyAbsSyn23 t23
-	| HappyAbsSyn24 t24
-	| HappyAbsSyn25 t25
-	| HappyAbsSyn26 t26
-	| HappyAbsSyn27 t27
-	| HappyAbsSyn28 t28
-	| HappyAbsSyn29 t29
-	| HappyAbsSyn30 t30
-	| HappyAbsSyn31 t31
-	| HappyAbsSyn32 t32
-
-action_0 (33) = happyShift action_20
-action_0 (34) = happyShift action_21
-action_0 (35) = happyShift action_22
-action_0 (54) = happyShift action_23
-action_0 (55) = happyShift action_24
-action_0 (56) = happyShift action_25
-action_0 (57) = happyShift action_26
-action_0 (58) = happyShift action_27
-action_0 (61) = happyShift action_28
-action_0 (62) = happyShift action_29
-action_0 (63) = happyShift action_30
-action_0 (64) = happyShift action_31
-action_0 (4) = happyGoto action_2
-action_0 (5) = happyGoto action_3
-action_0 (6) = happyGoto action_4
-action_0 (7) = happyGoto action_5
-action_0 (8) = happyGoto action_6
-action_0 (9) = happyGoto action_7
-action_0 (10) = happyGoto action_8
-action_0 (11) = happyGoto action_9
-action_0 (12) = happyGoto action_10
-action_0 (13) = happyGoto action_11
-action_0 (17) = happyGoto action_12
-action_0 (18) = happyGoto action_13
-action_0 (19) = happyGoto action_14
-action_0 (21) = happyGoto action_15
-action_0 (26) = happyGoto action_16
-action_0 (27) = happyGoto action_17
-action_0 (28) = happyGoto action_18
-action_0 (29) = happyGoto action_19
-action_0 _ = happyReduce_1
-
-action_1 _ = happyFail
-
-action_2 (65) = happyAccept
-action_2 _ = happyFail
-
-action_3 (35) = happyShift action_54
-action_3 _ = happyReduce_2
-
-action_4 _ = happyReduce_3
-
-action_5 _ = happyReduce_9
-
-action_6 _ = happyReduce_8
-
-action_7 _ = happyReduce_10
-
-action_8 _ = happyReduce_11
-
-action_9 _ = happyReduce_12
-
-action_10 _ = happyReduce_13
-
-action_11 _ = happyReduce_14
-
-action_12 _ = happyReduce_15
-
-action_13 _ = happyReduce_16
-
-action_14 _ = happyReduce_17
-
-action_15 _ = happyReduce_18
-
-action_16 _ = happyReduce_57
-
-action_17 (36) = happyShift action_42
-action_17 (37) = happyShift action_43
-action_17 (38) = happyShift action_44
-action_17 (39) = happyShift action_45
-action_17 (40) = happyShift action_46
-action_17 (41) = happyShift action_47
-action_17 (42) = happyShift action_48
-action_17 (43) = happyShift action_49
-action_17 (44) = happyShift action_50
-action_17 (45) = happyShift action_51
-action_17 (46) = happyShift action_52
-action_17 (47) = happyShift action_53
-action_17 _ = happyReduce_48
-
-action_18 _ = happyReduce_58
-
-action_19 _ = happyReduce_59
-
-action_20 (51) = happyShift action_41
-action_20 _ = happyReduce_55
-
-action_21 _ = happyReduce_56
-
-action_22 (33) = happyShift action_20
-action_22 (34) = happyShift action_21
-action_22 (35) = happyShift action_22
-action_22 (54) = happyShift action_23
-action_22 (55) = happyShift action_24
-action_22 (56) = happyShift action_25
-action_22 (57) = happyShift action_26
-action_22 (58) = happyShift action_27
-action_22 (61) = happyShift action_28
-action_22 (62) = happyShift action_29
-action_22 (63) = happyShift action_30
-action_22 (64) = happyShift action_31
-action_22 (5) = happyGoto action_40
-action_22 (6) = happyGoto action_4
-action_22 (7) = happyGoto action_5
-action_22 (8) = happyGoto action_6
-action_22 (9) = happyGoto action_7
-action_22 (10) = happyGoto action_8
-action_22 (11) = happyGoto action_9
-action_22 (12) = happyGoto action_10
-action_22 (13) = happyGoto action_11
-action_22 (17) = happyGoto action_12
-action_22 (18) = happyGoto action_13
-action_22 (19) = happyGoto action_14
-action_22 (21) = happyGoto action_15
-action_22 (26) = happyGoto action_16
-action_22 (27) = happyGoto action_17
-action_22 (28) = happyGoto action_18
-action_22 (29) = happyGoto action_19
-action_22 _ = happyReduce_7
-
-action_23 (33) = happyShift action_33
-action_23 (34) = happyShift action_21
-action_23 (20) = happyGoto action_39
-action_23 (21) = happyGoto action_35
-action_23 (26) = happyGoto action_16
-action_23 (27) = happyGoto action_17
-action_23 (28) = happyGoto action_18
-action_23 (29) = happyGoto action_19
-action_23 _ = happyFail
-
-action_24 _ = happyReduce_21
-
-action_25 (33) = happyShift action_38
-action_25 _ = happyFail
-
-action_26 _ = happyReduce_24
-
-action_27 (33) = happyShift action_37
-action_27 _ = happyFail
-
-action_28 (33) = happyShift action_33
-action_28 (34) = happyShift action_21
-action_28 (21) = happyGoto action_36
-action_28 (26) = happyGoto action_16
-action_28 (27) = happyGoto action_17
-action_28 (28) = happyGoto action_18
-action_28 (29) = happyGoto action_19
-action_28 _ = happyFail
-
-action_29 _ = happyReduce_33
-
-action_30 (33) = happyShift action_33
-action_30 (34) = happyShift action_21
-action_30 (20) = happyGoto action_34
-action_30 (21) = happyGoto action_35
-action_30 (26) = happyGoto action_16
-action_30 (27) = happyGoto action_17
-action_30 (28) = happyGoto action_18
-action_30 (29) = happyGoto action_19
-action_30 _ = happyReduce_34
-
-action_31 (33) = happyShift action_33
-action_31 (34) = happyShift action_21
-action_31 (21) = happyGoto action_32
-action_31 (26) = happyGoto action_16
-action_31 (27) = happyGoto action_17
-action_31 (28) = happyGoto action_18
-action_31 (29) = happyGoto action_19
-action_31 _ = happyFail
-
-action_32 (49) = happyShift action_76
-action_32 _ = happyFail
-
-action_33 _ = happyReduce_55
-
-action_34 _ = happyReduce_35
-
-action_35 _ = happyReduce_37
-
-action_36 (49) = happyShift action_75
-action_36 _ = happyFail
-
-action_37 (47) = happyShift action_74
-action_37 _ = happyFail
-
-action_38 (47) = happyShift action_72
-action_38 (49) = happyShift action_73
-action_38 _ = happyFail
-
-action_39 _ = happyReduce_19
-
-action_40 (35) = happyShift action_54
-action_40 _ = happyReduce_6
-
-action_41 (33) = happyShift action_33
-action_41 (34) = happyShift action_21
-action_41 (20) = happyGoto action_71
-action_41 (21) = happyGoto action_35
-action_41 (26) = happyGoto action_16
-action_41 (27) = happyGoto action_17
-action_41 (28) = happyGoto action_18
-action_41 (29) = happyGoto action_19
-action_41 _ = happyFail
-
-action_42 (33) = happyShift action_33
-action_42 (34) = happyShift action_21
-action_42 (26) = happyGoto action_16
-action_42 (27) = happyGoto action_70
-action_42 (28) = happyGoto action_18
-action_42 (29) = happyGoto action_19
-action_42 _ = happyFail
-
-action_43 (33) = happyShift action_33
-action_43 (34) = happyShift action_21
-action_43 (26) = happyGoto action_16
-action_43 (27) = happyGoto action_69
-action_43 (28) = happyGoto action_18
-action_43 (29) = happyGoto action_19
-action_43 _ = happyFail
-
-action_44 (33) = happyShift action_33
-action_44 (34) = happyShift action_21
-action_44 (26) = happyGoto action_16
-action_44 (27) = happyGoto action_68
-action_44 (28) = happyGoto action_18
-action_44 (29) = happyGoto action_19
-action_44 _ = happyFail
-
-action_45 (33) = happyShift action_33
-action_45 (34) = happyShift action_21
-action_45 (26) = happyGoto action_16
-action_45 (27) = happyGoto action_67
-action_45 (28) = happyGoto action_18
-action_45 (29) = happyGoto action_19
-action_45 _ = happyFail
-
-action_46 (33) = happyShift action_33
-action_46 (34) = happyShift action_21
-action_46 (26) = happyGoto action_16
-action_46 (27) = happyGoto action_66
-action_46 (28) = happyGoto action_18
-action_46 (29) = happyGoto action_19
-action_46 _ = happyFail
-
-action_47 (33) = happyShift action_33
-action_47 (34) = happyShift action_21
-action_47 (26) = happyGoto action_16
-action_47 (27) = happyGoto action_65
-action_47 (28) = happyGoto action_18
-action_47 (29) = happyGoto action_19
-action_47 _ = happyFail
-
-action_48 (33) = happyShift action_33
-action_48 (34) = happyShift action_21
-action_48 (26) = happyGoto action_16
-action_48 (27) = happyGoto action_64
-action_48 (28) = happyGoto action_18
-action_48 (29) = happyGoto action_19
-action_48 _ = happyFail
-
-action_49 (33) = happyShift action_33
-action_49 (34) = happyShift action_21
-action_49 (26) = happyGoto action_16
-action_49 (27) = happyGoto action_63
-action_49 (28) = happyGoto action_18
-action_49 (29) = happyGoto action_19
-action_49 _ = happyFail
-
-action_50 (33) = happyShift action_33
-action_50 (34) = happyShift action_21
-action_50 (26) = happyGoto action_16
-action_50 (27) = happyGoto action_62
-action_50 (28) = happyGoto action_18
-action_50 (29) = happyGoto action_19
-action_50 _ = happyFail
-
-action_51 (33) = happyShift action_33
-action_51 (34) = happyShift action_21
-action_51 (26) = happyGoto action_16
-action_51 (27) = happyGoto action_61
-action_51 (28) = happyGoto action_18
-action_51 (29) = happyGoto action_19
-action_51 _ = happyFail
-
-action_52 (33) = happyShift action_60
-action_52 _ = happyFail
-
-action_53 (33) = happyShift action_33
-action_53 (34) = happyShift action_21
-action_53 (26) = happyGoto action_16
-action_53 (27) = happyGoto action_56
-action_53 (28) = happyGoto action_18
-action_53 (29) = happyGoto action_19
-action_53 (30) = happyGoto action_57
-action_53 (31) = happyGoto action_58
-action_53 (32) = happyGoto action_59
-action_53 _ = happyReduce_62
-
-action_54 (33) = happyShift action_20
-action_54 (34) = happyShift action_21
-action_54 (54) = happyShift action_23
-action_54 (55) = happyShift action_24
-action_54 (56) = happyShift action_25
-action_54 (57) = happyShift action_26
-action_54 (58) = happyShift action_27
-action_54 (61) = happyShift action_28
-action_54 (62) = happyShift action_29
-action_54 (63) = happyShift action_30
-action_54 (64) = happyShift action_31
-action_54 (6) = happyGoto action_55
-action_54 (7) = happyGoto action_5
-action_54 (8) = happyGoto action_6
-action_54 (9) = happyGoto action_7
-action_54 (10) = happyGoto action_8
-action_54 (11) = happyGoto action_9
-action_54 (12) = happyGoto action_10
-action_54 (13) = happyGoto action_11
-action_54 (17) = happyGoto action_12
-action_54 (18) = happyGoto action_13
-action_54 (19) = happyGoto action_14
-action_54 (21) = happyGoto action_15
-action_54 (26) = happyGoto action_16
-action_54 (27) = happyGoto action_17
-action_54 (28) = happyGoto action_18
-action_54 (29) = happyGoto action_19
-action_54 _ = happyReduce_5
-
-action_55 _ = happyReduce_4
-
-action_56 (46) = happyShift action_52
-action_56 (47) = happyShift action_53
-action_56 _ = happyReduce_66
-
-action_57 (48) = happyShift action_87
-action_57 _ = happyFail
-
-action_58 _ = happyReduce_63
-
-action_59 (50) = happyShift action_86
-action_59 _ = happyReduce_64
-
-action_60 _ = happyReduce_60
-
-action_61 (46) = happyShift action_52
-action_61 (47) = happyShift action_53
-action_61 _ = happyReduce_47
-
-action_62 (46) = happyShift action_52
-action_62 (47) = happyShift action_53
-action_62 _ = happyReduce_46
-
-action_63 (46) = happyShift action_52
-action_63 (47) = happyShift action_53
-action_63 _ = happyReduce_45
-
-action_64 (46) = happyShift action_52
-action_64 (47) = happyShift action_53
-action_64 _ = happyReduce_44
-
-action_65 (46) = happyShift action_52
-action_65 (47) = happyShift action_53
-action_65 _ = happyReduce_43
-
-action_66 (46) = happyShift action_52
-action_66 (47) = happyShift action_53
-action_66 _ = happyReduce_42
-
-action_67 (46) = happyShift action_52
-action_67 (47) = happyShift action_53
-action_67 _ = happyReduce_39
-
-action_68 (46) = happyShift action_52
-action_68 (47) = happyShift action_53
-action_68 _ = happyReduce_38
-
-action_69 (46) = happyShift action_52
-action_69 (47) = happyShift action_53
-action_69 _ = happyReduce_41
-
-action_70 (46) = happyShift action_52
-action_70 (47) = happyShift action_53
-action_70 _ = happyReduce_40
-
-action_71 _ = happyReduce_20
-
-action_72 (33) = happyShift action_83
-action_72 (23) = happyGoto action_85
-action_72 (24) = happyGoto action_81
-action_72 (25) = happyGoto action_82
-action_72 _ = happyReduce_50
-
-action_73 (35) = happyShift action_78
-action_73 (22) = happyGoto action_84
-action_73 _ = happyFail
-
-action_74 (33) = happyShift action_83
-action_74 (23) = happyGoto action_80
-action_74 (24) = happyGoto action_81
-action_74 (25) = happyGoto action_82
-action_74 _ = happyReduce_50
-
-action_75 (35) = happyShift action_78
-action_75 (22) = happyGoto action_79
-action_75 _ = happyFail
-
-action_76 (35) = happyShift action_78
-action_76 (22) = happyGoto action_77
-action_76 _ = happyFail
-
-action_77 _ = happyReduce_36
-
-action_78 (52) = happyShift action_95
-action_78 _ = happyFail
-
-action_79 (59) = happyShift action_94
-action_79 (14) = happyGoto action_92
-action_79 (15) = happyGoto action_93
-action_79 _ = happyReduce_27
-
-action_80 (48) = happyShift action_91
-action_80 _ = happyFail
-
-action_81 _ = happyReduce_51
-
-action_82 (50) = happyShift action_90
-action_82 _ = happyReduce_52
-
-action_83 _ = happyReduce_54
-
-action_84 _ = happyReduce_22
-
-action_85 (48) = happyShift action_89
-action_85 _ = happyFail
-
-action_86 (33) = happyShift action_33
-action_86 (34) = happyShift action_21
-action_86 (26) = happyGoto action_16
-action_86 (27) = happyGoto action_56
-action_86 (28) = happyGoto action_18
-action_86 (29) = happyGoto action_19
-action_86 (31) = happyGoto action_88
-action_86 (32) = happyGoto action_59
-action_86 _ = happyFail
-
-action_87 _ = happyReduce_61
-
-action_88 _ = happyReduce_65
-
-action_89 (35) = happyShift action_78
-action_89 (22) = happyGoto action_102
-action_89 _ = happyFail
-
-action_90 (33) = happyShift action_83
-action_90 (24) = happyGoto action_101
-action_90 (25) = happyGoto action_82
-action_90 _ = happyFail
-
-action_91 (49) = happyShift action_100
-action_91 _ = happyFail
-
-action_92 (60) = happyShift action_99
-action_92 (16) = happyGoto action_98
-action_92 _ = happyReduce_31
-
-action_93 _ = happyReduce_28
-
-action_94 (33) = happyShift action_33
-action_94 (34) = happyShift action_21
-action_94 (21) = happyGoto action_97
-action_94 (26) = happyGoto action_16
-action_94 (27) = happyGoto action_17
-action_94 (28) = happyGoto action_18
-action_94 (29) = happyGoto action_19
-action_94 _ = happyFail
-
-action_95 (33) = happyShift action_20
-action_95 (34) = happyShift action_21
-action_95 (35) = happyShift action_22
-action_95 (54) = happyShift action_23
-action_95 (55) = happyShift action_24
-action_95 (56) = happyShift action_25
-action_95 (57) = happyShift action_26
-action_95 (58) = happyShift action_27
-action_95 (61) = happyShift action_28
-action_95 (62) = happyShift action_29
-action_95 (63) = happyShift action_30
-action_95 (64) = happyShift action_31
-action_95 (5) = happyGoto action_96
-action_95 (6) = happyGoto action_4
-action_95 (7) = happyGoto action_5
-action_95 (8) = happyGoto action_6
-action_95 (9) = happyGoto action_7
-action_95 (10) = happyGoto action_8
-action_95 (11) = happyGoto action_9
-action_95 (12) = happyGoto action_10
-action_95 (13) = happyGoto action_11
-action_95 (17) = happyGoto action_12
-action_95 (18) = happyGoto action_13
-action_95 (19) = happyGoto action_14
-action_95 (21) = happyGoto action_15
-action_95 (26) = happyGoto action_16
-action_95 (27) = happyGoto action_17
-action_95 (28) = happyGoto action_18
-action_95 (29) = happyGoto action_19
-action_95 _ = happyFail
-
-action_96 (35) = happyShift action_54
-action_96 (53) = happyShift action_106
-action_96 _ = happyFail
-
-action_97 (49) = happyShift action_105
-action_97 _ = happyFail
-
-action_98 _ = happyReduce_26
-
-action_99 (49) = happyShift action_104
-action_99 _ = happyFail
-
-action_100 (35) = happyShift action_78
-action_100 (22) = happyGoto action_103
-action_100 _ = happyFail
-
-action_101 _ = happyReduce_53
-
-action_102 _ = happyReduce_23
-
-action_103 _ = happyReduce_25
-
-action_104 (35) = happyShift action_78
-action_104 (22) = happyGoto action_108
-action_104 _ = happyFail
-
-action_105 (35) = happyShift action_78
-action_105 (22) = happyGoto action_107
-action_105 _ = happyFail
-
-action_106 _ = happyReduce_49
-
-action_107 (59) = happyShift action_94
-action_107 (15) = happyGoto action_109
-action_107 _ = happyReduce_29
-
-action_108 _ = happyReduce_32
-
-action_109 _ = happyReduce_30
-
-happyReduce_1 = happySpecReduce_0  4 happyReduction_1
-happyReduction_1  =  HappyAbsSyn4
+newtype HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34 = HappyAbsSyn HappyAny
+#if __GLASGOW_HASKELL__ >= 607
+type HappyAny = Happy_GHC_Exts.Any
+#else
+type HappyAny = forall a . a
+#endif
+happyIn4 :: t4 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn4 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn4 #-}
+happyOut4 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t4
+happyOut4 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut4 #-}
+happyIn5 :: t5 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn5 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn5 #-}
+happyOut5 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t5
+happyOut5 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut5 #-}
+happyIn6 :: t6 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn6 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn6 #-}
+happyOut6 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t6
+happyOut6 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut6 #-}
+happyIn7 :: t7 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn7 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn7 #-}
+happyOut7 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t7
+happyOut7 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut7 #-}
+happyIn8 :: t8 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn8 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn8 #-}
+happyOut8 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t8
+happyOut8 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut8 #-}
+happyIn9 :: t9 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn9 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn9 #-}
+happyOut9 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t9
+happyOut9 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut9 #-}
+happyIn10 :: t10 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn10 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn10 #-}
+happyOut10 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t10
+happyOut10 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut10 #-}
+happyIn11 :: t11 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn11 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn11 #-}
+happyOut11 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t11
+happyOut11 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut11 #-}
+happyIn12 :: t12 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn12 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn12 #-}
+happyOut12 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t12
+happyOut12 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut12 #-}
+happyIn13 :: t13 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn13 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn13 #-}
+happyOut13 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t13
+happyOut13 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut13 #-}
+happyIn14 :: t14 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn14 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn14 #-}
+happyOut14 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t14
+happyOut14 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut14 #-}
+happyIn15 :: t15 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn15 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn15 #-}
+happyOut15 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t15
+happyOut15 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut15 #-}
+happyIn16 :: t16 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn16 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn16 #-}
+happyOut16 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t16
+happyOut16 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut16 #-}
+happyIn17 :: t17 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn17 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn17 #-}
+happyOut17 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t17
+happyOut17 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut17 #-}
+happyIn18 :: t18 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn18 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn18 #-}
+happyOut18 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t18
+happyOut18 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut18 #-}
+happyIn19 :: t19 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn19 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn19 #-}
+happyOut19 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t19
+happyOut19 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut19 #-}
+happyIn20 :: t20 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn20 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn20 #-}
+happyOut20 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t20
+happyOut20 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut20 #-}
+happyIn21 :: t21 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn21 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn21 #-}
+happyOut21 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t21
+happyOut21 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut21 #-}
+happyIn22 :: t22 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn22 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn22 #-}
+happyOut22 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t22
+happyOut22 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut22 #-}
+happyIn23 :: t23 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn23 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn23 #-}
+happyOut23 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t23
+happyOut23 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut23 #-}
+happyIn24 :: t24 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn24 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn24 #-}
+happyOut24 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t24
+happyOut24 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut24 #-}
+happyIn25 :: t25 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn25 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn25 #-}
+happyOut25 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t25
+happyOut25 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut25 #-}
+happyIn26 :: t26 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn26 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn26 #-}
+happyOut26 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t26
+happyOut26 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut26 #-}
+happyIn27 :: t27 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn27 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn27 #-}
+happyOut27 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t27
+happyOut27 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut27 #-}
+happyIn28 :: t28 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn28 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn28 #-}
+happyOut28 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t28
+happyOut28 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut28 #-}
+happyIn29 :: t29 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn29 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn29 #-}
+happyOut29 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t29
+happyOut29 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut29 #-}
+happyIn30 :: t30 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn30 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn30 #-}
+happyOut30 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t30
+happyOut30 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut30 #-}
+happyIn31 :: t31 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn31 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn31 #-}
+happyOut31 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t31
+happyOut31 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut31 #-}
+happyIn32 :: t32 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn32 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn32 #-}
+happyOut32 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t32
+happyOut32 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut32 #-}
+happyIn33 :: t33 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn33 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn33 #-}
+happyOut33 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t33
+happyOut33 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut33 #-}
+happyIn34 :: t34 -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyIn34 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyIn34 #-}
+happyOut34 :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> t34
+happyOut34 x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOut34 #-}
+happyInTok :: (L.Token) -> (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34)
+happyInTok x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyInTok #-}
+happyOutTok :: (HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 t19 t20 t21 t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34) -> (L.Token)
+happyOutTok x = Happy_GHC_Exts.unsafeCoerce# x
+{-# INLINE happyOutTok #-}
+
+
+happyActOffsets :: HappyAddr
+happyActOffsets = HappyA# "\x01\x00\x00\x00\x80\x00\x9d\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xdd\x00\x00\x00\x20\x00\x00\x00\x00\x00\x8c\x00\x00\x00\x01\x00\x40\x00\x00\x00\x91\x00\x00\x00\x90\x00\x40\x00\x00\x00\x40\x00\x40\x00\xc7\x00\x00\x00\x00\x00\xdd\x00\xb9\x00\x81\x00\xfa\xff\x00\x00\x8a\x00\x40\x00\x88\x00\x40\x00\x40\x00\x40\x00\x40\x00\x40\x00\x40\x00\x40\x00\x40\x00\x40\x00\x40\x00\x40\x00\x0c\x00\x00\x00\xdd\x00\xdd\x00\xdd\x00\xdd\x00\xdd\x00\xdd\x00\xdd\x00\xdd\x00\xdd\x00\xdd\x00\xdd\x00\x78\x00\x00\x00\x7d\x00\x00\x00\x00\x00\x86\x00\x76\x00\x77\x00\x73\x00\x73\x00\x00\x00\x63\x00\x59\x00\x5f\x00\x00\x00\x5e\x00\x00\x00\x00\x00\x55\x00\x40\x00\x00\x00\x00\x00\x6b\x00\x5d\x00\x4c\x00\x43\x00\x00\x00\x40\x00\x0c\x00\xfe\xff\x00\x00\x00\x00\xab\x00\x00\x00\x4b\x00\x57\x00\x00\x00\x00\x00\x00\x00\x57\x00\x57\x00\x0c\x00\x00\x00\x00\x00\x39\x00\x00\x00\x00\x00\x00\x00"#
+
+happyGotoOffsets :: HappyAddr
+happyGotoOffsets = HappyA# "\x2d\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x7b\x00\xe7\x00\x00\x00\x00\x00\x00\x00\x00\x00\x3e\x01\x00\x00\xe3\x00\x35\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xd9\x00\x00\x00\xc2\x00\x31\x01\x28\x01\x24\x01\x1b\x01\x17\x01\x0e\x01\x0a\x01\x01\x01\xfd\x00\xf4\x00\x93\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x24\x00\x42\x00\xf0\xff\x41\x00\x37\x00\x00\x00\x00\x00\x1b\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf7\xff\x00\x00\x00\x00\x30\x00\x06\x00\x00\x00\x35\x00\x00\x00\xf0\x00\x48\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x2b\x00\x00\x00\x00\x00\x00\x00\x02\x00\xf8\xff\x62\x00\x00\x00\x00\x00\xfb\xff\x00\x00\x00\x00\x00\x00"#
+
+happyDefActions :: HappyAddr
+happyDefActions = HappyA# "\xfe\xff\x00\x00\x00\x00\xfd\xff\xf7\xff\xf1\xff\xf2\xff\xf0\xff\xef\xff\xee\xff\xed\xff\xec\xff\xeb\xff\xea\xff\xe9\xff\xe8\xff\xc1\xff\xca\xff\xc0\xff\xbf\xff\xc3\xff\xc2\xff\xf3\xff\x00\x00\xe5\xff\x00\x00\xe2\xff\x00\x00\x00\x00\xd9\xff\xd8\xff\x00\x00\x00\x00\xc3\xff\xd7\xff\xd5\xff\x00\x00\x00\x00\x00\x00\xe7\xff\xf4\xff\x00\x00\x00\x00\xbc\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf5\xff\xf6\xff\xcb\xff\xcc\xff\xcd\xff\xce\xff\xcf\xff\xd0\xff\xd3\xff\xd4\xff\xd1\xff\xd2\xff\xb8\xff\x00\x00\xbb\xff\xba\xff\xbe\xff\xe6\xff\xc8\xff\x00\x00\xc8\xff\x00\x00\x00\x00\xd6\xff\x00\x00\xdf\xff\x00\x00\xc7\xff\xc6\xff\xc4\xff\xe4\xff\x00\x00\x00\x00\xbd\xff\xb9\xff\x00\x00\x00\x00\x00\x00\xdb\xff\xde\xff\x00\x00\xf9\xff\x00\x00\xfa\xff\xf8\xff\x00\x00\xe0\xff\x00\x00\x00\x00\xc5\xff\xe3\xff\xe1\xff\x00\x00\x00\x00\xfb\xff\xc9\xff\xfc\xff\xdd\xff\xda\xff\xdc\xff"#
+
+happyCheck :: HappyAddr
+happyCheck = HappyA# "\xff\xff\x03\x00\x01\x00\x02\x00\x03\x00\x15\x00\x16\x00\x17\x00\x0d\x00\x0f\x00\x13\x00\x11\x00\x14\x00\x01\x00\x02\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x15\x00\x1d\x00\x1e\x00\x14\x00\x16\x00\x17\x00\x18\x00\x19\x00\x1a\x00\x16\x00\x17\x00\x1d\x00\x1e\x00\x1f\x00\x20\x00\x16\x00\x17\x00\x18\x00\x19\x00\x1a\x00\x0c\x00\x0d\x00\x1d\x00\x1e\x00\x1f\x00\x20\x00\x00\x00\x0e\x00\x0f\x00\x03\x00\x04\x00\x05\x00\x06\x00\x07\x00\x08\x00\x09\x00\x0a\x00\x0b\x00\x15\x00\x16\x00\x17\x00\x0f\x00\x10\x00\x11\x00\x14\x00\x13\x00\x01\x00\x02\x00\x0e\x00\x14\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x01\x00\x02\x00\x14\x00\x04\x00\x05\x00\x06\x00\x07\x00\x08\x00\x09\x00\x0a\x00\x0b\x00\x1b\x00\x14\x00\x14\x00\x0f\x00\x10\x00\x11\x00\x03\x00\x13\x00\x11\x00\x11\x00\x01\x00\x1c\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x02\x00\x10\x00\x04\x00\x05\x00\x06\x00\x07\x00\x08\x00\x09\x00\x0a\x00\x0b\x00\x03\x00\x10\x00\x12\x00\x0f\x00\x10\x00\x11\x00\x1b\x00\x13\x00\x03\x00\x14\x00\x01\x00\x03\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x03\x00\x04\x00\x05\x00\x06\x00\x07\x00\x08\x00\x09\x00\x0a\x00\x0b\x00\x01\x00\x10\x00\x01\x00\x0f\x00\x10\x00\x11\x00\x03\x00\x13\x00\x12\x00\x0f\x00\x01\x00\x01\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x04\x00\x05\x00\x06\x00\x07\x00\x08\x00\x09\x00\x0a\x00\x0b\x00\x13\x00\x03\x00\x21\x00\x0f\x00\x10\x00\x11\x00\xff\xff\x13\x00\xff\xff\xff\xff\xff\xff\xff\xff\x18\x00\x19\x00\x1a\x00\x1b\x00\x04\x00\x05\x00\x06\x00\x07\x00\x08\x00\x09\x00\x0a\x00\x0b\x00\x0c\x00\x0d\x00\xff\xff\xff\xff\xff\xff\x11\x00\x04\x00\x05\x00\x06\x00\x07\x00\x08\x00\x09\x00\x0a\x00\x0b\x00\x0c\x00\x0d\x00\xff\xff\xff\xff\xff\xff\x11\x00\x04\x00\x05\x00\x06\x00\x07\x00\x08\x00\x09\x00\x0a\x00\x0b\x00\x0c\x00\x0d\x00\x13\x00\xff\xff\xff\xff\x11\x00\xff\xff\x18\x00\x19\x00\x1a\x00\x1b\x00\x1c\x00\x1d\x00\x1e\x00\x04\x00\x05\x00\x06\x00\x07\x00\x08\x00\x09\x00\x0a\x00\x0b\x00\x0c\x00\x0d\x00\x12\x00\x13\x00\xff\xff\xff\xff\xff\xff\xff\xff\x18\x00\x19\x00\x1a\x00\x1b\x00\x12\x00\x13\x00\xff\xff\xff\xff\x12\x00\x13\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x13\x00\xff\xff\xff\xff\xff\xff\x13\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x13\x00\xff\xff\xff\xff\xff\xff\x13\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x13\x00\xff\xff\xff\xff\xff\xff\x13\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x13\x00\xff\xff\xff\xff\xff\xff\x13\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x13\x00\xff\xff\xff\xff\xff\xff\x13\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x13\x00\xff\xff\xff\xff\xff\xff\x13\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x13\x00\xff\xff\xff\xff\xff\xff\xff\xff\x18\x00\x19\x00\x1a\x00\x1b\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"#
+
+happyTable :: HappyAddr
+happyTable = HappyA# "\x00\x00\x6d\x00\x15\x00\x16\x00\x17\x00\x50\x00\x51\x00\x52\x00\x71\x00\x49\x00\x42\x00\x4a\x00\x6f\x00\x15\x00\x16\x00\x10\x00\x11\x00\x12\x00\x13\x00\x6e\x00\x58\x00\x45\x00\x70\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x1c\x00\x67\x00\x52\x00\x1d\x00\x1e\x00\x1f\x00\x20\x00\x18\x00\x19\x00\x1a\x00\x1b\x00\x1c\x00\x5c\x00\x5d\x00\x1d\x00\x1e\x00\x1f\x00\x20\x00\x02\x00\x2b\x00\x2c\x00\x03\x00\x04\x00\x05\x00\x06\x00\x07\x00\x08\x00\x09\x00\x0a\x00\x0b\x00\x55\x00\x51\x00\x52\x00\x0c\x00\x0d\x00\x0e\x00\x69\x00\x0f\x00\x22\x00\x16\x00\x64\x00\x68\x00\x10\x00\x11\x00\x12\x00\x13\x00\x60\x00\x61\x00\x4d\x00\x62\x00\x05\x00\x06\x00\x07\x00\x08\x00\x09\x00\x0a\x00\x0b\x00\x5f\x00\x4f\x00\x54\x00\x0c\x00\x0d\x00\x0e\x00\x4f\x00\x0f\x00\x6b\x00\x67\x00\x54\x00\x66\x00\x10\x00\x11\x00\x12\x00\x13\x00\x6e\x00\x5a\x00\x62\x00\x05\x00\x06\x00\x07\x00\x08\x00\x09\x00\x0a\x00\x0b\x00\x4f\x00\x5c\x00\x5b\x00\x0c\x00\x0d\x00\x0e\x00\x5f\x00\x0f\x00\x4f\x00\x60\x00\x54\x00\x4f\x00\x10\x00\x11\x00\x12\x00\x13\x00\x28\x00\x04\x00\x05\x00\x06\x00\x07\x00\x08\x00\x09\x00\x0a\x00\x0b\x00\x54\x00\x58\x00\x47\x00\x0c\x00\x0d\x00\x0e\x00\x37\x00\x0f\x00\x57\x00\x4b\x00\x26\x00\x27\x00\x10\x00\x11\x00\x12\x00\x13\x00\x37\x00\x05\x00\x06\x00\x07\x00\x08\x00\x09\x00\x0a\x00\x0b\x00\x2a\x00\x37\x00\xff\xff\x0c\x00\x0d\x00\x0e\x00\x00\x00\x0f\x00\x00\x00\x00\x00\x00\x00\x00\x00\x10\x00\x11\x00\x12\x00\x13\x00\x2d\x00\x2e\x00\x2f\x00\x30\x00\x31\x00\x32\x00\x33\x00\x34\x00\x35\x00\x36\x00\x00\x00\x00\x00\x00\x00\x6c\x00\x2d\x00\x2e\x00\x2f\x00\x30\x00\x31\x00\x32\x00\x33\x00\x34\x00\x35\x00\x36\x00\x00\x00\x00\x00\x00\x00\x4c\x00\x2d\x00\x2e\x00\x2f\x00\x30\x00\x31\x00\x32\x00\x33\x00\x34\x00\x35\x00\x36\x00\x42\x00\x00\x00\x00\x00\x4d\x00\x00\x00\x10\x00\x11\x00\x12\x00\x13\x00\x43\x00\x44\x00\x45\x00\x2d\x00\x2e\x00\x2f\x00\x30\x00\x31\x00\x32\x00\x33\x00\x34\x00\x35\x00\x36\x00\x47\x00\x23\x00\x00\x00\x00\x00\x00\x00\x00\x00\x10\x00\x11\x00\x12\x00\x13\x00\x22\x00\x23\x00\x00\x00\x00\x00\x27\x00\x23\x00\x10\x00\x11\x00\x12\x00\x13\x00\x10\x00\x11\x00\x12\x00\x13\x00\x63\x00\x00\x00\x00\x00\x00\x00\x38\x00\x10\x00\x11\x00\x12\x00\x13\x00\x10\x00\x11\x00\x12\x00\x13\x00\x39\x00\x00\x00\x00\x00\x00\x00\x3a\x00\x10\x00\x11\x00\x12\x00\x13\x00\x10\x00\x11\x00\x12\x00\x13\x00\x3b\x00\x00\x00\x00\x00\x00\x00\x3c\x00\x10\x00\x11\x00\x12\x00\x13\x00\x10\x00\x11\x00\x12\x00\x13\x00\x3d\x00\x00\x00\x00\x00\x00\x00\x3e\x00\x10\x00\x11\x00\x12\x00\x13\x00\x10\x00\x11\x00\x12\x00\x13\x00\x3f\x00\x00\x00\x00\x00\x00\x00\x40\x00\x10\x00\x11\x00\x12\x00\x13\x00\x10\x00\x11\x00\x12\x00\x13\x00\x41\x00\x00\x00\x00\x00\x00\x00\x20\x00\x10\x00\x11\x00\x12\x00\x13\x00\x10\x00\x11\x00\x12\x00\x13\x00\x24\x00\x00\x00\x00\x00\x00\x00\x00\x00\x10\x00\x11\x00\x12\x00\x13\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"#
+
+happyReduceArr = Happy_Data_Array.array (1, 71) [
+	(1 , happyReduce_1),
+	(2 , happyReduce_2),
+	(3 , happyReduce_3),
+	(4 , happyReduce_4),
+	(5 , happyReduce_5),
+	(6 , happyReduce_6),
+	(7 , happyReduce_7),
+	(8 , happyReduce_8),
+	(9 , happyReduce_9),
+	(10 , happyReduce_10),
+	(11 , happyReduce_11),
+	(12 , happyReduce_12),
+	(13 , happyReduce_13),
+	(14 , happyReduce_14),
+	(15 , happyReduce_15),
+	(16 , happyReduce_16),
+	(17 , happyReduce_17),
+	(18 , happyReduce_18),
+	(19 , happyReduce_19),
+	(20 , happyReduce_20),
+	(21 , happyReduce_21),
+	(22 , happyReduce_22),
+	(23 , happyReduce_23),
+	(24 , happyReduce_24),
+	(25 , happyReduce_25),
+	(26 , happyReduce_26),
+	(27 , happyReduce_27),
+	(28 , happyReduce_28),
+	(29 , happyReduce_29),
+	(30 , happyReduce_30),
+	(31 , happyReduce_31),
+	(32 , happyReduce_32),
+	(33 , happyReduce_33),
+	(34 , happyReduce_34),
+	(35 , happyReduce_35),
+	(36 , happyReduce_36),
+	(37 , happyReduce_37),
+	(38 , happyReduce_38),
+	(39 , happyReduce_39),
+	(40 , happyReduce_40),
+	(41 , happyReduce_41),
+	(42 , happyReduce_42),
+	(43 , happyReduce_43),
+	(44 , happyReduce_44),
+	(45 , happyReduce_45),
+	(46 , happyReduce_46),
+	(47 , happyReduce_47),
+	(48 , happyReduce_48),
+	(49 , happyReduce_49),
+	(50 , happyReduce_50),
+	(51 , happyReduce_51),
+	(52 , happyReduce_52),
+	(53 , happyReduce_53),
+	(54 , happyReduce_54),
+	(55 , happyReduce_55),
+	(56 , happyReduce_56),
+	(57 , happyReduce_57),
+	(58 , happyReduce_58),
+	(59 , happyReduce_59),
+	(60 , happyReduce_60),
+	(61 , happyReduce_61),
+	(62 , happyReduce_62),
+	(63 , happyReduce_63),
+	(64 , happyReduce_64),
+	(65 , happyReduce_65),
+	(66 , happyReduce_66),
+	(67 , happyReduce_67),
+	(68 , happyReduce_68),
+	(69 , happyReduce_69),
+	(70 , happyReduce_70),
+	(71 , happyReduce_71)
+	]
+
+happy_n_terms = 34 :: Int
+happy_n_nonterms = 31 :: Int
+
+happyReduce_1 = happySpecReduce_0  0# happyReduction_1
+happyReduction_1  =  happyIn4
 		 ([]
 	)
 
-happyReduce_2 = happySpecReduce_1  4 happyReduction_2
-happyReduction_2 (HappyAbsSyn5  happy_var_1)
-	 =  HappyAbsSyn4
+happyReduce_2 = happySpecReduce_1  0# happyReduction_2
+happyReduction_2 happy_x_1
+	 =  case happyOut7 happy_x_1 of { happy_var_1 -> 
+	happyIn4
 		 (happy_var_1
-	)
-happyReduction_2 _  = notHappyAtAll 
+	)}
 
-happyReduce_3 = happySpecReduce_1  5 happyReduction_3
-happyReduction_3 (HappyAbsSyn6  happy_var_1)
-	 =  HappyAbsSyn5
+happyReduce_3 = happySpecReduce_3  1# happyReduction_3
+happyReduction_3 happy_x_3
+	happy_x_2
+	happy_x_1
+	 =  case happyOut5 happy_x_1 of { happy_var_1 -> 
+	case happyOut6 happy_x_3 of { happy_var_3 -> 
+	happyIn5
+		 (happy_var_3 : happy_var_1
+	)}}
+
+happyReduce_4 = happySpecReduce_2  1# happyReduction_4
+happyReduction_4 happy_x_2
+	happy_x_1
+	 =  case happyOut5 happy_x_1 of { happy_var_1 -> 
+	happyIn5
+		 (happy_var_1
+	)}
+
+happyReduce_5 = happySpecReduce_1  1# happyReduction_5
+happyReduction_5 happy_x_1
+	 =  case happyOut6 happy_x_1 of { happy_var_1 -> 
+	happyIn5
 		 ([happy_var_1]
-	)
-happyReduction_3 _  = notHappyAtAll 
+	)}
 
-happyReduce_4 = happySpecReduce_3  5 happyReduction_4
-happyReduction_4 (HappyAbsSyn6  happy_var_3)
-	_
-	(HappyAbsSyn5  happy_var_1)
-	 =  HappyAbsSyn5
-		 (happy_var_1 ++ [happy_var_3]
-	)
-happyReduction_4 _ _ _  = notHappyAtAll 
-
-happyReduce_5 = happySpecReduce_2  5 happyReduction_5
-happyReduction_5 _
-	(HappyAbsSyn5  happy_var_1)
-	 =  HappyAbsSyn5
-		 (happy_var_1
-	)
-happyReduction_5 _ _  = notHappyAtAll 
-
-happyReduce_6 = happySpecReduce_2  5 happyReduction_6
-happyReduction_6 (HappyAbsSyn5  happy_var_2)
-	_
-	 =  HappyAbsSyn5
-		 (happy_var_2
-	)
-happyReduction_6 _ _  = notHappyAtAll 
-
-happyReduce_7 = happySpecReduce_1  5 happyReduction_7
-happyReduction_7 _
-	 =  HappyAbsSyn5
+happyReduce_6 = happySpecReduce_0  1# happyReduction_6
+happyReduction_6  =  happyIn5
 		 ([]
 	)
 
-happyReduce_8 = happySpecReduce_1  6 happyReduction_8
-happyReduction_8 (HappyAbsSyn8  happy_var_1)
-	 =  HappyAbsSyn6
+happyReduce_7 = happySpecReduce_1  2# happyReduction_7
+happyReduction_7 happy_x_1
+	 =  case happyOut8 happy_x_1 of { happy_var_1 -> 
+	happyIn6
 		 (happy_var_1
-	)
-happyReduction_8 _  = notHappyAtAll 
+	)}
 
-happyReduce_9 = happySpecReduce_1  6 happyReduction_9
-happyReduction_9 (HappyAbsSyn7  happy_var_1)
-	 =  HappyAbsSyn6
+happyReduce_8 = happySpecReduce_1  3# happyReduction_8
+happyReduction_8 happy_x_1
+	 =  case happyOut8 happy_x_1 of { happy_var_1 -> 
+	happyIn7
+		 ([happy_var_1]
+	)}
+
+happyReduce_9 = happySpecReduce_3  3# happyReduction_9
+happyReduction_9 happy_x_3
+	happy_x_2
+	happy_x_1
+	 =  case happyOut7 happy_x_1 of { happy_var_1 -> 
+	case happyOut8 happy_x_3 of { happy_var_3 -> 
+	happyIn7
+		 (happy_var_1 ++ [happy_var_3]
+	)}}
+
+happyReduce_10 = happySpecReduce_2  3# happyReduction_10
+happyReduction_10 happy_x_2
+	happy_x_1
+	 =  case happyOut7 happy_x_1 of { happy_var_1 -> 
+	happyIn7
 		 (happy_var_1
-	)
-happyReduction_9 _  = notHappyAtAll 
+	)}
 
-happyReduce_10 = happySpecReduce_1  6 happyReduction_10
-happyReduction_10 (HappyAbsSyn9  happy_var_1)
-	 =  HappyAbsSyn6
+happyReduce_11 = happySpecReduce_2  3# happyReduction_11
+happyReduction_11 happy_x_2
+	happy_x_1
+	 =  case happyOut7 happy_x_2 of { happy_var_2 -> 
+	happyIn7
+		 (happy_var_2
+	)}
+
+happyReduce_12 = happySpecReduce_1  3# happyReduction_12
+happyReduction_12 happy_x_1
+	 =  happyIn7
+		 ([]
+	)
+
+happyReduce_13 = happySpecReduce_1  4# happyReduction_13
+happyReduction_13 happy_x_1
+	 =  case happyOut10 happy_x_1 of { happy_var_1 -> 
+	happyIn8
 		 (happy_var_1
-	)
-happyReduction_10 _  = notHappyAtAll 
+	)}
 
-happyReduce_11 = happySpecReduce_1  6 happyReduction_11
-happyReduction_11 (HappyAbsSyn10  happy_var_1)
-	 =  HappyAbsSyn6
+happyReduce_14 = happySpecReduce_1  4# happyReduction_14
+happyReduction_14 happy_x_1
+	 =  case happyOut9 happy_x_1 of { happy_var_1 -> 
+	happyIn8
 		 (happy_var_1
-	)
-happyReduction_11 _  = notHappyAtAll 
+	)}
 
-happyReduce_12 = happySpecReduce_1  6 happyReduction_12
-happyReduction_12 (HappyAbsSyn11  happy_var_1)
-	 =  HappyAbsSyn6
+happyReduce_15 = happySpecReduce_1  4# happyReduction_15
+happyReduction_15 happy_x_1
+	 =  case happyOut11 happy_x_1 of { happy_var_1 -> 
+	happyIn8
 		 (happy_var_1
-	)
-happyReduction_12 _  = notHappyAtAll 
+	)}
 
-happyReduce_13 = happySpecReduce_1  6 happyReduction_13
-happyReduction_13 (HappyAbsSyn12  happy_var_1)
-	 =  HappyAbsSyn6
+happyReduce_16 = happySpecReduce_1  4# happyReduction_16
+happyReduction_16 happy_x_1
+	 =  case happyOut12 happy_x_1 of { happy_var_1 -> 
+	happyIn8
 		 (happy_var_1
-	)
-happyReduction_13 _  = notHappyAtAll 
+	)}
 
-happyReduce_14 = happySpecReduce_1  6 happyReduction_14
-happyReduction_14 (HappyAbsSyn13  happy_var_1)
-	 =  HappyAbsSyn6
+happyReduce_17 = happySpecReduce_1  4# happyReduction_17
+happyReduction_17 happy_x_1
+	 =  case happyOut13 happy_x_1 of { happy_var_1 -> 
+	happyIn8
 		 (happy_var_1
-	)
-happyReduction_14 _  = notHappyAtAll 
+	)}
 
-happyReduce_15 = happySpecReduce_1  6 happyReduction_15
-happyReduction_15 (HappyAbsSyn17  happy_var_1)
-	 =  HappyAbsSyn6
+happyReduce_18 = happySpecReduce_1  4# happyReduction_18
+happyReduction_18 happy_x_1
+	 =  case happyOut14 happy_x_1 of { happy_var_1 -> 
+	happyIn8
 		 (happy_var_1
-	)
-happyReduction_15 _  = notHappyAtAll 
+	)}
 
-happyReduce_16 = happySpecReduce_1  6 happyReduction_16
-happyReduction_16 (HappyAbsSyn18  happy_var_1)
-	 =  HappyAbsSyn6
+happyReduce_19 = happySpecReduce_1  4# happyReduction_19
+happyReduction_19 happy_x_1
+	 =  case happyOut15 happy_x_1 of { happy_var_1 -> 
+	happyIn8
 		 (happy_var_1
-	)
-happyReduction_16 _  = notHappyAtAll 
+	)}
 
-happyReduce_17 = happySpecReduce_1  6 happyReduction_17
-happyReduction_17 (HappyAbsSyn19  happy_var_1)
-	 =  HappyAbsSyn6
+happyReduce_20 = happySpecReduce_1  4# happyReduction_20
+happyReduction_20 happy_x_1
+	 =  case happyOut19 happy_x_1 of { happy_var_1 -> 
+	happyIn8
 		 (happy_var_1
-	)
-happyReduction_17 _  = notHappyAtAll 
+	)}
 
-happyReduce_18 = happySpecReduce_1  6 happyReduction_18
-happyReduction_18 (HappyAbsSyn21  happy_var_1)
-	 =  HappyAbsSyn6
+happyReduce_21 = happySpecReduce_1  4# happyReduction_21
+happyReduction_21 happy_x_1
+	 =  case happyOut20 happy_x_1 of { happy_var_1 -> 
+	happyIn8
+		 (happy_var_1
+	)}
+
+happyReduce_22 = happySpecReduce_1  4# happyReduction_22
+happyReduction_22 happy_x_1
+	 =  case happyOut21 happy_x_1 of { happy_var_1 -> 
+	happyIn8
+		 (happy_var_1
+	)}
+
+happyReduce_23 = happySpecReduce_1  4# happyReduction_23
+happyReduction_23 happy_x_1
+	 =  case happyOut23 happy_x_1 of { happy_var_1 -> 
+	happyIn8
 		 (Expression happy_var_1
-	)
-happyReduction_18 _  = notHappyAtAll 
+	)}
 
-happyReduce_19 = happySpecReduce_2  7 happyReduction_19
-happyReduction_19 (HappyAbsSyn20  happy_var_2)
-	_
-	 =  HappyAbsSyn7
+happyReduce_24 = happySpecReduce_2  5# happyReduction_24
+happyReduction_24 happy_x_2
+	happy_x_1
+	 =  case happyOut22 happy_x_2 of { happy_var_2 -> 
+	happyIn9
 		 (Assert happy_var_2
-	)
-happyReduction_19 _ _  = notHappyAtAll 
+	)}
 
-happyReduce_20 = happySpecReduce_3  8 happyReduction_20
-happyReduction_20 (HappyAbsSyn20  happy_var_3)
-	_
-	(HappyTerminal (L.Identifier happy_var_1))
-	 =  HappyAbsSyn8
+happyReduce_25 = happySpecReduce_3  6# happyReduction_25
+happyReduction_25 happy_x_3
+	happy_x_2
+	happy_x_1
+	 =  case happyOutTok happy_x_1 of { (L.Identifier happy_var_1) -> 
+	case happyOut22 happy_x_3 of { happy_var_3 -> 
+	happyIn10
 		 (Assignment (Variable happy_var_1) happy_var_3
-	)
-happyReduction_20 _ _ _  = notHappyAtAll 
+	)}}
 
-happyReduce_21 = happySpecReduce_1  9 happyReduction_21
-happyReduction_21 _
-	 =  HappyAbsSyn9
+happyReduce_26 = happySpecReduce_1  7# happyReduction_26
+happyReduction_26 happy_x_1
+	 =  happyIn11
 		 (Break
 	)
 
-happyReduce_22 = happyReduce 4 10 happyReduction_22
-happyReduction_22 ((HappyAbsSyn22  happy_var_4) `HappyStk`
-	_ `HappyStk`
-	(HappyTerminal (L.Identifier happy_var_2)) `HappyStk`
-	_ `HappyStk`
+happyReduce_27 = happyReduce 4# 8# happyReduction_27
+happyReduction_27 (happy_x_4 `HappyStk`
+	happy_x_3 `HappyStk`
+	happy_x_2 `HappyStk`
+	happy_x_1 `HappyStk`
 	happyRest)
-	 = HappyAbsSyn10
+	 = case happyOutTok happy_x_2 of { (L.Identifier happy_var_2) -> 
+	case happyOut24 happy_x_4 of { happy_var_4 -> 
+	happyIn12
 		 (ClassDef happy_var_2 [] happy_var_4
-	) `HappyStk` happyRest
+	) `HappyStk` happyRest}}
 
-happyReduce_23 = happyReduce 6 10 happyReduction_23
-happyReduction_23 ((HappyAbsSyn22  happy_var_6) `HappyStk`
-	_ `HappyStk`
-	(HappyAbsSyn23  happy_var_4) `HappyStk`
-	_ `HappyStk`
-	(HappyTerminal (L.Identifier happy_var_2)) `HappyStk`
-	_ `HappyStk`
+happyReduce_28 = happyReduce 6# 8# happyReduction_28
+happyReduction_28 (happy_x_6 `HappyStk`
+	happy_x_5 `HappyStk`
+	happy_x_4 `HappyStk`
+	happy_x_3 `HappyStk`
+	happy_x_2 `HappyStk`
+	happy_x_1 `HappyStk`
 	happyRest)
-	 = HappyAbsSyn10
+	 = case happyOutTok happy_x_2 of { (L.Identifier happy_var_2) -> 
+	case happyOut25 happy_x_4 of { happy_var_4 -> 
+	case happyOut24 happy_x_6 of { happy_var_6 -> 
+	happyIn12
 		 (ClassDef happy_var_2 happy_var_4 happy_var_6
-	) `HappyStk` happyRest
+	) `HappyStk` happyRest}}}
 
-happyReduce_24 = happySpecReduce_1  11 happyReduction_24
-happyReduction_24 _
-	 =  HappyAbsSyn11
+happyReduce_29 = happySpecReduce_1  9# happyReduction_29
+happyReduction_29 happy_x_1
+	 =  happyIn13
 		 (Continue
 	)
 
-happyReduce_25 = happyReduce 7 12 happyReduction_25
-happyReduction_25 ((HappyAbsSyn22  happy_var_7) `HappyStk`
-	_ `HappyStk`
-	_ `HappyStk`
-	(HappyAbsSyn23  happy_var_4) `HappyStk`
-	_ `HappyStk`
-	(HappyTerminal (L.Identifier happy_var_2)) `HappyStk`
-	_ `HappyStk`
+happyReduce_30 = happyReduce 7# 10# happyReduction_30
+happyReduction_30 (happy_x_7 `HappyStk`
+	happy_x_6 `HappyStk`
+	happy_x_5 `HappyStk`
+	happy_x_4 `HappyStk`
+	happy_x_3 `HappyStk`
+	happy_x_2 `HappyStk`
+	happy_x_1 `HappyStk`
 	happyRest)
-	 = HappyAbsSyn12
+	 = case happyOutTok happy_x_2 of { (L.Identifier happy_var_2) -> 
+	case happyOut25 happy_x_4 of { happy_var_4 -> 
+	case happyOut24 happy_x_7 of { happy_var_7 -> 
+	happyIn14
 		 (Def happy_var_2 happy_var_4 happy_var_7
-	) `HappyStk` happyRest
+	) `HappyStk` happyRest}}}
 
-happyReduce_26 = happyReduce 6 13 happyReduction_26
-happyReduction_26 ((HappyAbsSyn16  happy_var_6) `HappyStk`
-	(HappyAbsSyn14  happy_var_5) `HappyStk`
-	(HappyAbsSyn22  happy_var_4) `HappyStk`
-	_ `HappyStk`
-	(HappyAbsSyn21  happy_var_2) `HappyStk`
-	_ `HappyStk`
+happyReduce_31 = happyReduce 6# 11# happyReduction_31
+happyReduction_31 (happy_x_6 `HappyStk`
+	happy_x_5 `HappyStk`
+	happy_x_4 `HappyStk`
+	happy_x_3 `HappyStk`
+	happy_x_2 `HappyStk`
+	happy_x_1 `HappyStk`
 	happyRest)
-	 = HappyAbsSyn13
+	 = case happyOut23 happy_x_2 of { happy_var_2 -> 
+	case happyOut24 happy_x_4 of { happy_var_4 -> 
+	case happyOut16 happy_x_5 of { happy_var_5 -> 
+	case happyOut18 happy_x_6 of { happy_var_6 -> 
+	happyIn15
 		 (If ((IfClause happy_var_2 happy_var_4):happy_var_5) happy_var_6
-	) `HappyStk` happyRest
+	) `HappyStk` happyRest}}}}
 
-happyReduce_27 = happySpecReduce_0  14 happyReduction_27
-happyReduction_27  =  HappyAbsSyn14
+happyReduce_32 = happySpecReduce_0  12# happyReduction_32
+happyReduction_32  =  happyIn16
 		 ([]
 	)
 
-happyReduce_28 = happySpecReduce_1  14 happyReduction_28
-happyReduction_28 (HappyAbsSyn15  happy_var_1)
-	 =  HappyAbsSyn14
+happyReduce_33 = happySpecReduce_1  12# happyReduction_33
+happyReduction_33 happy_x_1
+	 =  case happyOut17 happy_x_1 of { happy_var_1 -> 
+	happyIn16
 		 (happy_var_1
-	)
-happyReduction_28 _  = notHappyAtAll 
+	)}
 
-happyReduce_29 = happyReduce 4 15 happyReduction_29
-happyReduction_29 ((HappyAbsSyn22  happy_var_4) `HappyStk`
-	_ `HappyStk`
-	(HappyAbsSyn21  happy_var_2) `HappyStk`
-	_ `HappyStk`
+happyReduce_34 = happyReduce 4# 13# happyReduction_34
+happyReduction_34 (happy_x_4 `HappyStk`
+	happy_x_3 `HappyStk`
+	happy_x_2 `HappyStk`
+	happy_x_1 `HappyStk`
 	happyRest)
-	 = HappyAbsSyn15
+	 = case happyOut23 happy_x_2 of { happy_var_2 -> 
+	case happyOut24 happy_x_4 of { happy_var_4 -> 
+	happyIn17
 		 ([IfClause happy_var_2 happy_var_4]
-	) `HappyStk` happyRest
+	) `HappyStk` happyRest}}
 
-happyReduce_30 = happyReduce 5 15 happyReduction_30
-happyReduction_30 ((HappyAbsSyn15  happy_var_5) `HappyStk`
-	(HappyAbsSyn22  happy_var_4) `HappyStk`
-	_ `HappyStk`
-	(HappyAbsSyn21  happy_var_2) `HappyStk`
-	_ `HappyStk`
+happyReduce_35 = happyReduce 5# 13# happyReduction_35
+happyReduction_35 (happy_x_5 `HappyStk`
+	happy_x_4 `HappyStk`
+	happy_x_3 `HappyStk`
+	happy_x_2 `HappyStk`
+	happy_x_1 `HappyStk`
 	happyRest)
-	 = HappyAbsSyn15
+	 = case happyOut23 happy_x_2 of { happy_var_2 -> 
+	case happyOut24 happy_x_4 of { happy_var_4 -> 
+	case happyOut17 happy_x_5 of { happy_var_5 -> 
+	happyIn17
 		 ((IfClause happy_var_2 happy_var_4):happy_var_5
-	) `HappyStk` happyRest
+	) `HappyStk` happyRest}}}
 
-happyReduce_31 = happySpecReduce_0  16 happyReduction_31
-happyReduction_31  =  HappyAbsSyn16
+happyReduce_36 = happySpecReduce_0  14# happyReduction_36
+happyReduction_36  =  happyIn18
 		 ([]
 	)
 
-happyReduce_32 = happySpecReduce_3  16 happyReduction_32
-happyReduction_32 (HappyAbsSyn22  happy_var_3)
-	_
-	_
-	 =  HappyAbsSyn16
+happyReduce_37 = happySpecReduce_3  14# happyReduction_37
+happyReduction_37 happy_x_3
+	happy_x_2
+	happy_x_1
+	 =  case happyOut24 happy_x_3 of { happy_var_3 -> 
+	happyIn18
 		 (happy_var_3
-	)
-happyReduction_32 _ _ _  = notHappyAtAll 
+	)}
 
-happyReduce_33 = happySpecReduce_1  17 happyReduction_33
-happyReduction_33 _
-	 =  HappyAbsSyn17
+happyReduce_38 = happySpecReduce_1  15# happyReduction_38
+happyReduction_38 happy_x_1
+	 =  happyIn19
 		 (Pass
 	)
 
-happyReduce_34 = happySpecReduce_1  18 happyReduction_34
-happyReduction_34 _
-	 =  HappyAbsSyn18
+happyReduce_39 = happySpecReduce_1  16# happyReduction_39
+happyReduction_39 happy_x_1
+	 =  happyIn20
 		 (Return $ Constant None
 	)
 
-happyReduce_35 = happySpecReduce_2  18 happyReduction_35
-happyReduction_35 (HappyAbsSyn20  happy_var_2)
-	_
-	 =  HappyAbsSyn18
+happyReduce_40 = happySpecReduce_2  16# happyReduction_40
+happyReduction_40 happy_x_2
+	happy_x_1
+	 =  case happyOut22 happy_x_2 of { happy_var_2 -> 
+	happyIn20
 		 (Return happy_var_2
-	)
-happyReduction_35 _ _  = notHappyAtAll 
+	)}
 
-happyReduce_36 = happyReduce 4 19 happyReduction_36
-happyReduction_36 ((HappyAbsSyn22  happy_var_4) `HappyStk`
-	_ `HappyStk`
-	(HappyAbsSyn21  happy_var_2) `HappyStk`
-	_ `HappyStk`
+happyReduce_41 = happyReduce 4# 17# happyReduction_41
+happyReduction_41 (happy_x_4 `HappyStk`
+	happy_x_3 `HappyStk`
+	happy_x_2 `HappyStk`
+	happy_x_1 `HappyStk`
 	happyRest)
-	 = HappyAbsSyn19
+	 = case happyOut23 happy_x_2 of { happy_var_2 -> 
+	case happyOut24 happy_x_4 of { happy_var_4 -> 
+	happyIn21
 		 (While happy_var_2 happy_var_4
-	) `HappyStk` happyRest
+	) `HappyStk` happyRest}}
 
-happyReduce_37 = happySpecReduce_1  20 happyReduction_37
-happyReduction_37 (HappyAbsSyn21  happy_var_1)
-	 =  HappyAbsSyn20
+happyReduce_42 = happySpecReduce_1  18# happyReduction_42
+happyReduction_42 happy_x_1
+	 =  case happyOut23 happy_x_1 of { happy_var_1 -> 
+	happyIn22
 		 (happy_var_1
-	)
-happyReduction_37 _  = notHappyAtAll 
+	)}
 
-happyReduce_38 = happySpecReduce_3  21 happyReduction_38
-happyReduction_38 (HappyAbsSyn27  happy_var_3)
-	_
-	(HappyAbsSyn27  happy_var_1)
-	 =  HappyAbsSyn21
+happyReduce_43 = happySpecReduce_3  19# happyReduction_43
+happyReduction_43 happy_x_3
+	happy_x_2
+	happy_x_1
+	 =  case happyOut23 happy_x_1 of { happy_var_1 -> 
+	case happyOut23 happy_x_3 of { happy_var_3 -> 
+	happyIn23
 		 (BinOp (ArithOp Mul) happy_var_1 happy_var_3
-	)
-happyReduction_38 _ _ _  = notHappyAtAll 
+	)}}
 
-happyReduce_39 = happySpecReduce_3  21 happyReduction_39
-happyReduction_39 (HappyAbsSyn27  happy_var_3)
-	_
-	(HappyAbsSyn27  happy_var_1)
-	 =  HappyAbsSyn21
+happyReduce_44 = happySpecReduce_3  19# happyReduction_44
+happyReduction_44 happy_x_3
+	happy_x_2
+	happy_x_1
+	 =  case happyOut23 happy_x_1 of { happy_var_1 -> 
+	case happyOut23 happy_x_3 of { happy_var_3 -> 
+	happyIn23
 		 (BinOp (ArithOp Div) happy_var_1 happy_var_3
-	)
-happyReduction_39 _ _ _  = notHappyAtAll 
+	)}}
 
-happyReduce_40 = happySpecReduce_3  21 happyReduction_40
-happyReduction_40 (HappyAbsSyn27  happy_var_3)
-	_
-	(HappyAbsSyn27  happy_var_1)
-	 =  HappyAbsSyn21
+happyReduce_45 = happySpecReduce_3  19# happyReduction_45
+happyReduction_45 happy_x_3
+	happy_x_2
+	happy_x_1
+	 =  case happyOut23 happy_x_1 of { happy_var_1 -> 
+	case happyOut23 happy_x_3 of { happy_var_3 -> 
+	happyIn23
 		 (BinOp (ArithOp Add) happy_var_1 happy_var_3
-	)
-happyReduction_40 _ _ _  = notHappyAtAll 
+	)}}
 
-happyReduce_41 = happySpecReduce_3  21 happyReduction_41
-happyReduction_41 (HappyAbsSyn27  happy_var_3)
-	_
-	(HappyAbsSyn27  happy_var_1)
-	 =  HappyAbsSyn21
+happyReduce_46 = happySpecReduce_3  19# happyReduction_46
+happyReduction_46 happy_x_3
+	happy_x_2
+	happy_x_1
+	 =  case happyOut23 happy_x_1 of { happy_var_1 -> 
+	case happyOut23 happy_x_3 of { happy_var_3 -> 
+	happyIn23
 		 (BinOp (ArithOp Sub) happy_var_1 happy_var_3
-	)
-happyReduction_41 _ _ _  = notHappyAtAll 
+	)}}
 
-happyReduce_42 = happySpecReduce_3  21 happyReduction_42
-happyReduction_42 (HappyAbsSyn27  happy_var_3)
-	_
-	(HappyAbsSyn27  happy_var_1)
-	 =  HappyAbsSyn21
+happyReduce_47 = happySpecReduce_3  19# happyReduction_47
+happyReduction_47 happy_x_3
+	happy_x_2
+	happy_x_1
+	 =  case happyOut23 happy_x_1 of { happy_var_1 -> 
+	case happyOut23 happy_x_3 of { happy_var_3 -> 
+	happyIn23
 		 (BinOp (BoolOp Eq) happy_var_1 happy_var_3
-	)
-happyReduction_42 _ _ _  = notHappyAtAll 
+	)}}
 
-happyReduce_43 = happySpecReduce_3  21 happyReduction_43
-happyReduction_43 (HappyAbsSyn27  happy_var_3)
-	_
-	(HappyAbsSyn27  happy_var_1)
-	 =  HappyAbsSyn21
+happyReduce_48 = happySpecReduce_3  19# happyReduction_48
+happyReduction_48 happy_x_3
+	happy_x_2
+	happy_x_1
+	 =  case happyOut23 happy_x_1 of { happy_var_1 -> 
+	case happyOut23 happy_x_3 of { happy_var_3 -> 
+	happyIn23
 		 (BinOp (BoolOp NotEq) happy_var_1 happy_var_3
-	)
-happyReduction_43 _ _ _  = notHappyAtAll 
+	)}}
 
-happyReduce_44 = happySpecReduce_3  21 happyReduction_44
-happyReduction_44 (HappyAbsSyn27  happy_var_3)
-	_
-	(HappyAbsSyn27  happy_var_1)
-	 =  HappyAbsSyn21
+happyReduce_49 = happySpecReduce_3  19# happyReduction_49
+happyReduction_49 happy_x_3
+	happy_x_2
+	happy_x_1
+	 =  case happyOut23 happy_x_1 of { happy_var_1 -> 
+	case happyOut23 happy_x_3 of { happy_var_3 -> 
+	happyIn23
 		 (BinOp (BoolOp LessThan) happy_var_1 happy_var_3
-	)
-happyReduction_44 _ _ _  = notHappyAtAll 
+	)}}
 
-happyReduce_45 = happySpecReduce_3  21 happyReduction_45
-happyReduction_45 (HappyAbsSyn27  happy_var_3)
-	_
-	(HappyAbsSyn27  happy_var_1)
-	 =  HappyAbsSyn21
+happyReduce_50 = happySpecReduce_3  19# happyReduction_50
+happyReduction_50 happy_x_3
+	happy_x_2
+	happy_x_1
+	 =  case happyOut23 happy_x_1 of { happy_var_1 -> 
+	case happyOut23 happy_x_3 of { happy_var_3 -> 
+	happyIn23
 		 (BinOp (BoolOp LessThanEq) happy_var_1 happy_var_3
-	)
-happyReduction_45 _ _ _  = notHappyAtAll 
+	)}}
 
-happyReduce_46 = happySpecReduce_3  21 happyReduction_46
-happyReduction_46 (HappyAbsSyn27  happy_var_3)
-	_
-	(HappyAbsSyn27  happy_var_1)
-	 =  HappyAbsSyn21
+happyReduce_51 = happySpecReduce_3  19# happyReduction_51
+happyReduction_51 happy_x_3
+	happy_x_2
+	happy_x_1
+	 =  case happyOut23 happy_x_1 of { happy_var_1 -> 
+	case happyOut23 happy_x_3 of { happy_var_3 -> 
+	happyIn23
 		 (BinOp (BoolOp GreaterThan) happy_var_1 happy_var_3
-	)
-happyReduction_46 _ _ _  = notHappyAtAll 
+	)}}
 
-happyReduce_47 = happySpecReduce_3  21 happyReduction_47
-happyReduction_47 (HappyAbsSyn27  happy_var_3)
-	_
-	(HappyAbsSyn27  happy_var_1)
-	 =  HappyAbsSyn21
+happyReduce_52 = happySpecReduce_3  19# happyReduction_52
+happyReduction_52 happy_x_3
+	happy_x_2
+	happy_x_1
+	 =  case happyOut23 happy_x_1 of { happy_var_1 -> 
+	case happyOut23 happy_x_3 of { happy_var_3 -> 
+	happyIn23
 		 (BinOp (BoolOp GreaterThanEq) happy_var_1 happy_var_3
-	)
-happyReduction_47 _ _ _  = notHappyAtAll 
+	)}}
 
-happyReduce_48 = happySpecReduce_1  21 happyReduction_48
-happyReduction_48 (HappyAbsSyn27  happy_var_1)
-	 =  HappyAbsSyn21
+happyReduce_53 = happySpecReduce_1  19# happyReduction_53
+happyReduction_53 happy_x_1
+	 =  case happyOut29 happy_x_1 of { happy_var_1 -> 
+	happyIn23
 		 (happy_var_1
-	)
-happyReduction_48 _  = notHappyAtAll 
+	)}
 
-happyReduce_49 = happyReduce 4 22 happyReduction_49
-happyReduction_49 (_ `HappyStk`
-	(HappyAbsSyn5  happy_var_3) `HappyStk`
-	_ `HappyStk`
-	_ `HappyStk`
+happyReduce_54 = happyReduce 4# 20# happyReduction_54
+happyReduction_54 (happy_x_4 `HappyStk`
+	happy_x_3 `HappyStk`
+	happy_x_2 `HappyStk`
+	happy_x_1 `HappyStk`
 	happyRest)
-	 = HappyAbsSyn22
+	 = case happyOut5 happy_x_3 of { happy_var_3 -> 
+	happyIn24
 		 (happy_var_3
-	) `HappyStk` happyRest
+	) `HappyStk` happyRest}
 
-happyReduce_50 = happySpecReduce_0  23 happyReduction_50
-happyReduction_50  =  HappyAbsSyn23
+happyReduce_55 = happySpecReduce_0  21# happyReduction_55
+happyReduction_55  =  happyIn25
 		 ([]
 	)
 
-happyReduce_51 = happySpecReduce_1  23 happyReduction_51
-happyReduction_51 (HappyAbsSyn24  happy_var_1)
-	 =  HappyAbsSyn23
+happyReduce_56 = happySpecReduce_1  21# happyReduction_56
+happyReduction_56 happy_x_1
+	 =  case happyOut26 happy_x_1 of { happy_var_1 -> 
+	happyIn25
 		 (happy_var_1
-	)
-happyReduction_51 _  = notHappyAtAll 
+	)}
 
-happyReduce_52 = happySpecReduce_1  24 happyReduction_52
-happyReduction_52 (HappyAbsSyn25  happy_var_1)
-	 =  HappyAbsSyn24
+happyReduce_57 = happySpecReduce_1  22# happyReduction_57
+happyReduction_57 happy_x_1
+	 =  case happyOut27 happy_x_1 of { happy_var_1 -> 
+	happyIn26
 		 ([happy_var_1]
-	)
-happyReduction_52 _  = notHappyAtAll 
+	)}
 
-happyReduce_53 = happySpecReduce_3  24 happyReduction_53
-happyReduction_53 (HappyAbsSyn24  happy_var_3)
-	_
-	(HappyAbsSyn25  happy_var_1)
-	 =  HappyAbsSyn24
+happyReduce_58 = happySpecReduce_3  22# happyReduction_58
+happyReduction_58 happy_x_3
+	happy_x_2
+	happy_x_1
+	 =  case happyOut27 happy_x_1 of { happy_var_1 -> 
+	case happyOut26 happy_x_3 of { happy_var_3 -> 
+	happyIn26
 		 (happy_var_1:happy_var_3
-	)
-happyReduction_53 _ _ _  = notHappyAtAll 
+	)}}
 
-happyReduce_54 = happySpecReduce_1  25 happyReduction_54
-happyReduction_54 (HappyTerminal (L.Identifier happy_var_1))
-	 =  HappyAbsSyn25
+happyReduce_59 = happySpecReduce_1  23# happyReduction_59
+happyReduction_59 happy_x_1
+	 =  case happyOutTok happy_x_1 of { (L.Identifier happy_var_1) -> 
+	happyIn27
 		 (happy_var_1
-	)
-happyReduction_54 _  = notHappyAtAll 
+	)}
 
-happyReduce_55 = happySpecReduce_1  26 happyReduction_55
-happyReduction_55 (HappyTerminal (L.Identifier happy_var_1))
-	 =  HappyAbsSyn26
+happyReduce_60 = happySpecReduce_1  24# happyReduction_60
+happyReduction_60 happy_x_1
+	 =  case happyOutTok happy_x_1 of { (L.Identifier happy_var_1) -> 
+	happyIn28
 		 (Variable happy_var_1
-	)
-happyReduction_55 _  = notHappyAtAll 
+	)}
 
-happyReduce_56 = happySpecReduce_1  26 happyReduction_56
-happyReduction_56 (HappyTerminal (L.Literal happy_var_1))
-	 =  HappyAbsSyn26
+happyReduce_61 = happySpecReduce_1  24# happyReduction_61
+happyReduction_61 happy_x_1
+	 =  case happyOutTok happy_x_1 of { (L.Literal happy_var_1) -> 
+	happyIn28
 		 (Constant happy_var_1
-	)
-happyReduction_56 _  = notHappyAtAll 
+	)}
 
-happyReduce_57 = happySpecReduce_1  27 happyReduction_57
-happyReduction_57 (HappyAbsSyn26  happy_var_1)
-	 =  HappyAbsSyn27
+happyReduce_62 = happySpecReduce_1  25# happyReduction_62
+happyReduction_62 happy_x_1
+	 =  case happyOut28 happy_x_1 of { happy_var_1 -> 
+	happyIn29
 		 (happy_var_1
-	)
-happyReduction_57 _  = notHappyAtAll 
+	)}
 
-happyReduce_58 = happySpecReduce_1  27 happyReduction_58
-happyReduction_58 (HappyAbsSyn28  happy_var_1)
-	 =  HappyAbsSyn27
+happyReduce_63 = happySpecReduce_1  25# happyReduction_63
+happyReduction_63 happy_x_1
+	 =  case happyOut30 happy_x_1 of { happy_var_1 -> 
+	happyIn29
 		 (happy_var_1
-	)
-happyReduction_58 _  = notHappyAtAll 
+	)}
 
-happyReduce_59 = happySpecReduce_1  27 happyReduction_59
-happyReduction_59 (HappyAbsSyn29  happy_var_1)
-	 =  HappyAbsSyn27
+happyReduce_64 = happySpecReduce_1  25# happyReduction_64
+happyReduction_64 happy_x_1
+	 =  case happyOut31 happy_x_1 of { happy_var_1 -> 
+	happyIn29
 		 (happy_var_1
-	)
-happyReduction_59 _  = notHappyAtAll 
+	)}
 
-happyReduce_60 = happySpecReduce_3  28 happyReduction_60
-happyReduction_60 (HappyTerminal (L.Identifier happy_var_3))
-	_
-	(HappyAbsSyn27  happy_var_1)
-	 =  HappyAbsSyn28
+happyReduce_65 = happySpecReduce_3  26# happyReduction_65
+happyReduction_65 happy_x_3
+	happy_x_2
+	happy_x_1
+	 =  case happyOut29 happy_x_1 of { happy_var_1 -> 
+	case happyOutTok happy_x_3 of { (L.Identifier happy_var_3) -> 
+	happyIn30
 		 (Attribute happy_var_1 happy_var_3
-	)
-happyReduction_60 _ _ _  = notHappyAtAll 
+	)}}
 
-happyReduce_61 = happyReduce 4 29 happyReduction_61
-happyReduction_61 (_ `HappyStk`
-	(HappyAbsSyn30  happy_var_3) `HappyStk`
-	_ `HappyStk`
-	(HappyAbsSyn27  happy_var_1) `HappyStk`
+happyReduce_66 = happyReduce 4# 27# happyReduction_66
+happyReduction_66 (happy_x_4 `HappyStk`
+	happy_x_3 `HappyStk`
+	happy_x_2 `HappyStk`
+	happy_x_1 `HappyStk`
 	happyRest)
-	 = HappyAbsSyn29
+	 = case happyOut29 happy_x_1 of { happy_var_1 -> 
+	case happyOut32 happy_x_3 of { happy_var_3 -> 
+	happyIn31
 		 (Call happy_var_1 happy_var_3
-	) `HappyStk` happyRest
+	) `HappyStk` happyRest}}
 
-happyReduce_62 = happySpecReduce_0  30 happyReduction_62
-happyReduction_62  =  HappyAbsSyn30
+happyReduce_67 = happySpecReduce_0  28# happyReduction_67
+happyReduction_67  =  happyIn32
 		 ([]
 	)
 
-happyReduce_63 = happySpecReduce_1  30 happyReduction_63
-happyReduction_63 (HappyAbsSyn31  happy_var_1)
-	 =  HappyAbsSyn30
+happyReduce_68 = happySpecReduce_1  28# happyReduction_68
+happyReduction_68 happy_x_1
+	 =  case happyOut33 happy_x_1 of { happy_var_1 -> 
+	happyIn32
 		 (happy_var_1
-	)
-happyReduction_63 _  = notHappyAtAll 
+	)}
 
-happyReduce_64 = happySpecReduce_1  31 happyReduction_64
-happyReduction_64 (HappyAbsSyn32  happy_var_1)
-	 =  HappyAbsSyn31
+happyReduce_69 = happySpecReduce_1  29# happyReduction_69
+happyReduction_69 happy_x_1
+	 =  case happyOut34 happy_x_1 of { happy_var_1 -> 
+	happyIn33
 		 ([happy_var_1]
-	)
-happyReduction_64 _  = notHappyAtAll 
+	)}
 
-happyReduce_65 = happySpecReduce_3  31 happyReduction_65
-happyReduction_65 (HappyAbsSyn31  happy_var_3)
-	_
-	(HappyAbsSyn32  happy_var_1)
-	 =  HappyAbsSyn31
+happyReduce_70 = happySpecReduce_3  29# happyReduction_70
+happyReduction_70 happy_x_3
+	happy_x_2
+	happy_x_1
+	 =  case happyOut34 happy_x_1 of { happy_var_1 -> 
+	case happyOut33 happy_x_3 of { happy_var_3 -> 
+	happyIn33
 		 (happy_var_1:happy_var_3
-	)
-happyReduction_65 _ _ _  = notHappyAtAll 
+	)}}
 
-happyReduce_66 = happySpecReduce_1  32 happyReduction_66
-happyReduction_66 (HappyAbsSyn27  happy_var_1)
-	 =  HappyAbsSyn32
+happyReduce_71 = happySpecReduce_1  30# happyReduction_71
+happyReduction_71 happy_x_1
+	 =  case happyOut23 happy_x_1 of { happy_var_1 -> 
+	happyIn34
 		 (happy_var_1
-	)
-happyReduction_66 _  = notHappyAtAll 
+	)}
 
 happyNewToken action sts stk
 	= L.lexer(\tk -> 
-	let cont i = action i i tk (HappyState action) sts stk in
+	let cont i = happyDoAction i tk action sts stk in
 	case tk of {
-	L.EOF -> action 65 65 tk (HappyState action) sts stk;
-	L.Identifier happy_dollar_dollar -> cont 33;
-	L.Literal happy_dollar_dollar -> cont 34;
-	L.Newline -> cont 35;
-	L.Punctuation "+" -> cont 36;
-	L.Punctuation "-" -> cont 37;
-	L.Punctuation "*" -> cont 38;
-	L.Punctuation "/" -> cont 39;
-	L.Punctuation "==" -> cont 40;
-	L.Punctuation "!=" -> cont 41;
-	L.Punctuation "<" -> cont 42;
-	L.Punctuation "<=" -> cont 43;
-	L.Punctuation ">" -> cont 44;
-	L.Punctuation ">=" -> cont 45;
-	L.Punctuation "." -> cont 46;
-	L.Punctuation "(" -> cont 47;
-	L.Punctuation ")" -> cont 48;
-	L.Punctuation ":" -> cont 49;
-	L.Punctuation "," -> cont 50;
-	L.Punctuation "=" -> cont 51;
-	L.Indent -> cont 52;
-	L.Dedent -> cont 53;
-	L.Keyword "assert" -> cont 54;
-	L.Keyword "break" -> cont 55;
-	L.Keyword "class" -> cont 56;
-	L.Keyword "continue" -> cont 57;
-	L.Keyword "def" -> cont 58;
-	L.Keyword "elif" -> cont 59;
-	L.Keyword "else" -> cont 60;
-	L.Keyword "if" -> cont 61;
-	L.Keyword "pass" -> cont 62;
-	L.Keyword "return" -> cont 63;
-	L.Keyword "while" -> cont 64;
+	L.EOF -> happyDoAction 33# tk action sts stk;
+	L.Identifier happy_dollar_dollar -> cont 1#;
+	L.Literal happy_dollar_dollar -> cont 2#;
+	L.Newline -> cont 3#;
+	L.Punctuation "+" -> cont 4#;
+	L.Punctuation "-" -> cont 5#;
+	L.Punctuation "*" -> cont 6#;
+	L.Punctuation "/" -> cont 7#;
+	L.Punctuation "==" -> cont 8#;
+	L.Punctuation "!=" -> cont 9#;
+	L.Punctuation "<" -> cont 10#;
+	L.Punctuation "<=" -> cont 11#;
+	L.Punctuation ">" -> cont 12#;
+	L.Punctuation ">=" -> cont 13#;
+	L.Punctuation "." -> cont 14#;
+	L.Punctuation "(" -> cont 15#;
+	L.Punctuation ")" -> cont 16#;
+	L.Punctuation ":" -> cont 17#;
+	L.Punctuation "," -> cont 18#;
+	L.Punctuation "=" -> cont 19#;
+	L.Indent -> cont 20#;
+	L.Dedent -> cont 21#;
+	L.Keyword "assert" -> cont 22#;
+	L.Keyword "break" -> cont 23#;
+	L.Keyword "class" -> cont 24#;
+	L.Keyword "continue" -> cont 25#;
+	L.Keyword "def" -> cont 26#;
+	L.Keyword "elif" -> cont 27#;
+	L.Keyword "else" -> cont 28#;
+	L.Keyword "if" -> cont 29#;
+	L.Keyword "pass" -> cont 30#;
+	L.Keyword "return" -> cont 31#;
+	L.Keyword "while" -> cont 32#;
 	_ -> happyError' tk
 	})
 
-happyError_ 65 tk = happyError' tk
+happyError_ 33# tk = happyError' tk
 happyError_ _ tk = happyError' tk
 
 happyThen :: () => L.P a -> (a -> L.P b) -> L.P b
@@ -1159,11 +949,12 @@ happyError' :: () => (L.Token) -> L.P a
 happyError' tk = parseError tk
 
 parseTokens = happySomeParser where
-  happySomeParser = happyThen (happyParse action_0) (\x -> case x of {HappyAbsSyn4 z -> happyReturn z; _other -> notHappyAtAll })
+  happySomeParser = happyThen (happyParse 0#) (\x -> happyReturn (happyOut4 x))
 
 happySeq = happyDontSeq
 
 
+tokenize code = L.tokenize code
 parse code = L.evalP parseTokens code
 
 parseError :: L.Token -> a
@@ -1177,10 +968,24 @@ parseError t = error $ "Parse error: " ++ show t
 
 {-# LINE 13 "templates/GenericTemplate.hs" #-}
 
+
+
+
+
+-- Do not remove this comment. Required to fix CPP parsing when using GCC and a clang-compiled alex.
+#if __GLASGOW_HASKELL__ > 706
+#define LT(n,m) ((Happy_GHC_Exts.tagToEnum# (n Happy_GHC_Exts.<# m)) :: Bool)
+#define GTE(n,m) ((Happy_GHC_Exts.tagToEnum# (n Happy_GHC_Exts.>=# m)) :: Bool)
+#define EQ(n,m) ((Happy_GHC_Exts.tagToEnum# (n Happy_GHC_Exts.==# m)) :: Bool)
+#else
+#define LT(n,m) (n Happy_GHC_Exts.<# m)
+#define GTE(n,m) (n Happy_GHC_Exts.>=# m)
+#define EQ(n,m) (n Happy_GHC_Exts.==# m)
+#endif
 {-# LINE 46 "templates/GenericTemplate.hs" #-}
 
 
-
+data Happy_IntList = HappyCons Happy_GHC_Exts.Int# Happy_IntList
 
 
 
@@ -1203,121 +1008,163 @@ happyParse start_state = happyNewToken start_state notHappyAtAll notHappyAtAll
 -----------------------------------------------------------------------------
 -- Accepting the parse
 
--- If the current token is (1), it means we've just accepted a partial
+-- If the current token is 0#, it means we've just accepted a partial
 -- parse (a %partial parser).  We must ignore the saved token on the top of
 -- the stack in this case.
-happyAccept (1) tk st sts (_ `HappyStk` ans `HappyStk` _) =
+happyAccept 0# tk st sts (_ `HappyStk` ans `HappyStk` _) =
         happyReturn1 ans
 happyAccept j tk st sts (HappyStk ans _) = 
-         (happyReturn1 ans)
+        (happyTcHack j (happyTcHack st)) (happyReturn1 ans)
 
 -----------------------------------------------------------------------------
 -- Arrays only: do the next action
 
-{-# LINE 155 "templates/GenericTemplate.hs" #-}
+
+
+happyDoAction i tk st
+        = {- nothing -}
+
+
+          case action of
+                0#           -> {- nothing -}
+                                     happyFail i tk st
+                -1#          -> {- nothing -}
+                                     happyAccept i tk st
+                n | LT(n,(0# :: Happy_GHC_Exts.Int#)) -> {- nothing -}
+
+                                                   (happyReduceArr Happy_Data_Array.! rule) i tk st
+                                                   where rule = (Happy_GHC_Exts.I# ((Happy_GHC_Exts.negateInt# ((n Happy_GHC_Exts.+# (1# :: Happy_GHC_Exts.Int#))))))
+                n                 -> {- nothing -}
+
+
+                                     happyShift new_state i tk st
+                                     where new_state = (n Happy_GHC_Exts.-# (1# :: Happy_GHC_Exts.Int#))
+   where off    = indexShortOffAddr happyActOffsets st
+         off_i  = (off Happy_GHC_Exts.+# i)
+         check  = if GTE(off_i,(0# :: Happy_GHC_Exts.Int#))
+                  then EQ(indexShortOffAddr happyCheck off_i, i)
+                  else False
+         action
+          | check     = indexShortOffAddr happyTable off_i
+          | otherwise = indexShortOffAddr happyDefActions st
+
+
+indexShortOffAddr (HappyA# arr) off =
+        Happy_GHC_Exts.narrow16Int# i
+  where
+        i = Happy_GHC_Exts.word2Int# (Happy_GHC_Exts.or# (Happy_GHC_Exts.uncheckedShiftL# high 8#) low)
+        high = Happy_GHC_Exts.int2Word# (Happy_GHC_Exts.ord# (Happy_GHC_Exts.indexCharOffAddr# arr (off' Happy_GHC_Exts.+# 1#)))
+        low  = Happy_GHC_Exts.int2Word# (Happy_GHC_Exts.ord# (Happy_GHC_Exts.indexCharOffAddr# arr off'))
+        off' = off Happy_GHC_Exts.*# 2#
+
+
+
+
+
+data HappyAddr = HappyA# Happy_GHC_Exts.Addr#
+
+
+
 
 -----------------------------------------------------------------------------
 -- HappyState data type (not arrays)
 
-
-
-newtype HappyState b c = HappyState
-        (Int ->                    -- token number
-         Int ->                    -- token number (yes, again)
-         b ->                           -- token semantic value
-         HappyState b c ->              -- current state
-         [HappyState b c] ->            -- state stack
-         c)
-
-
+{-# LINE 170 "templates/GenericTemplate.hs" #-}
 
 -----------------------------------------------------------------------------
 -- Shifting a token
 
-happyShift new_state (1) tk st sts stk@(x `HappyStk` _) =
-     let i = (case x of { HappyErrorToken (i) -> i }) in
+happyShift new_state 0# tk st sts stk@(x `HappyStk` _) =
+     let i = (case Happy_GHC_Exts.unsafeCoerce# x of { (Happy_GHC_Exts.I# (i)) -> i }) in
 --     trace "shifting the error token" $
-     new_state i i tk (HappyState (new_state)) ((st):(sts)) (stk)
+     happyDoAction i tk new_state (HappyCons (st) (sts)) (stk)
 
 happyShift new_state i tk st sts stk =
-     happyNewToken new_state ((st):(sts)) ((HappyTerminal (tk))`HappyStk`stk)
+     happyNewToken new_state (HappyCons (st) (sts)) ((happyInTok (tk))`HappyStk`stk)
 
 -- happyReduce is specialised for the common cases.
 
-happySpecReduce_0 i fn (1) tk st sts stk
-     = happyFail (1) tk st sts stk
-happySpecReduce_0 nt fn j tk st@((HappyState (action))) sts stk
-     = action nt j tk st ((st):(sts)) (fn `HappyStk` stk)
+happySpecReduce_0 i fn 0# tk st sts stk
+     = happyFail 0# tk st sts stk
+happySpecReduce_0 nt fn j tk st@((action)) sts stk
+     = happyGoto nt j tk st (HappyCons (st) (sts)) (fn `HappyStk` stk)
 
-happySpecReduce_1 i fn (1) tk st sts stk
-     = happyFail (1) tk st sts stk
-happySpecReduce_1 nt fn j tk _ sts@(((st@(HappyState (action))):(_))) (v1`HappyStk`stk')
+happySpecReduce_1 i fn 0# tk st sts stk
+     = happyFail 0# tk st sts stk
+happySpecReduce_1 nt fn j tk _ sts@((HappyCons (st@(action)) (_))) (v1`HappyStk`stk')
      = let r = fn v1 in
-       happySeq r (action nt j tk st sts (r `HappyStk` stk'))
+       happySeq r (happyGoto nt j tk st sts (r `HappyStk` stk'))
 
-happySpecReduce_2 i fn (1) tk st sts stk
-     = happyFail (1) tk st sts stk
-happySpecReduce_2 nt fn j tk _ ((_):(sts@(((st@(HappyState (action))):(_))))) (v1`HappyStk`v2`HappyStk`stk')
+happySpecReduce_2 i fn 0# tk st sts stk
+     = happyFail 0# tk st sts stk
+happySpecReduce_2 nt fn j tk _ (HappyCons (_) (sts@((HappyCons (st@(action)) (_))))) (v1`HappyStk`v2`HappyStk`stk')
      = let r = fn v1 v2 in
-       happySeq r (action nt j tk st sts (r `HappyStk` stk'))
+       happySeq r (happyGoto nt j tk st sts (r `HappyStk` stk'))
 
-happySpecReduce_3 i fn (1) tk st sts stk
-     = happyFail (1) tk st sts stk
-happySpecReduce_3 nt fn j tk _ ((_):(((_):(sts@(((st@(HappyState (action))):(_))))))) (v1`HappyStk`v2`HappyStk`v3`HappyStk`stk')
+happySpecReduce_3 i fn 0# tk st sts stk
+     = happyFail 0# tk st sts stk
+happySpecReduce_3 nt fn j tk _ (HappyCons (_) ((HappyCons (_) (sts@((HappyCons (st@(action)) (_))))))) (v1`HappyStk`v2`HappyStk`v3`HappyStk`stk')
      = let r = fn v1 v2 v3 in
-       happySeq r (action nt j tk st sts (r `HappyStk` stk'))
+       happySeq r (happyGoto nt j tk st sts (r `HappyStk` stk'))
 
-happyReduce k i fn (1) tk st sts stk
-     = happyFail (1) tk st sts stk
+happyReduce k i fn 0# tk st sts stk
+     = happyFail 0# tk st sts stk
 happyReduce k nt fn j tk st sts stk
-     = case happyDrop (k - ((1) :: Int)) sts of
-         sts1@(((st1@(HappyState (action))):(_))) ->
+     = case happyDrop (k Happy_GHC_Exts.-# (1# :: Happy_GHC_Exts.Int#)) sts of
+         sts1@((HappyCons (st1@(action)) (_))) ->
                 let r = fn stk in  -- it doesn't hurt to always seq here...
-                happyDoSeq r (action nt j tk st1 sts1 r)
+                happyDoSeq r (happyGoto nt j tk st1 sts1 r)
 
-happyMonadReduce k nt fn (1) tk st sts stk
-     = happyFail (1) tk st sts stk
+happyMonadReduce k nt fn 0# tk st sts stk
+     = happyFail 0# tk st sts stk
 happyMonadReduce k nt fn j tk st sts stk =
-      case happyDrop k ((st):(sts)) of
-        sts1@(((st1@(HappyState (action))):(_))) ->
+      case happyDrop k (HappyCons (st) (sts)) of
+        sts1@((HappyCons (st1@(action)) (_))) ->
           let drop_stk = happyDropStk k stk in
-          happyThen1 (fn stk tk) (\r -> action nt j tk st1 sts1 (r `HappyStk` drop_stk))
+          happyThen1 (fn stk tk) (\r -> happyGoto nt j tk st1 sts1 (r `HappyStk` drop_stk))
 
-happyMonad2Reduce k nt fn (1) tk st sts stk
-     = happyFail (1) tk st sts stk
+happyMonad2Reduce k nt fn 0# tk st sts stk
+     = happyFail 0# tk st sts stk
 happyMonad2Reduce k nt fn j tk st sts stk =
-      case happyDrop k ((st):(sts)) of
-        sts1@(((st1@(HappyState (action))):(_))) ->
+      case happyDrop k (HappyCons (st) (sts)) of
+        sts1@((HappyCons (st1@(action)) (_))) ->
          let drop_stk = happyDropStk k stk
 
+             off = indexShortOffAddr happyGotoOffsets st1
+             off_i = (off Happy_GHC_Exts.+# nt)
+             new_state = indexShortOffAddr happyTable off_i
 
 
-
-
-             new_state = action
 
           in
           happyThen1 (fn stk tk) (\r -> happyNewToken new_state sts1 (r `HappyStk` drop_stk))
 
-happyDrop (0) l = l
-happyDrop n ((_):(t)) = happyDrop (n - ((1) :: Int)) t
+happyDrop 0# l = l
+happyDrop n (HappyCons (_) (t)) = happyDrop (n Happy_GHC_Exts.-# (1# :: Happy_GHC_Exts.Int#)) t
 
-happyDropStk (0) l = l
-happyDropStk n (x `HappyStk` xs) = happyDropStk (n - ((1)::Int)) xs
+happyDropStk 0# l = l
+happyDropStk n (x `HappyStk` xs) = happyDropStk (n Happy_GHC_Exts.-# (1#::Happy_GHC_Exts.Int#)) xs
 
 -----------------------------------------------------------------------------
 -- Moving to a new state after a reduction
 
-{-# LINE 256 "templates/GenericTemplate.hs" #-}
-happyGoto action j tk st = action j j tk (HappyState action)
+
+happyGoto nt j tk st = 
+   {- nothing -}
+   happyDoAction j tk new_state
+   where off = indexShortOffAddr happyGotoOffsets st
+         off_i = (off Happy_GHC_Exts.+# nt)
+         new_state = indexShortOffAddr happyTable off_i
+
+
 
 
 -----------------------------------------------------------------------------
--- Error recovery ((1) is the error token)
+-- Error recovery (0# is the error token)
 
 -- parse error if we are in recovery and we fail again
-happyFail (1) tk old_st _ stk@(x `HappyStk` _) =
-     let i = (case x of { HappyErrorToken (i) -> i }) in
+happyFail 0# tk old_st _ stk@(x `HappyStk` _) =
+     let i = (case Happy_GHC_Exts.unsafeCoerce# x of { (Happy_GHC_Exts.I# (i)) -> i }) in
 --      trace "failing" $ 
         happyError_ i tk
 
@@ -1326,17 +1173,17 @@ happyFail (1) tk old_st _ stk@(x `HappyStk` _) =
     for now --SDM
 
 -- discard a state
-happyFail  (1) tk old_st (((HappyState (action))):(sts)) 
+happyFail  0# tk old_st (HappyCons ((action)) (sts)) 
                                                 (saved_tok `HappyStk` _ `HappyStk` stk) =
 --      trace ("discarding state, depth " ++ show (length stk))  $
-        action (1) (1) tk (HappyState (action)) sts ((saved_tok`HappyStk`stk))
+        happyDoAction 0# tk action sts ((saved_tok`HappyStk`stk))
 -}
 
 -- Enter error recovery: generate an error token,
 --                       save the old token and carry on.
-happyFail  i tk (HappyState (action)) sts stk =
+happyFail  i tk (action) sts stk =
 --      trace "entering error recovery" $
-        action (1) (1) tk (HappyState (action)) sts ( (HappyErrorToken (i)) `HappyStk` stk)
+        happyDoAction 0# tk action sts ( (Happy_GHC_Exts.unsafeCoerce# (Happy_GHC_Exts.I# (i))) `HappyStk` stk)
 
 -- Internal happy errors:
 
@@ -1347,9 +1194,9 @@ notHappyAtAll = error "Internal Happy error\n"
 -- Hack to get the typechecker to accept our action functions
 
 
-
-
-
+happyTcHack :: Happy_GHC_Exts.Int# -> a -> a
+happyTcHack x y = y
+{-# INLINE happyTcHack #-}
 
 
 -----------------------------------------------------------------------------
@@ -1367,7 +1214,14 @@ happyDontSeq a b = b
 -- of deciding to inline happyGoto everywhere, which increases the size of
 -- the generated parser quite a bit.
 
-{-# LINE 322 "templates/GenericTemplate.hs" #-}
+
+{-# NOINLINE happyDoAction #-}
+{-# NOINLINE happyTable #-}
+{-# NOINLINE happyCheck #-}
+{-# NOINLINE happyActOffsets #-}
+{-# NOINLINE happyGotoOffsets #-}
+{-# NOINLINE happyDefActions #-}
+
 {-# NOINLINE happyShift #-}
 {-# NOINLINE happySpecReduce_0 #-}
 {-# NOINLINE happySpecReduce_1 #-}

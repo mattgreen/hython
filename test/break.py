@@ -1,4 +1,6 @@
 a = 5
+print("hi")
+
 while a != 0:
     print(a)
     a = a-1

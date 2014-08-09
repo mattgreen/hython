@@ -51,6 +51,14 @@ program
     :                   { [] }
     | statements        { $1 }
 
+stmts
+    : stmts newline stmt    { $3 : $1 }
+    | stmts newline         { $1 }
+    | stmt                  { [$1] }
+    |                       { [] }
+
+stmt : statement { $1 }
+
 statements
     : statement             { [$1] }
     | statements newline statement     { $1 ++ [$3] }
@@ -119,20 +127,20 @@ expressionList
     : expression        { $1 }
 
 expression
-    : primary "*" primary   { BinOp (ArithOp Mul) $1 $3 }
-    | primary "/" primary   { BinOp (ArithOp Div) $1 $3 }
-    | primary "+" primary   { BinOp (ArithOp Add) $1 $3 }
-    | primary "-" primary   { BinOp (ArithOp Sub) $1 $3 }
-    | primary "==" primary  { BinOp (BoolOp Eq) $1 $3 }
-    | primary "!=" primary  { BinOp (BoolOp NotEq) $1 $3 }
-    | primary "<" primary   { BinOp (BoolOp LessThan) $1 $3 }
-    | primary "<=" primary  { BinOp (BoolOp LessThanEq) $1 $3 }
-    | primary ">" primary   { BinOp (BoolOp GreaterThan) $1 $3 }
-    | primary ">=" primary  { BinOp (BoolOp GreaterThanEq) $1 $3 }
+    : expression "*" expression   { BinOp (ArithOp Mul) $1 $3 }
+    | expression "/" expression   { BinOp (ArithOp Div) $1 $3 }
+    | expression "+" expression   { BinOp (ArithOp Add) $1 $3 }
+    | expression "-" expression   { BinOp (ArithOp Sub) $1 $3 }
+    | expression "==" expression  { BinOp (BoolOp Eq) $1 $3 }
+    | expression "!=" expression  { BinOp (BoolOp NotEq) $1 $3 }
+    | expression "<" expression   { BinOp (BoolOp LessThan) $1 $3 }
+    | expression "<=" expression  { BinOp (BoolOp LessThanEq) $1 $3 }
+    | expression ">" expression   { BinOp (BoolOp GreaterThan) $1 $3 }
+    | expression ">=" expression  { BinOp (BoolOp GreaterThanEq) $1 $3 }
     | primary   { $1 }
 
 suite
-    : newline indent statements dedent { $3 }
+    : newline indent stmts dedent { $3 }
 
 parameterList
     :               { [] }
@@ -169,9 +177,10 @@ arguments
     | argument "," arguments    { $1:$3 }
 
 argument
-    : primary                   { $1 }
+    : expression                   { $1 }
 
 {
+tokenize code = L.tokenize code
 parse code = L.evalP parseTokens code
 
 parseError :: L.Token -> a
