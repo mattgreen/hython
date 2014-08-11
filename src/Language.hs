@@ -29,6 +29,7 @@ data Expression
     | MethodCall String String [Expression]
     | Attribute Expression String
     | Variable String
+    | UnaryOp UnaryOperator Expression
     | BinOp Operator Expression Expression
     | Constant Value
     deriving(Eq, Show)
@@ -50,12 +51,34 @@ type AttributeDict = Map String Value
 instance Show (IORef a) where
     show _ = "<ioref>"
 
+data UnaryOperator
+    = Not
+    | Splat
+    deriving(Eq, Show)
+
 data Operator
     = ArithOp ArithmeticOperator
+    | BitOp BitOperator
+    | BoolOp BooleanOperator
     | CompOp ComparisonOperator
     deriving(Eq, Show)
 
-data ArithmeticOperator = Add | Sub | Mul | Div
+data ArithmeticOperator
+    = Add
+    | Sub
+    | Mul
+    | Div
+    deriving(Eq, Show)
+
+data BitOperator
+    = BitAnd
+    | BitOr
+    | BitXor
+    deriving(Eq, Show)
+
+data BooleanOperator
+    = And
+    | Or
     deriving(Eq, Show)
 
 data ComparisonOperator = Eq | NotEq | LessThan | LessThanEq | GreaterThan | GreaterThanEq

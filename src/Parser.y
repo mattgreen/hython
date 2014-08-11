@@ -23,6 +23,7 @@ NEWLINE     {L.Newline}
 "-"         {L.Operator "-"}
 "*"         {L.Operator "*"}
 "/"         {L.Operator "/"}
+'|'         {L.Operator "|"}
 '=='        {L.Operator "=="}
 '!='        {L.Operator "!="}
 '<'         {L.Operator "<"}
@@ -40,6 +41,7 @@ NEWLINE     {L.Newline}
 INDENT      {L.Indent}
 DEDENT      {L.Dedent}
 
+AND         {L.Keyword "and"}
 ASSERT      {L.Keyword "assert"}
 BREAK       {L.Keyword "break"}
 CLASS       {L.Keyword "class"}
@@ -61,6 +63,8 @@ IS          {L.Keyword "is"}
 LAMBDA      {L.Keyword "lambda"}
 NONE        {L.Keyword "None"}
 NONLOCAL    {L.Keyword "nonlocal"}
+NOT         {L.Keyword "not"}
+OR          {L.Keyword "or"}
 PASS        {L.Keyword "pass"}
 RAISE       {L.Keyword "raise"}
 RETURN      {L.Keyword "return"}
@@ -246,19 +250,30 @@ suite
 
 -- test: or_test ['if' or_test 'else' test] | lambdef
 test
-    : comparison { $1 }
+    : or_test       { $1 }
 
 -- test_nocond: or_test | lambdef_nocond
 -- lambdef: 'lambda' [varargslist] ':' test
 -- lambdef_nocond: 'lambda' [varargslist] ':' test_nocond
 -- or_test: and_test ('or' and_test)*
+or_test
+    : and_test              { $1 }
+    | and_test OR and_test  { BinOp (BoolOp Or) $1 $3 }
+
 -- and_test: not_test ('and' not_test)*
+and_test
+    : not_test              { $1 }
+    | not_test AND not_test { BinOp (BoolOp And) $1 $3 }
+
 -- not_test: 'not' not_test | comparison
+not_test
+    : NOT not_test          { UnaryOp Not $2 }
+    | comparison            { $1 }
 
 -- comparison: expr (comp_op expr)*
 comparison
-    : atom                      { $1 }
-    | comparison comp_op atom   { BinOp (CompOp $2) $1 $3 }
+    : expr                  { $1 }
+    | expr comp_op expr     { BinOp (CompOp $2) $1 $3 }
 
 -- comp_op: '<'|'>'|'=='|'>='|'<='|'<>'|'!='|'in'|'not' 'in'|'is'|'is' 'not'
 comp_op
@@ -276,7 +291,14 @@ comp_op
 
 -- star_expr: '*' expr
 -- expr: xor_expr ('|' xor_expr)*
+expr
+    : xor_expr                      { $1 }
+    | xor_expr '|' xor_expr             { BinOp (BitOp BitOr) $1 $3 }
+
 -- xor_expr: and_expr ('^' and_expr)*
+--    : and_expr
+--    | and_expr sepBy(and_expr, '^') { BinOp (B
+xor_expr: atom  { $1 }
 -- and_expr: shift_expr ('&' shift_expr)*
 -- shift_expr: arith_expr (('<<'|'>>') arith_expr)*
 -- arith_expr: term (('+'|'-') term)*
