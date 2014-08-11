@@ -204,7 +204,7 @@ evalExpr (BinOp (ArithOp Mul) (Constant (String l)) (Constant (Int r))) =
     return $ String (concat $ replicate (fromInteger r) l)
 
 -- Int [=|!=|<|<=|>|>=] Int
-evalExpr (BinOp (BoolOp op) (Constant (Int l)) (Constant (Int r))) =
+evalExpr (BinOp (CompOp op) (Constant (Int l)) (Constant (Int r))) =
     return $ Bool (fn op l r)
   where
     fn Eq               = (==)
@@ -214,7 +214,7 @@ evalExpr (BinOp (BoolOp op) (Constant (Int l)) (Constant (Int r))) =
     fn GreaterThan      = (>)
     fn GreaterThanEq    = (>=)
 
-evalExpr (BinOp (BoolOp op) (Constant (Float l)) (Constant (Float r))) =
+evalExpr (BinOp (CompOp op) (Constant (Float l)) (Constant (Float r))) =
     return $ Bool (fn op l r)
   where
     fn Eq               = (==)
@@ -224,10 +224,10 @@ evalExpr (BinOp (BoolOp op) (Constant (Float l)) (Constant (Float r))) =
     fn GreaterThan      = (>)
     fn GreaterThanEq    = (>=)
 
-evalExpr (BinOp (BoolOp Eq) (Constant l) (Constant r)) =
+evalExpr (BinOp (CompOp Eq) (Constant l) (Constant r)) =
     return $ Bool (l == r)
 
-evalExpr (BinOp (BoolOp NotEq) (Constant l) (Constant r)) =
+evalExpr (BinOp (CompOp NotEq) (Constant l) (Constant r)) =
     return $ Bool (l /= r)
 
 evalExpr (BinOp op (Constant l) (Constant r)) =

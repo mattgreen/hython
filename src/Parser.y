@@ -258,7 +258,7 @@ test
 -- comparison: expr (comp_op expr)*
 comparison
     : atom                      { $1 }
-    | comparison comp_op atom   { BinOp (BoolOp $2) $1 $3 }
+    | comparison comp_op atom   { BinOp (CompOp $2) $1 $3 }
 
 -- comp_op: '<'|'>'|'=='|'>='|'<='|'<>'|'!='|'in'|'not' 'in'|'is'|'is' 'not'
 comp_op
