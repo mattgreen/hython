@@ -284,7 +284,7 @@ atom
 
 -- classdef: 'class' NAME ['(' [arglist] ')'] ':' suite
 classdef
-    : CLASS identifier ':' base_classes suite { ClassDef $2 $4 $5 }
+    : CLASS identifier base_classes ':' suite { ClassDef $2 $3 $5 }
 
 base_classes
     :                                   { [] }
