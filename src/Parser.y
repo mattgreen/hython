@@ -23,13 +23,14 @@ NEWLINE     {L.Newline}
 "-"         {L.Operator "-"}
 "*"         {L.Operator "*"}
 "/"         {L.Operator "/"}
-"=="        {L.Operator "=="}
-"!="        {L.Operator "!="}
-"<"         {L.Operator "<"}
-"<="        {L.Operator "<="}
-">"         {L.Operator ">"}
-">="        {L.Operator ">="}
-"."         {L.Delimiter "."}
+'=='        {L.Operator "=="}
+'!='        {L.Operator "!="}
+'<'         {L.Operator "<"}
+'<='        {L.Operator "<="}
+'>'         {L.Operator ">"}
+'>='        {L.Operator ">="}
+'<>'        {L.Operator "<>"}
+'.'         {L.Delimiter "."}
 '('         {L.Delimiter "("}
 ')'         {L.Delimiter ")"}
 ':'         {L.Delimiter ":"}
@@ -256,12 +257,23 @@ test
 
 -- comparison: expr (comp_op expr)*
 comparison
-    : atom                  { $1 }
-
--- # <> isn't actually a valid comparison operator in Python. It's here for the
--- # sake of a __future__ import described in PEP 401
+    : atom                      { $1 }
+    | comparison comp_op atom   { BinOp (BoolOp $2) $1 $3 }
 
 -- comp_op: '<'|'>'|'=='|'>='|'<='|'<>'|'!='|'in'|'not' 'in'|'is'|'is' 'not'
+comp_op
+    : '<'   { LessThan }
+    | '>'   { GreaterThan }
+    | '=='  { Eq }
+    | '>='  { GreaterThanEq }
+    | '<='  { LessThanEq }
+    | '!='  { NotEq }
+    --| '<>'
+    --| 'in'
+    --| 'not' 'in'
+    --| 'is'
+    --| 'is' 'not'
+
 -- star_expr: '*' expr
 -- expr: xor_expr ('|' xor_expr)*
 -- xor_expr: and_expr ('^' and_expr)*
