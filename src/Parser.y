@@ -48,6 +48,7 @@ DEL         {L.Keyword "del"}
 ELIF        {L.Keyword "elif"}
 ELSE        {L.Keyword "else"}
 EXCEPT      {L.Keyword "except"}
+FALSE       {L.Keyword "False"}
 FINALLY     {L.Keyword "finally"}
 FOR         {L.Keyword "for"}
 FROM        {L.Keyword "from"}
@@ -57,10 +58,12 @@ IMPORT      {L.Keyword "import"}
 IN          {L.Keyword "in"}
 IS          {L.Keyword "is"}
 LAMBDA      {L.Keyword "lambda"}
+NONE        {L.Keyword "None"}
 NONLOCAL    {L.Keyword "nonlocal"}
 PASS        {L.Keyword "pass"}
 RAISE       {L.Keyword "raise"}
 RETURN      {L.Keyword "return"}
+TRUE        {L.Keyword "True"}
 TRY         {L.Keyword "try"}
 WHILE       {L.Keyword "while"}
 WITH        {L.Keyword "with"}
@@ -170,6 +173,7 @@ pass_stmt
 flow_stmt
     : break_stmt        { $1 }
     | continue_stmt     { $1 }
+    | return_stmt       { $1 }
 
 -- break_stmt: 'break'
 break_stmt
@@ -180,6 +184,9 @@ continue_stmt
     : CONTINUE          { Continue }
 
 -- return_stmt: 'return' [testlist]
+return_stmt
+    : RETURN atom       { Return $2 }
+
 -- yield_stmt: yield_expr
 -- raise_stmt: 'raise' [test ['from' test]]
 -- import_stmt: import_name | import_from
@@ -271,6 +278,9 @@ comparison
 atom
     : identifier    { Variable $1 }
     | literal       { Constant $1 }
+    | NONE          { Constant None }
+    | TRUE          { Constant $ Bool True }
+    | FALSE         { Constant $ Bool False }
 
 -- testlist_comp: (test|star_expr) ( comp_for | (',' (test|star_expr))* [','] )
 -- trailer: '(' [arglist] ')' | '[' subscriptlist ']' | '.' NAME
