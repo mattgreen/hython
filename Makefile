@@ -7,10 +7,7 @@ src/Lexer.hs: src/Lexer.x
 	./.cabal-sandbox/bin/alex -g -o src/Lexer.hs src/Lexer.x
 
 src/Parser.hs: src/Parser.y
-	./.cabal-sandbox/bin/happy -a -g -c -iinfo.txt -o src/Parser.hs src/Parser.y
-
-src/Small.hs: src/Small.y
-	./.cabal-sandbox/bin/happy -a -g -c -ismall.txt -o src/Small.hs src/Small.y
+	./.cabal-sandbox/bin/happy -a -g -c -o src/Parser.hs src/Parser.y
 
 .PHONY: test
 test: hython

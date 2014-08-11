@@ -12,6 +12,16 @@ import Language
 $digit = 0-9
 $white = [\ ]
 $newline = \n
+$delimiters = [\( \) \[ \] \{ \} \, \: \. \; \@ \=]
+
+@operator   = "+" | "-" | "*" | "**" | "/" | "//" | "%" | "<<" | ">>" | "&"
+            | "|" | "^" | "~" | "<"  | ">" | "<=" | ">=" | "==" | "!="
+
+@delimiter  = "("  | ")" | "[" | "]" | "{" | "}" | ","  | ":"  | "."
+            | ";"  | "@" | "=" | "->" | "+=" | "-=" | "*=" | "/=" | "//="
+            | "%=" | "&=" | "|=" | "^=" | ">>=" | "<<=" | "**="
+
+@keywordOrIdentifier = [a-zA-Z_][a-zA-Z0-9_]*
 
 tokens :-
     -- Whitespace handling
@@ -33,47 +43,33 @@ tokens :-
     '.*'                        { \_ s -> return $ Literal (String s) }
     \".*\"                      { \_ s -> return $ Literal (String s) }
 
-    -- Booleans
-    False                       { \_ s -> return $ Literal (Bool False) }
-    True                        { \_ s -> return $ Literal (Bool True) }
+    @keywordOrIdentifier        { \_ s -> return $ keywordOrIdentifier s }
 
-    -- None
-    None                        { \_ s -> return $ Literal None }
-
-    -- Keywords
-    if                          { \_ s -> return $ Keyword "if" }
-    elif                        { \_ s -> return $ Keyword "elif" }
-    else                        { \_ s -> return $ Keyword "else" }
-    def                         { \_ s -> return $ Keyword "def" }
-    return                      { \_ s -> return $ Keyword "return" }
-    while                       { \_ s -> return $ Keyword "while" }
-    break                       { \_ s -> return $ Keyword "break" }
-    continue                    { \_ s -> return $ Keyword "continue" }
-    pass                        { \_ s -> return $ Keyword "pass" }
-    assert                      { \_ s -> return $ Keyword "assert" }
-    class                       { \_ s -> return $ Keyword "class" }
-
-    -- Identifiers
-    [a-zA-Z_][a-zA-Z0-9_]*      { \_ s -> return $ Identifier s }
-
-    ==                          { \_ s -> return $ Punctuation s }
-    !=                          { \_ s -> return $ Punctuation s }
-    >=                          { \_ s -> return $ Punctuation s }
-    "<="                        { \_ s -> return $ Punctuation s }
-
-    [=\(\)\,\:\+\-\*\/\.\<\>]   { \_ s -> return $ Punctuation s }
-
+    @delimiter                  { \_ s -> return $ Delimiter s }
+    @operator                   { \_ s -> return $ Operator s }
 {
 data Token
      = Newline
      | Indent
      | Dedent
      | Identifier String
-     | Literal Value
-     | Punctuation String
      | Keyword String
+     | Literal Value
+     | Operator String
+     | Delimiter String
      | EOF
      deriving (Eq,Show)
+
+keywordOrIdentifier :: String -> Token
+keywordOrIdentifier s
+    | s `elem` keywords = Keyword s
+    | otherwise         = Identifier s
+  where
+    keywords = ["False", "None", "True", "and", "as", "assert", "break", "class",
+                "continue", "def", "del", "elif", "else", "except", "finally",
+                "for", "from", "global", "if", "import", "in", "is", "lambda",
+                "nonlocal", "not", "or", "pass", "raise", "return", "try",
+                "while", "with", "yield"]
 
 -- The functions that must be provided to Alex's basic interface
 -- The input: last character, unused bytes, remaining string
@@ -146,13 +142,7 @@ readToken = do
                        AlexToken inp' n act -> do 
                           let (AlexInput _ _ buf) = alexInput s
                           put s{alexInput = inp'}
-                          pushToken $ act n (take n buf)
-                          readToken
-
-pushToken :: P Token -> P ()
-pushToken t = do
-    s <- get
-    put s { pending_tokens = (pending_tokens s) ++ [t] }
+                          act n (take n buf)
 
 readtoks::P [Token]
 readtoks = do

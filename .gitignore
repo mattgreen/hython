@@ -1,3 +1,5 @@
 .cabal-sandbox
 dist
 hython
+src/Lexer.hs
+src/Parser.hs

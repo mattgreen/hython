@@ -1,184 +1,310 @@
 {
 module Parser(parse) where
-import qualified Lexer as L
 import Control.Monad.Error
+import Data.Either
+import Data.List
 
 import Language
+import qualified Lexer as L
 }
 
-%monad{L.P}
-%lexer{L.lexer}{L.EOF}
+%monad      {L.P}
+%lexer      {L.lexer}{L.EOF}
+%tokentype  {L.Token}
+%error      { parseError }
+
 %name parseTokens
-%tokentype{L.Token}
-%error { parseError }
 
 %token
 identifier  {L.Identifier $$}
 literal     {L.Literal $$}
-newline     {L.Newline}
-"+"         {L.Punctuation "+"}
-"-"         {L.Punctuation "-"}
-"*"         {L.Punctuation "*"}
-"/"         {L.Punctuation "/"}
-"=="        {L.Punctuation "=="}
-"!="        {L.Punctuation "!="}
-"<"         {L.Punctuation "<"}
-"<="        {L.Punctuation "<="}
-">"         {L.Punctuation ">"}
-">="        {L.Punctuation ">="}
-"."         {L.Punctuation "."}
-"("         {L.Punctuation "("}
-")"         {L.Punctuation ")"}
-":"         {L.Punctuation ":"}
-","         {L.Punctuation ","}
-"="         {L.Punctuation "="}
-indent      {L.Indent}
-dedent      {L.Dedent}
-assert      {L.Keyword "assert"}
-break       {L.Keyword "break"}
-class       {L.Keyword "class"}
-continue    {L.Keyword "continue"}
-def         {L.Keyword "def"}
-elif        {L.Keyword "elif"}
-else        {L.Keyword "else"}
-if          {L.Keyword "if"}
-pass        {L.Keyword "pass"}
-return      {L.Keyword "return"}
-while       {L.Keyword "while"}
+NEWLINE     {L.Newline}
+"+"         {L.Operator "+"}
+"-"         {L.Operator "-"}
+"*"         {L.Operator "*"}
+"/"         {L.Operator "/"}
+"=="        {L.Operator "=="}
+"!="        {L.Operator "!="}
+"<"         {L.Operator "<"}
+"<="        {L.Operator "<="}
+">"         {L.Operator ">"}
+">="        {L.Operator ">="}
+"."         {L.Delimiter "."}
+'('         {L.Delimiter "("}
+')'         {L.Delimiter ")"}
+':'         {L.Delimiter ":"}
+'='         {L.Delimiter "="}
+';'         {L.Delimiter ";"}
+','         {L.Delimiter ","}
+INDENT      {L.Indent}
+DEDENT      {L.Dedent}
+
+ASSERT      {L.Keyword "assert"}
+BREAK       {L.Keyword "break"}
+CLASS       {L.Keyword "class"}
+CONTINUE    {L.Keyword "continue"}
+DEF         {L.Keyword "def"}
+DEL         {L.Keyword "del"}
+ELIF        {L.Keyword "elif"}
+ELSE        {L.Keyword "else"}
+EXCEPT      {L.Keyword "except"}
+FINALLY     {L.Keyword "finally"}
+FOR         {L.Keyword "for"}
+FROM        {L.Keyword "from"}
+GLOBAL      {L.Keyword "global"}
+IF          {L.Keyword "if"}
+IMPORT      {L.Keyword "import"}
+IN          {L.Keyword "in"}
+IS          {L.Keyword "is"}
+LAMBDA      {L.Keyword "lambda"}
+NONLOCAL    {L.Keyword "nonlocal"}
+PASS        {L.Keyword "pass"}
+RAISE       {L.Keyword "raise"}
+RETURN      {L.Keyword "return"}
+TRY         {L.Keyword "try"}
+WHILE       {L.Keyword "while"}
+WITH        {L.Keyword "with"}
+YIELD       {L.Keyword "yield"}
 %%
 
-program
+or(p,q)
+   : p      { $1 }
+   | q      { $1 }
+
+either(p,q)
+   : p      { Left $1 }
+   | q      { Right $1 }
+
+opt(p)
+   :        { Nothing }
+   | p      { Just $1 }
+
+rev_list1(p)
+   : p               { [$1] }
+   | rev_list1(p) p  { $2 : $1 }
+
+many1(p)
+   : rev_list1(p) { reverse $1 }
+
+many0(p)
+   : many1(p) { $1 }
+   |         { [] }
+
+sepOptEndBy(p,sep) 
+   : sepByRev(p,sep) ',' { reverse $1 }
+   | sepByRev(p,sep) { reverse $1 }
+
+sepBy(p,sep): sepByRev(p,sep) { reverse $1 }
+
+sepBy0(p,sep)
     :                   { [] }
-    | statements        { $1 }
+    | sepBy(p,sep)      { $1 }
 
-stmts
-    : stmts newline stmt    { $3 : $1 }
-    | stmts newline         { $1 }
-    | stmt                  { [$1] }
-    |                       { [] }
+sepByRev(p,sep)
+   : p { [$1] }
+   | sepByRev(p,sep) sep p { $3 : $1 }
 
-stmt : statement { $1 }
+-- single_input: NEWLINE | simple_stmt | compound_stmt NEWLINE
+-- file_input: (NEWLINE | stmt)* ENDMARKER
+file_input
+    : many0(either(NEWLINE, stmt))  { foldl' (++) [] (rights $1) }
 
-statements
-    : statement             { [$1] }
-    | statements newline statement     { $1 ++ [$3] }
-    | statements newline { $1 }
-    | newline statements    { $2 }
-    | newline           { [] }
+-- eval_input: testlist NEWLINE* ENDMARKER
+-- 
+-- decorator: '@' dotted_name [ '(' [arglist] ')' ] NEWLINE
+-- decorators: decorator+
+-- decorated: decorators (classdef | funcdef)
+-- funcdef: 'def' NAME parameters ['->' test] ':' suite
+funcdef
+    : DEF identifier parameters ':' suite { Def $2 $3 $5 }
 
-statement
-    : assignment        { $1 }
-    | assertion         { $1 }
-    | breakStatement    { $1 }
-    | classStatement    { $1 }
-    | continueStatement { $1 }
-    | defStatement      { $1 }
-    | ifStatement       { $1 }
-    | passStatement     { $1 }
-    | returnStatement   { $1 }
-    | whileStatement    { $1 }
-    | expression        { Expression $1 }
-
-assertion
-    : assert expressionList { Assert $2 }
-
-assignment
-    : identifier "=" expressionList { Assignment (Variable $1) $3 }
-
-breakStatement
-    : break             { Break }
-
-classStatement
-    : class identifier ":" suite                    { ClassDef $2 [] $4 }
-    | class identifier "(" parameterList ")" suite  { ClassDef $2 $4 $6 }
-
-continueStatement
-    : continue          { Continue }
-
-defStatement
-    : def identifier "(" parameterList ")" ":" suite { Def $2 $4 $7 }
-
-ifStatement
-    : if expression ":" suite elifClauseList elseClause { If ((IfClause $2 $4):$5) $6 }
-
-elifClauseList
-    :                   { [] }
-    | elifClauses       { $1 }
-
-elifClauses
-    : elif expression ":" suite { [IfClause $2 $4] }
-    | elif expression ":" suite elifClauses { (IfClause $2 $4):$5 }
-
-elseClause
-    :                           { [] }
-    | else ":" suite            { $3 }
-
-passStatement
-    : pass              { Pass }
-
-returnStatement
-    : return                { Return $ Constant None }
-    | return expressionList { Return $2 }
-
-whileStatement
-    : while expression ":" suite    { While $2 $4 }
-
-expressionList
-    : expression        { $1 }
-
-expression
-    : expression "*" expression   { BinOp (ArithOp Mul) $1 $3 }
-    | expression "/" expression   { BinOp (ArithOp Div) $1 $3 }
-    | expression "+" expression   { BinOp (ArithOp Add) $1 $3 }
-    | expression "-" expression   { BinOp (ArithOp Sub) $1 $3 }
-    | expression "==" expression  { BinOp (BoolOp Eq) $1 $3 }
-    | expression "!=" expression  { BinOp (BoolOp NotEq) $1 $3 }
-    | expression "<" expression   { BinOp (BoolOp LessThan) $1 $3 }
-    | expression "<=" expression  { BinOp (BoolOp LessThanEq) $1 $3 }
-    | expression ">" expression   { BinOp (BoolOp GreaterThan) $1 $3 }
-    | expression ">=" expression  { BinOp (BoolOp GreaterThanEq) $1 $3 }
-    | primary   { $1 }
-
-suite
-    : newline indent stmts dedent { $3 }
-
-parameterList
-    :               { [] }
-    | parameters    { $1 }
-
+-- parameters: '(' [typedargslist] ')'
 parameters
-    : parameter                 { [$1] }
-    | parameter "," parameters  { $1:$3 }
+    : '(' sepBy0(identifier, ',') ')' { $2 }
 
-parameter
-    : identifier                { $1 }
+-- typedargslist: (tfpdef ['=' test] (',' tfpdef ['=' test])* [','
+--        ['*' [tfpdef] (',' tfpdef ['=' test])* [',' '**' tfpdef] | '**' tfpdef]]
+--      |  '*' [tfpdef] (',' tfpdef ['=' test])* [',' '**' tfpdef] | '**' tfpdef)
+-- tfpdef: NAME [':' test]
+-- varargslist: (vfpdef ['=' test] (',' vfpdef ['=' test])* [','
+--        ['*' [vfpdef] (',' vfpdef ['=' test])* [',' '**' vfpdef] | '**' vfpdef]]
+--      |  '*' [vfpdef] (',' vfpdef ['=' test])* [',' '**' vfpdef] | '**' vfpdef)
+-- vfpdef: NAME
 
+-- stmt: simple_stmt | compound_stmt
+stmt
+    : simple_stmt   { $1 }
+    | compound_stmt { [$1] }
+
+-- simple_stmt: small_stmt (';' small_stmt)* [';'] NEWLINE
+simple_stmt
+    : small_stmts opt(';') NEWLINE  { $1 }
+
+small_stmts
+    : small_stmt                    { [$1] }
+    | small_stmts ';' small_stmt    { $3 : $1 }
+
+-- small_stmt: (expr_stmt | del_stmt | pass_stmt | flow_stmt |
+--              import_stmt | global_stmt | nonlocal_stmt | assert_stmt)
+small_stmt
+    : expr_stmt     { $1 }
+    | pass_stmt     { $1 }
+    | flow_stmt     { $1 }
+    | assert_stmt   { $1 }
+
+-- expr_stmt: testlist_star_expr (augassign (yield_expr|testlist) |
+--                      ('=' (yield_expr|testlist_star_expr))*)
+expr_stmt
+    : atom          { Expression $1 }
+
+-- testlist_star_expr: (test|star_expr) (',' (test|star_expr))* [',']
+-- augassign: ('+=' | '-=' | '*=' | '/=' | '%=' | '&=' | '|=' | '^=' |
+--             '<<=' | '>>=' | '**=' | '//=')
+-- # For normal assignments, additional restrictions enforced by the interpreter
+-- del_stmt: 'del' exprlist
+-- pass_stmt: 'pass'
+pass_stmt
+    : PASS              { Pass }
+
+-- flow_stmt: break_stmt | continue_stmt | return_stmt | raise_stmt | yield_stmt
+flow_stmt
+    : break_stmt        { $1 }
+    | continue_stmt     { $1 }
+
+-- break_stmt: 'break'
+break_stmt
+    : BREAK             { Break }
+
+-- continue_stmt: 'continue'
+continue_stmt
+    : CONTINUE          { Continue }
+
+-- return_stmt: 'return' [testlist]
+-- yield_stmt: yield_expr
+-- raise_stmt: 'raise' [test ['from' test]]
+-- import_stmt: import_name | import_from
+-- import_name: 'import' dotted_as_names
+-- # note below: the ('.' | '...') is necessary because '...' is tokenized as ELLIPSIS
+-- import_from: ('from' (('.' | '...')* dotted_name | ('.' | '...')+)
+--               'import' ('*' | '(' import_as_names ')' | import_as_names))
+-- import_as_name: NAME ['as' NAME]
+-- dotted_as_name: dotted_name ['as' NAME]
+-- import_as_names: import_as_name (',' import_as_name)* [',']
+-- dotted_as_names: dotted_as_name (',' dotted_as_name)*
+-- dotted_name: NAME ('.' NAME)*
+-- global_stmt: 'global' NAME (',' NAME)*
+-- nonlocal_stmt: 'nonlocal' NAME (',' NAME)*
+-- assert_stmt: 'assert' test [',' test]
+assert_stmt
+    : ASSERT sepBy(test, ',')        { Assert $ head $2 }
+
+-- compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated
+compound_stmt
+    : if_stmt       { $1 }
+    | while_stmt    { $1 }
+    | funcdef       { $1 }
+    | classdef      { $1 }
+
+-- if_stmt: 'if' test ':' suite ('elif' test ':' suite)* ['else' ':' suite]
+if_stmt
+    : IF test ':' suite many0(elif_clause) else_clause  { If ((IfClause $2 $4):$5) $6 }
+
+elif_clause
+    : ELIF test ':' suite { IfClause $2 $4 }
+
+else_clause
+    :                   { [] }
+    | ELSE ':' suite    { $3 }
+
+-- while_stmt: 'while' test ':' suite ['else' ':' suite]
+while_stmt
+    : WHILE test ':' suite      { While $2 $4 }
+
+-- for_stmt: 'for' exprlist 'in' testlist ':' suite ['else' ':' suite]
+-- try_stmt: ('try' ':' suite
+--            ((except_clause ':' suite)+
+--             ['else' ':' suite]
+--             ['finally' ':' suite] |
+--            'finally' ':' suite))
+-- with_stmt: 'with' with_item (',' with_item)*  ':' suite
+-- with_item: test ['as' expr]
+-- # NB compile.c makes sure that the default except clause is last
+-- except_clause: 'except' [test ['as' NAME]]
+
+-- suite: simple_stmt | NEWLINE INDENT stmt+ DEDENT
+suite
+    : simple_stmt                       { $1 }
+    | NEWLINE INDENT many1(stmt) DEDENT { concat $3 }
+
+-- test: or_test ['if' or_test 'else' test] | lambdef
+test
+    : comparison { $1 }
+
+-- test_nocond: or_test | lambdef_nocond
+-- lambdef: 'lambda' [varargslist] ':' test
+-- lambdef_nocond: 'lambda' [varargslist] ':' test_nocond
+-- or_test: and_test ('or' and_test)*
+-- and_test: not_test ('and' not_test)*
+-- not_test: 'not' not_test | comparison
+
+-- comparison: expr (comp_op expr)*
+comparison
+    : atom                  { $1 }
+
+-- # <> isn't actually a valid comparison operator in Python. It's here for the
+-- # sake of a __future__ import described in PEP 401
+
+-- comp_op: '<'|'>'|'=='|'>='|'<='|'<>'|'!='|'in'|'not' 'in'|'is'|'is' 'not'
+-- star_expr: '*' expr
+-- expr: xor_expr ('|' xor_expr)*
+-- xor_expr: and_expr ('^' and_expr)*
+-- and_expr: shift_expr ('&' shift_expr)*
+-- shift_expr: arith_expr (('<<'|'>>') arith_expr)*
+-- arith_expr: term (('+'|'-') term)*
+-- term: factor (('*'|'/'|'%'|'//') factor)*
+-- factor: ('+'|'-'|'~') factor | power
+-- power: atom trailer* ['**' factor]
+-- atom: ('(' [yield_expr|testlist_comp] ')' |
+--        '[' [testlist_comp] ']' |
+--        '{' [dictorsetmaker] '}' |
+--        NAME | NUMBER | STRING+ | '...' | 'None' | 'True' | 'False')
 atom
     : identifier    { Variable $1 }
     | literal       { Constant $1 }
 
-primary
-    : atom          { $1 }
-    | attributeRef  { $1 }
-    | call          { $1 }
+-- testlist_comp: (test|star_expr) ( comp_for | (',' (test|star_expr))* [','] )
+-- trailer: '(' [arglist] ')' | '[' subscriptlist ']' | '.' NAME
+-- subscriptlist: subscript (',' subscript)* [',']
+-- subscript: test | [test] ':' [test] [sliceop]
+-- sliceop: ':' [test]
+-- exprlist: (expr|star_expr) (',' (expr|star_expr))* [',']
+-- testlist: test (',' test)* [',']
+-- dictorsetmaker: ( (test ':' test (comp_for | (',' test ':' test)* [','])) |
+--                   (test (comp_for | (',' test)* [','])) )
 
-attributeRef
-    : primary "." identifier    { Attribute $1 $3 }
+-- classdef: 'class' NAME ['(' [arglist] ')'] ':' suite
+classdef
+    : CLASS identifier ':' base_classes suite { ClassDef $2 $4 $5 }
 
-call
-    : primary "(" argumentList ")"  { Call $1 $3 }
-
-argumentList
-    :               { [] }
-    | arguments     { $1 }
-
-arguments
-    : argument                  { [$1] }
-    | argument "," arguments    { $1:$3 }
-
-argument
-    : expression                   { $1 }
-
+base_classes
+    :                                   { [] }
+    | '(' sepBy0(identifier, ',') ')'   { $2 }
+-- 
+-- arglist: (argument ',')* (argument [',']
+--                          |'*' test (',' argument)* [',' '**' test] 
+--                          |'**' test)
+-- # The reason that keywords are test nodes instead of NAME is that using NAME
+-- # results in an ambiguity. ast.c makes sure it's a NAME.
+-- argument: test [comp_for] | test '=' test  # Really [keyword '='] test
+-- comp_iter: comp_for | comp_if
+-- comp_for: 'for' exprlist 'in' or_test [comp_iter]
+-- comp_if: 'if' test_nocond [comp_iter]
+-- 
+-- # not used in grammar, but may appear in "node" passed from Parser to Compiler
+-- encoding_decl: NAME
+-- 
+-- yield_expr: 'yield' [yield_arg]
+-- yield_arg: 'from' test | testlist
 {
 tokenize code = L.tokenize code
 parse code = L.evalP parseTokens code
