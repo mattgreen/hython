@@ -11,6 +11,7 @@ import Language
 
 $digit = 0-9
 $white = [\ ]
+$content = [^ $white \#]
 $newline = \n
 $delimiters = [\( \) \[ \] \{ \} \, \: \. \; \@ \=]
 
@@ -25,12 +26,12 @@ $delimiters = [\( \) \[ \] \{ \} \, \: \. \; \@ \=]
 
 tokens :-
     -- Whitespace handling
-    $newline $white* / [^$white]   {startWhite}
-    $newline                ;
-    $white+		            ;
+    $newline $white* / $content { startWhite }
+    $newline                    ;
+    $white+                     ;
 
     -- Comments
-    "#".*                    ;
+    "#".*                       ;
 
     -- Integers
     0+                          { \_ s -> return $ Literal (Int 0) }
