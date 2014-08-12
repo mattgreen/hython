@@ -163,9 +163,14 @@ small_stmt
 -- expr_stmt: testlist_star_expr (augassign (yield_expr|testlist) |
 --                      ('=' (yield_expr|testlist_star_expr))*)
 expr_stmt
-    : test          { Expression $1 }
+    : testlist_star_expr          { Expression $1 }
+    | testlist_star_expr '=' testlist_star_expr { Assignment $1 $3 }
 
 -- testlist_star_expr: (test|star_expr) (',' (test|star_expr))* [',']
+-- TODO: implement fully
+testlist_star_expr
+    : or(test, star_expr)           { $1 }
+
 -- augassign: ('+=' | '-=' | '*=' | '/=' | '%=' | '&=' | '|=' | '^=' |
 --             '<<=' | '>>=' | '**=' | '//=')
 -- # For normal assignments, additional restrictions enforced by the interpreter
@@ -256,21 +261,25 @@ test
 -- lambdef: 'lambda' [varargslist] ':' test
 -- lambdef_nocond: 'lambda' [varargslist] ':' test_nocond
 -- or_test: and_test ('or' and_test)*
+-- TODO: implement 0-n clauses
 or_test
     : and_test              { $1 }
     | and_test OR and_test  { BinOp (BoolOp Or) $1 $3 }
 
 -- and_test: not_test ('and' not_test)*
+-- TODO: implement 0-n clauses
 and_test
     : not_test              { $1 }
     | not_test AND not_test { BinOp (BoolOp And) $1 $3 }
 
 -- not_test: 'not' not_test | comparison
+-- TODO: implement 0-n clauses
 not_test
     : NOT not_test          { UnaryOp Not $2 }
     | comparison            { $1 }
 
 -- comparison: expr (comp_op expr)*
+-- TODO: implement 0-n clauses
 comparison
     : expr                  { $1 }
     | expr comp_op expr     { BinOp (CompOp $2) $1 $3 }
@@ -290,6 +299,10 @@ comp_op
     --| 'is' 'not'
 
 -- star_expr: '*' expr
+-- TODO: implement
+star_expr
+    : '*' expr      { undefined }
+
 -- expr: xor_expr ('|' xor_expr)*
 expr
     : xor_expr                      { $1 }
