@@ -25,7 +25,7 @@ $delimiters = [\( \) \[ \] \{ \} \, \: \. \; \@ \=]
 
 tokens :-
     -- Whitespace handling
-    \n$white*                 {startWhite}
+    $newline $white* / [^$white]   {startWhite}
     $newline                ;
     $white+		            ;
 
