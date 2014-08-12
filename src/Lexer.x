@@ -2,9 +2,10 @@
 {-# OPTIONS_GHC -w #-}
 
 module Lexer where
+
+import Codec.Binary.UTF8.String (encode)
 import Control.Monad.State
 import Data.Word
-import Codec.Binary.UTF8.String (encode)
 
 import Language
 }
@@ -26,7 +27,7 @@ $delimiters = [\( \) \[ \] \{ \} \, \: \. \; \@ \=]
 
 tokens :-
     -- Whitespace handling
-    $newline $white* / $content { startWhite }
+    $newline $white* / $content { handleIndentation }
     $newline                    ;
     $white+                     ;
 
@@ -110,21 +111,22 @@ evalP m s= evalState m (initialState s)
 
 -- Set input
 
-startWhite::Int->String->P Token
-startWhite n _ = do
-	   s<-get
-           let is@(cur:_) = indent_stack s
-           when (n>cur) $ do
-              put s{indent_stack = n:is,pending_tokens = [Indent]}
-           when (n<cur)  $ do
-              let (pre,post@(top:_)) = span (> n) is
-              if top == n
-                then
-                  put s{indent_stack = post,
-                                    pending_tokens = map (const Dedent) pre}
-                else
-                  error "Indents don't match"
-           return Newline
+handleIndentation :: Int -> String -> P Token
+handleIndentation newIndent _ = do
+    s <- get
+    let indents@(currentIndent:_) = indent_stack s
+
+    when (newIndent > currentIndent) $ do
+        put s{indent_stack = newIndent:indents, pending_tokens = [Indent]}
+    when (newIndent < currentIndent) $ do
+        let (pre,post@(top:_)) = span (> newIndent) indents
+        if top == newIndent
+          then
+            put s{indent_stack = post, pending_tokens = map (const Dedent) pre}
+          else
+            error $ "Incorrect indentation, expected " ++ (show top)
+
+    return Newline
 
 -- Action to read a token
 readToken::P Token
@@ -136,9 +138,9 @@ readToken = do
 			return t  
                [] ->  case alexScan (alexInput s) 0 of
                        AlexEOF -> do
-                                    rval <- startWhite 1 ""
-                                    put s{pending_tokens=(pending_tokens s)++[EOF]}
-                                    return rval
+                                    let dedents = map (const Dedent) (init (indent_stack s))
+                                    put s{pending_tokens=(pending_tokens s)++dedents++[EOF]}
+                                    return Newline
                        AlexError _ -> error "!Lexical error"
                        AlexSkip inp' _ -> do    
                           put s{alexInput = inp'}
@@ -148,18 +150,19 @@ readToken = do
                           put s{alexInput = inp'}
                           act n (take n buf)
 
-readtoks::P [Token]
-readtoks = do
-            t<-readToken
-            case t of
-              EOF -> return [t]
-              _ -> do 
-                rest<- readtoks
-                return (t:rest)
+readTokens :: P [Token]
+readTokens = do
+    token <- readToken
+    case token of
+        EOF -> do
+            s <- get
+            return [token]
+        _   -> do
+            rest <- readTokens
+            return (token:rest)
 
-tokenize::String->[Token]
-tokenize s = 
-        evalP readtoks s 
+tokenize :: String -> [Token]
+tokenize s = evalP readTokens s
 
 lexer :: (Token -> P a) -> P a
 lexer cont = readToken >>= cont
