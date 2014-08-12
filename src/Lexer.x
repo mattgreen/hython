@@ -41,8 +41,8 @@ tokens :-
     0[xX][0-9a-fA-F]+           { \_ s -> return $ Literal (Int $ read s) }
 
     -- Strings
-    '.*'                        { \_ s -> return $ Literal (String s) }
-    \".*\"                      { \_ s -> return $ Literal (String s) }
+    '.*'                        { \_ s -> return $ Literal (String (stringContent s)) }
+    \".*\"                      { \_ s -> return $ Literal (String (stringContent s)) }
 
     @keywordOrIdentifier        { \_ s -> return $ keywordOrIdentifier s }
 
@@ -71,6 +71,9 @@ keywordOrIdentifier s
                 "for", "from", "global", "if", "import", "in", "is", "lambda",
                 "nonlocal", "not", "or", "pass", "raise", "return", "try",
                 "while", "with", "yield"]
+
+stringContent :: String -> String
+stringContent s = tail $ init s
 
 -- The functions that must be provided to Alex's basic interface
 -- The input: last character, unused bytes, remaining string
