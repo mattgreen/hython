@@ -265,13 +265,13 @@ test
 -- TODO: implement 0-n clauses
 or_test
     : and_test              { $1 }
-    | and_test OR and_test  { BinOp (BoolOp Or) $1 $3 }
+    | or_test OR and_test  { BinOp (BoolOp Or) $1 $3 }
 
 -- and_test: not_test ('and' not_test)*
 -- TODO: implement 0-n clauses
 and_test
     : not_test              { $1 }
-    | not_test AND not_test { BinOp (BoolOp And) $1 $3 }
+    | and_test AND not_test { BinOp (BoolOp And) $1 $3 }
 
 -- not_test: 'not' not_test | comparison
 -- TODO: implement 0-n clauses
@@ -317,17 +317,19 @@ xor_expr: arith_expr  { $1 }
 -- shift_expr: arith_expr (('<<'|'>>') arith_expr)*
 -- arith_expr: term (('+'|'-') term)*
 arith_expr
-    : term              { $1 }
-    | term '+' term     { BinOp (ArithOp Add) $1 $3 }
-    | term '-' term     { BinOp (ArithOp Sub) $1 $3 }
+    : term                  { $1 }
+    | arith_expr '+' term   { BinOp (ArithOp Add) $1 $3 }
+    | arith_expr'-' term    { BinOp (ArithOp Sub) $1 $3 }
 
 -- term: factor (('*'|'/'|'%'|'//') factor)*
+-- TODO: implement modulo/floordiv
 term
-    : factor                { $1 }
-    | factor '*' factor     { BinOp (ArithOp Mul) $1 $3 }
-    | factor '/' factor     { BinOp (ArithOp Div) $1 $3 }
+    : factor            { $1 }
+    | term '*' factor   { BinOp (ArithOp Mul) $1 $3 }
+    | term '/' factor   { BinOp (ArithOp Div) $1 $3 }
 
 -- factor: ('+'|'-'|'~') factor | power
+-- TODO: implement signs
 factor
     : power                 { $1 }
 
