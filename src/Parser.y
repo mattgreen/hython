@@ -19,10 +19,10 @@ import qualified Lexer as L
 identifier  {L.Identifier $$}
 literal     {L.Literal $$}
 NEWLINE     {L.Newline}
-"+"         {L.Operator "+"}
-"-"         {L.Operator "-"}
-"*"         {L.Operator "*"}
-"/"         {L.Operator "/"}
+'+'         {L.Operator "+"}
+'-'         {L.Operator "-"}
+'*'         {L.Operator "*"}
+'/'         {L.Operator "/"}
 '|'         {L.Operator "|"}
 '=='        {L.Operator "=="}
 '!='        {L.Operator "!="}
@@ -163,7 +163,7 @@ small_stmt
 -- expr_stmt: testlist_star_expr (augassign (yield_expr|testlist) |
 --                      ('=' (yield_expr|testlist_star_expr))*)
 expr_stmt
-    : atom          { Expression $1 }
+    : test          { Expression $1 }
 
 -- testlist_star_expr: (test|star_expr) (',' (test|star_expr))* [',']
 -- augassign: ('+=' | '-=' | '*=' | '/=' | '%=' | '&=' | '|=' | '^=' |
@@ -190,7 +190,7 @@ continue_stmt
 
 -- return_stmt: 'return' [testlist]
 return_stmt
-    : RETURN atom       { Return $2 }
+    : RETURN test       { Return $2 }
 
 -- yield_stmt: yield_expr
 -- raise_stmt: 'raise' [test ['from' test]]
@@ -297,14 +297,31 @@ expr
 
 -- xor_expr: and_expr ('^' and_expr)*
 --    : and_expr
---    | and_expr sepBy(and_expr, '^') { BinOp (B
-xor_expr: atom  { $1 }
+--   | and_expr sepBy(and_expr, '^') { BinOp (B
+xor_expr: arith_expr  { $1 }
 -- and_expr: shift_expr ('&' shift_expr)*
 -- shift_expr: arith_expr (('<<'|'>>') arith_expr)*
 -- arith_expr: term (('+'|'-') term)*
+arith_expr
+    : term              { $1 }
+    | term '+' term     { BinOp (ArithOp Add) $1 $3 }
+    | term '-' term     { BinOp (ArithOp Sub) $1 $3 }
+
 -- term: factor (('*'|'/'|'%'|'//') factor)*
+term
+    : factor                { $1 }
+    | factor '*' factor     { BinOp (ArithOp Mul) $1 $3 }
+    | factor '/' factor     { BinOp (ArithOp Div) $1 $3 }
+
 -- factor: ('+'|'-'|'~') factor | power
+factor
+    : power                 { $1 }
+
 -- power: atom trailer* ['**' factor]
+power
+    : atom                  { $1 }
+    | atom trailer          { handleTrailer $1 $2 }
+
 -- atom: ('(' [yield_expr|testlist_comp] ')' |
 --        '[' [testlist_comp] ']' |
 --        '{' [dictorsetmaker] '}' |
@@ -318,6 +335,10 @@ atom
 
 -- testlist_comp: (test|star_expr) ( comp_for | (',' (test|star_expr))* [','] )
 -- trailer: '(' [arglist] ')' | '[' subscriptlist ']' | '.' NAME
+trailer
+    : '(' arglist ')'       { TrailerCall $2 }
+    | '.' identifier        { TrailerAttr $2 }
+
 -- subscriptlist: subscript (',' subscript)* [',']
 -- subscript: test | [test] ':' [test] [sliceop]
 -- sliceop: ':' [test]
@@ -331,15 +352,19 @@ classdef
     : CLASS identifier base_classes ':' suite { ClassDef $2 $3 $5 }
 
 base_classes
-    :                                   { [] }
-    | '(' sepBy0(identifier, ',') ')'   { $2 }
--- 
+    :                   { [] }
+    | '(' arglist ')'   { $2 }
+
 -- arglist: (argument ',')* (argument [',']
 --                          |'*' test (',' argument)* [',' '**' test] 
 --                          |'**' test)
+arglist
+    : sepBy0(argument, ',')         { $1 }
 -- # The reason that keywords are test nodes instead of NAME is that using NAME
 -- # results in an ambiguity. ast.c makes sure it's a NAME.
 -- argument: test [comp_for] | test '=' test  # Really [keyword '='] test
+argument
+    : test  { $1 }
 -- comp_iter: comp_for | comp_if
 -- comp_for: 'for' exprlist 'in' or_test [comp_iter]
 -- comp_if: 'if' test_nocond [comp_iter]
@@ -350,6 +375,15 @@ base_classes
 -- yield_expr: 'yield' [yield_arg]
 -- yield_arg: 'from' test | testlist
 {
+
+data Trailer
+    = TrailerCall [Expression]
+    | TrailerAttr String
+    deriving (Show, Eq)
+
+handleTrailer expr (TrailerCall args) = Call expr args
+handleTrailer expr (TrailerAttr name) = Attribute expr name
+
 tokenize code = L.tokenize code
 parse code = L.evalP parseTokens code
 

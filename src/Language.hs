@@ -17,7 +17,7 @@ data Statement
     | Continue
     | Pass
     | Assert Expression
-    | ClassDef String [String] Statements
+    | ClassDef String [Expression] Statements
     deriving(Eq, Show)
 
 type Statements = [Statement]
