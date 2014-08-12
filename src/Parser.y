@@ -195,7 +195,8 @@ continue_stmt
 
 -- return_stmt: 'return' [testlist]
 return_stmt
-    : RETURN test       { Return $2 }
+    : RETURN            { Return (Constant None) }
+    | RETURN test       { Return $2 }
 
 -- yield_stmt: yield_expr
 -- raise_stmt: 'raise' [test ['from' test]]
