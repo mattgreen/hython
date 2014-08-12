@@ -331,9 +331,9 @@ factor
     : power                 { $1 }
 
 -- power: atom trailer* ['**' factor]
+-- TODO: implement fully
 power
-    : atom                  { $1 }
-    | atom trailer          { handleTrailer $1 $2 }
+    : atom many0(trailer)       { handleTrailers $1 $2 }
 
 -- atom: ('(' [yield_expr|testlist_comp] ')' |
 --        '[' [testlist_comp] ']' |
@@ -394,8 +394,10 @@ data Trailer
     | TrailerAttr String
     deriving (Show, Eq)
 
-handleTrailer expr (TrailerCall args) = Call expr args
-handleTrailer expr (TrailerAttr name) = Attribute expr name
+handleTrailers expr trailers = foldl' handleTrailer expr trailers
+  where
+    handleTrailer expr (TrailerCall args) = Call expr args
+    handleTrailer expr (TrailerAttr name) = Attribute expr name
 
 tokenize code = L.tokenize code
 parse code = L.evalP parseTokens code
