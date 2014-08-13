@@ -5,7 +5,10 @@ module Lexer where
 
 import Codec.Binary.UTF8.String (encode)
 import Control.Monad.State
+import Data.Complex
+import Data.List
 import Data.Word
+import Text.Regex
 
 import Language
 }
@@ -25,6 +28,15 @@ $delimiters = [\( \) \[ \] \{ \} \, \: \. \; \@ \=]
 
 @keywordOrIdentifier = [a-zA-Z_][a-zA-Z0-9_]*
 
+@intpart = $digit+
+@fraction = "." $digit+
+@exponent = [eE] [\+\-]? $digit+
+@pointfloat = @intpart @fraction | @fraction | @intpart "."
+@exponentfloat = (@intpart | @pointfloat) @exponent
+@floatnumber = @pointfloat | @exponentfloat
+
+@imagnumber = (@floatnumber | @intpart) [jJ]
+
 tokens :-
     -- Whitespace handling
     $newline $white* / $content { handleIndentation }
@@ -37,9 +49,15 @@ tokens :-
     -- Integers
     0+                          { \_ s -> return $ Literal (Int 0) }
     [1-9][0-9]*                 { \_ s -> return $ Literal (Int $ read s) }
-    -- 0[bB][01]+               { \_ s -> return $ Literal
+    0[bB][01]+                  { \_ s -> return $ Literal (Int $ binaryToDecimal s) }
     0[oO][0-9]+                 { \_ s -> return $ Literal (Int $ read s) }
     0[xX][0-9a-fA-F]+           { \_ s -> return $ Literal (Int $ read s) }
+
+    -- Floats
+    @floatnumber                { \_ s -> return $ Literal (Float $ read (legalizeFloat s)) }
+
+    -- Imaginary numbers
+    @imagnumber                 { \_ s -> return $ Literal (Imaginary (0.0 :+ (read (legalizeImag s)))) }
 
     -- Strings
     '.*'                        { \_ s -> return $ Literal (String (stringContent s)) }
@@ -72,6 +90,25 @@ keywordOrIdentifier s
                 "for", "from", "global", "if", "import", "in", "is", "lambda",
                 "nonlocal", "not", "or", "pass", "raise", "return", "try",
                 "while", "with", "yield"]
+
+binaryToDecimal :: String -> Integer
+binaryToDecimal s = convert $ drop 2 s
+  where
+    convert = foldr (\c s -> s * 2 + c) 0 . reverse . map (\c -> if c == '0' then 0 else 1)
+
+
+legalizeFloat :: String -> String
+legalizeFloat s = killSpaces (foldl' legalize s replacements)
+  where
+    killSpaces str = filter(/=' ') str
+    legalize str (regex, replacement) = subRegex (mkRegex regex) str replacement
+    replacements = [("^\\.", "0."),
+                    ("([^0-9])\\.", "\\1 0."),
+                    ("\\.$", ".0"),
+                    ("\\.([^0-9])", ".0\\1")]
+
+legalizeImag :: String -> String
+legalizeImag s = init (legalizeFloat s)
 
 stringContent :: String -> String
 stringContent s = tail $ init s
