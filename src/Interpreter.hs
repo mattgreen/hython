@@ -243,19 +243,19 @@ evalExpr (Call (Variable "print") args) = do
     liftIO $ putStrLn arg
     return None
 
-evalExpr (Call e args) = do
-    f <- evalExpr e
-    evalArgs <- mapM evalExpr args
-    evalCall f evalArgs
-
-evalExpr (MethodCall target name args) = do
-    receiver <- lookupSymbol target
+evalExpr (Call (Attribute obj name) args) = do
+    receiver <- evalExpr obj
     evalArgs <- mapM evalExpr args
     method <- getClassAttr name receiver
 
     case method of
-        Just f  -> evalCall f (receiver : evalArgs)
-        Nothing -> fail $ "Unknown method " ++ name
+        Just f  -> evalCall f (receiver: evalArgs)
+        Nothing -> fail $ "Unknown method: " ++ name
+
+evalExpr (Call e args) = do
+    f <- evalExpr e
+    evalArgs <- mapM evalExpr args
+    evalCall f evalArgs
 
 evalExpr (Attribute target name) = do
     receiver <- evalExpr target
