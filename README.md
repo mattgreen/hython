@@ -1,25 +1,93 @@
 #hython
 
-A Python 3 interpreter written in Haskell. I'm new to Haskell, so this will move pretty slowly.
+A Python 3 interpreter implemented in Haskell.
 
-I wanted to learn Haskell, so I intentionally chose a more ambitious project to see how it does.
+The goal of this project is to become more familiar with Haskell. It is not to produce a replacement for CPython or PyPy. I would like to implement as much of the core language as I can. While I list features out below, they're more for me to remember what I have remaining in each part of the project.
 
 ## Features
 
-* Line comments
-* `print` function
-* Basic data types: integers, floats, strings, and booleans
-* Operators: `+`, `-`, `*`, `/`, `==`, `!=`, `>`, `>=`, `<`, `<=`
-* Mutable variables
-* If/elif/else statements
-* While/break/continue
-* Functions + `return` statement
+### Lexical Analysis
 
-## Differences from Python 3
+ * [x] Line comments
+ * [x] Significant indentation
+ * [x] Integer literals
+ * [x] Floating point literals
+ * [x] Imaginary literals
+ * [x] Single quoted string literals
+ * [x] Double quoted string literals
+ * [ ] Triple quoted string literals
+ * [ ] String escape sequences
+ * [ ] Byte literals
+ * [x] All operators, delimiters, and keywords
+ * [ ] Implicit line joining in collections
+ * [ ] Explicit line joining via `\\`
 
-* Wrong indenting is silently ignored, rather than producing an exception
+### Parsing
+
+ * [x] Scalar literals
+ * [ ] Adjacent string literal concatenation
+ * [x] Function calls
+ * [x] Attribute access
+ * [ ] Tuples
+ * [ ] List literals
+ * [ ] List comprehensions
+ * [ ] Dictionary literals
+ * [ ] Subscript operators
+ * [ ] Set literals
+ * [ ] All arithmetic operators
+ * [ ] All bitwise operators
+ * [x] All boolean operators
+ * [ ] All comparison operators
+ * [x] `assert` statement
+ * [x] `break` statement
+ * [x] `class` statement
+ * [x] `def` statement
+ * [ ] `del` statement
+ * [ ] `except` statement
+ * [ ] `finally` statement
+ * [ ] `global` statement
+ * [x] `if`/`elif`/`else` statements
+ * [ ] `import` statement (and friends)
+ * [ ] `lambda` statement
+ * [ ] `nonlocal` statement
+ * [x] `pass` statement
+ * [ ] `raise` statement
+ * [x] `return` statement
+ * [ ] `try` statement
+ * [ ] `while` statement (needs `while`/`else` support)
+ * [ ] `with` statement
+ * [ ] `yield` statement
+ * [ ] Keyword arguments to functions
+ * [ ] Default arguments to functions
+
+### Interpreter
+
+ * [x] `print` built-in function
+ * [x] Variable assignment and retrieval
+ * [x] Loop control flow
+ * [x] Function control flow
+ * [x] Scoping (basic)
+ * [x] Functions
+ * [x] Classes
+ * [ ] Inheritance
+ * [ ] Modules
+ * [ ] Exception handling
+ * [ ] Generators
+ * [ ] Standard built-in functions
+ * [ ] Built-in exception types
 
 ## Running
-    $ cabal install
+
+To build:
+
     $ make
-    $ ./hython test/fib.py
+
+To test:
+
+    $ make test
+
+## Reference
+ * [Python 3.4 Language Reference](https://docs.python.org/3.4/reference/)
+ * [Alex + Happy Whitespace Handling](https://github.com/jmoy/alexhappy)
+ * [berp](https://github.com/bjpop/berp)
+ * [Language.Python](https://github.com/bjpop/language-python)
