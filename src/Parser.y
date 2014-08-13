@@ -344,11 +344,11 @@ power
 --        NAME | NUMBER | STRING+ | '...' | 'None' | 'True' | 'False')
 atom
     : '(' testlist_comp ')' { $2 }
-    | identifier    { Variable $1 }
-    | literal       { Constant $1 }
-    | NONE          { Constant None }
-    | TRUE          { Constant $ Bool True }
-    | FALSE         { Constant $ Bool False }
+    | identifier            { Variable $1 }
+    | literal               { Constant $1 }
+    | NONE                  { Constant None }
+    | TRUE                  { Constant $ Bool True }
+    | FALSE                 { Constant $ Bool False }
 
 -- testlist_comp: (test|star_expr) ( comp_for | (',' (test|star_expr))* [','] )
 testlist_comp
