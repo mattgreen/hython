@@ -4,7 +4,7 @@ build-type:       Simple
 cabal-version:    >= 1.2
 
 executable        hython
-  build-depends:  base, containers, mtl, array, utf8-string, regex-base, regex-compat
+  build-depends:  base, containers, mtl, array, utf8-string, regex-base, regex-compat, transformers
   build-tools:    alex, happy
   hs-source-dirs: src
   main-is:        Interpreter.hs

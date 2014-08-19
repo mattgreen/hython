@@ -1,5 +1,6 @@
 import Control.Monad
 import Control.Monad.State
+import Control.Monad.Trans.Cont
 import Data.Complex
 import Data.IORef
 import Data.Map (Map)
@@ -10,7 +11,8 @@ import Text.Printf
 import Language
 import Parser
 
-type Evaluator = StateT Environment IO
+type Evaluator = ContT () (StateT Environment IO)
+type EvaluatorContinuation = () -> Evaluator ()
 type SymbolTable = Map String Value
 data Flow = Next | Breaking | Continuing | Returning Value deriving (Eq, Show)
 
@@ -18,7 +20,7 @@ data Environment = Environment {
     scopes :: [SymbolTable],
     flow :: Flow,
     loopLevel :: Int
-} deriving (Show)
+}
 
 defaultEnv :: Environment
 defaultEnv = do
@@ -123,7 +125,6 @@ eval (Return expression) = do
     value <- evalExpr expression
     env <- get
     put env { flow = Returning value }
-
     return ()
 
 eval (While condition block) = do
@@ -349,5 +350,5 @@ main = do
     [filename] <- getArgs
     code <- readFile filename
 
-    _ <- runStateT (parseEval filename code) defaultEnv
+    _ <- runStateT (runContT (parseEval filename code) return) defaultEnv
     return ()
