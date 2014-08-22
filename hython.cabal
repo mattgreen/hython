@@ -8,4 +8,4 @@ executable        hython
   build-tools:    alex, happy
   hs-source-dirs: src
   main-is:        Interpreter.hs
-  ghc-options:    -Wall -fno-warn-missing-signatures
+  ghc-options:    -Wall -fno-warn-missing-signatures -debug

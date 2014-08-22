@@ -1,5 +1,6 @@
 def f():
     if True:
+        print("f()")
         return 0
         print("Shouldn't see this")
 
@@ -9,7 +10,9 @@ def g():
     print("Goodbye")
 
 def h():
-    return f() + 1
+    a = f() + 1
+    print("about to leave h()")
+    return a
 
 def i():
     pass

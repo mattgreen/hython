@@ -1,32 +1,38 @@
 import Control.Monad
+import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Trans.Cont
 import Data.Complex
 import Data.IORef
 import Data.Map (Map)
 import qualified Data.Map as Map
+import Debug.Trace
 import System.Environment
 import Text.Printf
 
 import Language
 import Parser
 
-type Evaluator = ContT () (StateT Environment IO)
+type Evaluator = ContT () (ReaderT FlowControl (StateT Environment IO))
 type EvaluatorContinuation = () -> Evaluator ()
 type SymbolTable = Map String Value
-data Flow = Next | Breaking | Continuing | Returning Value deriving (Eq, Show)
+
+data FlowControl = FlowControl {
+    loopContinue :: EvaluatorContinuation,
+    loopExit :: EvaluatorContinuation
+}
 
 data Environment = Environment {
     scopes :: [SymbolTable],
-    flow :: Flow,
-    loopLevel :: Int
+    fnReturn :: EvaluatorContinuation,
+    returnValue :: Value
 }
 
 defaultEnv :: Environment
 defaultEnv = do
     let builtins = []
     let globals = Map.fromList builtins
-    Environment {scopes = [globals], flow = Next, loopLevel = 0}
+    Environment {scopes = [globals]}
 
 currentScope :: Evaluator SymbolTable
 currentScope = do
@@ -100,14 +106,12 @@ eval (Assignment (Attribute var attr) expr) = do
 eval (Assignment{}) = fail "Syntax error!"
 
 eval (Break) = do
-    env <- get
-    when (loopLevel env <= 0) (fail "Can only break in a loop!")
-    put env { flow = Breaking }
+    flow <- ask
+    (loopExit flow) ()
 
 eval (Continue) = do
-    env <- get
-    when (loopLevel env <= 0) (fail "Can only continue in a loop!")
-    put env { flow = Continuing }
+    flow <- ask
+    (loopContinue flow ())
 
 eval (If clauses elseBlock) = do
     evalClauses clauses
@@ -123,42 +127,24 @@ eval (If clauses elseBlock) = do
 
 eval (Return expression) = do
     value <- evalExpr expression
+
     env <- get
-    put env { flow = Returning value }
-    return ()
+    put env { returnValue = value }
+
+    (fnReturn env) ()
 
 eval (While condition block) = do
-    setup
-    loop
-    cleanup
+    env <- get
 
-    where
-        setup = do
-            env <- get
-            let level = loopLevel env
-            put env { loopLevel = level + 1 }
-
-        loop = do
-            env <- get
-            result <- evalExpr condition
-            when (isTruthy result && flow env == Next) $ do
-                evalBlock block
-
-                -- Pretty ugly! Eat continue.
-                updatedEnv <- get
-                when (flow updatedEnv == Continuing) $ put updatedEnv { flow = Next }
-
-                loop
-
-        cleanup = do
-            env <- get
-            let level = loopLevel env
-            put env { loopLevel = level - 1 }
-
-            case flow env of
-                Breaking    -> put env { flow = Next }
-                Continuing  -> put env { flow = Next }
-                _           -> return ()
+    callCC $ \exit -> do
+        fix $ \loop -> do
+            callCC $ \continue -> do
+                local (\f -> f{ loopContinue = continue, loopExit = exit }) $ do
+                    result <- evalExpr condition
+                    unless (isTruthy result)
+                        (exit ())
+                    evalBlock block
+            loop
 
 eval (Pass) = return ()
 
@@ -270,16 +256,12 @@ evalExpr (Constant c) = return c
 
 evalBlock :: [Statement] -> Evaluator ()
 evalBlock statements = do
-    env <- get
-
-    case flow env of
-        Next -> case statements of
-            (s:r) -> do
-                eval s
-                evalBlock r
-            [] -> return ()
-        Continuing -> return ()
-        _ -> return ()
+    case statements of
+        (s:r) -> do
+            {-(trace $ show s) eval s-}
+            eval s
+            evalBlock r
+        [] -> return ()
 
 evalCall :: Value -> [Value] -> Evaluator Value
 evalCall cls@(Class {}) args = do
@@ -295,29 +277,19 @@ evalCall cls@(Class {}) args = do
 
 evalCall (Function _ params body) args = do
     env <- get
-    let level = loopLevel env
 
-    setup
-    evalBlock body
-    result <- returnValue
-    teardown level
-    return result
+    let previousReturnCont = fnReturn env
+    let previousScopes = scopes env
+    let scope = Map.union (Map.fromList $ zip params args) (last $ scopes env)
 
-    where
-        setup = do
-            env <- get
-            let scope = Map.union (Map.fromList $ zip params args) (last $ scopes env)
-            put env { scopes = scope : scopes env, loopLevel = 0 }
+    callCC $ \returnCont -> do
+        put env { fnReturn = returnCont, returnValue = None, scopes = scope : scopes env }
+        evalBlock body
 
-        returnValue = do
-            env <- get
-            case flow env of
-                Returning v -> return v
-                _           -> return None
+    env <- get
+    put env { fnReturn = previousReturnCont, scopes = previousScopes }
 
-        teardown level = do
-            env <- get
-            put env { scopes = tail (scopes env), flow = Next, loopLevel = level }
+    return $ returnValue env
 
 evalCall v _ = fail $ "Unable to call " ++ toString v
 
@@ -343,12 +315,16 @@ toString (Object _ _) = fail "Object must be associated with a class!"
 
 parseEval :: String -> String -> Evaluator ()
 parseEval _ code = do
-    mapM_ eval (parse code)
+    let statements = parse code
+    evalBlock statements
+
+defaultFlowControl :: FlowControl
+defaultFlowControl = FlowControl { }
 
 main :: IO ()
 main = do
     [filename] <- getArgs
     code <- readFile filename
 
-    _ <- runStateT (runContT (parseEval filename code) return) defaultEnv
+    _ <- runStateT (runReaderT (runContT (parseEval filename code) return) defaultFlowControl) defaultEnv
     return ()
