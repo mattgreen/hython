@@ -14,18 +14,18 @@ import Language
 import Parser
 
 type Evaluator = ContT () (ReaderT FlowControl (StateT Environment IO))
-type EvaluatorContinuation = () -> Evaluator ()
+type EvaluatorCont = () -> Evaluator ()
+type EvaluatorReturnCont = Value -> Evaluator ()
 type SymbolTable = Map String Value
 
 data FlowControl = FlowControl {
-    loopContinue :: EvaluatorContinuation,
-    loopExit :: EvaluatorContinuation
+    loopContinue :: EvaluatorCont,
+    loopExit :: EvaluatorCont
 }
 
 data Environment = Environment {
     scopes :: [SymbolTable],
-    fnReturn :: EvaluatorContinuation,
-    returnValue :: Value
+    fnReturn :: EvaluatorReturnCont
 }
 
 defaultEnv :: Environment
@@ -129,9 +129,7 @@ eval (Return expression) = do
     value <- evalExpr expression
 
     env <- get
-    put env { returnValue = value }
-
-    (fnReturn env) ()
+    (fnReturn env) value
 
 eval (While condition block) = do
     env <- get
@@ -282,14 +280,15 @@ evalCall (Function _ params body) args = do
     let previousScopes = scopes env
     let scope = Map.union (Map.fromList $ zip params args) (last $ scopes env)
 
-    callCC $ \returnCont -> do
-        put env { fnReturn = returnCont, returnValue = None, scopes = scope : scopes env }
+    result <- callCC $ \returnCont -> do
+        put env { fnReturn = returnCont, scopes = scope : previousScopes }
         evalBlock body
+        return None
 
     env <- get
     put env { fnReturn = previousReturnCont, scopes = previousScopes }
 
-    return $ returnValue env
+    return result
 
 evalCall v _ = fail $ "Unable to call " ++ toString v
 
