@@ -60,8 +60,8 @@ tokens :-
     @imagnumber                 { \_ s -> return $ Literal (Imaginary (0.0 :+ (read (legalizeImag s)))) }
 
     -- Strings
-    '[^\']*'                    { \_ s -> return $ Literal (String (stringContent s)) }
-    \"[^\"]*\"                  { \_ s -> return $ Literal (String (stringContent s)) }
+    '[^\']*'                    { \_ s -> return $ StringLiteral (stringContent s) }
+    \"[^\"]*\"                  { \_ s -> return $ StringLiteral (stringContent s) }
 
     @keywordOrIdentifier        { \_ s -> return $ keywordOrIdentifier s }
 
@@ -75,6 +75,7 @@ data Token
      | Identifier String
      | Keyword String
      | Literal Value
+     | StringLiteral String
      | Operator String
      | Delimiter String
      | EOF

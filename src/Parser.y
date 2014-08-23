@@ -18,6 +18,7 @@ import qualified Lexer as L
 %token
 identifier  {L.Identifier $$}
 literal     {L.Literal $$}
+string      {L.StringLiteral $$}
 NEWLINE     {L.Newline}
 '+'         {L.Operator "+"}
 '-'         {L.Operator "-"}
@@ -346,6 +347,7 @@ atom
     : '(' testlist_comp ')' { $2 }
     | identifier            { Name $1 }
     | literal               { Constant $1 }
+    | many1(string)         { Constant (String $ foldl' (++) "" $1) }
     | NONE                  { Constant None }
     | TRUE                  { Constant $ Bool True }
     | FALSE                 { Constant $ Bool False }

@@ -25,7 +25,7 @@ The goal of this project is to become more familiar with Haskell. It is not to p
 ### Parsing
 
  * [x] Scalar literals
- * [ ] Adjacent string literal concatenation
+ * [x] Adjacent string literal concatenation
  * [x] Function calls
  * [x] Attribute access
  * [ ] Tuples
