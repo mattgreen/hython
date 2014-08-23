@@ -27,7 +27,7 @@ data IfClause = IfClause Expression [Statement] deriving (Eq, Show)
 data Expression
     = Call Expression [Expression]
     | Attribute Expression String
-    | Variable String
+    | Name String
     | UnaryOp UnaryOperator Expression
     | BinOp Operator Expression Expression
     | Constant Value

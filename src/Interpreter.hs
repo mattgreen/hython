@@ -96,7 +96,7 @@ eval (ClassDef name _ statements) = do
         put env { scopes = tail $ scopes env }
         liftIO $ newIORef dict
 
-eval (Assignment (Variable var) expr) = do
+eval (Assignment (Name var) expr) = do
     value <- evalExpr expr
     updateSymbol var value
 
@@ -231,7 +231,7 @@ evalExpr (BinOp op l r) = do
     right <- evalExpr r
     evalExpr $ BinOp op (Constant left) (Constant right)
 
-evalExpr (Call (Variable "print") args) = do
+evalExpr (Call (Name "print") args) = do
     arg <- liftM toString (evalExpr (head args))
     liftIO $ putStrLn arg
     return None
@@ -257,7 +257,7 @@ evalExpr (Attribute target name) = do
         Just v  -> return v
         Nothing -> fail $ "No attribute " ++ name
 
-evalExpr (Variable var) = lookupSymbol var
+evalExpr (Name var) = lookupSymbol var
 evalExpr (Constant c) = return c
 
 evalBlock :: [Statement] -> Evaluator ()
@@ -287,7 +287,7 @@ evalCall (Function _ params body) args = do
         evalBlock body
         return None
 
-    modify (\e -> e{ fnReturn = previousReturnCont, scopes = previousScopes })
+    modify $ \e -> e{ fnReturn = previousReturnCont, scopes = previousScopes }
 
     return result
 

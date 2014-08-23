@@ -344,7 +344,7 @@ power
 --        NAME | NUMBER | STRING+ | '...' | 'None' | 'True' | 'False')
 atom
     : '(' testlist_comp ')' { $2 }
-    | identifier            { Variable $1 }
+    | identifier            { Name $1 }
     | literal               { Constant $1 }
     | NONE                  { Constant None }
     | TRUE                  { Constant $ Bool True }
