@@ -3,12 +3,14 @@ print(1+1)
 print(3-5)
 print(2*4)
 print(3/5)
+print(5%2)
 
 # Floating point arithmetic
 print(1.0 + 2.0)
 print(2.0 - 0.5)
 print(1.0 * 1.6)
 print(1.0 / 4.8)
+print(5.0 % 2.0)
 
 # TODO: imaginary number arithmetic
 

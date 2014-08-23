@@ -32,6 +32,8 @@ NEWLINE     {L.Newline}
 '>'         {L.Operator ">"}
 '>='        {L.Operator ">="}
 '<>'        {L.Operator "<>"}
+'%'         {L.Operator "%"}
+'//'        {L.Operator "//"}
 '.'         {L.Delimiter "."}
 '('         {L.Delimiter "("}
 ')'         {L.Delimiter ")"}
@@ -328,6 +330,8 @@ term
     : factor            { $1 }
     | term '*' factor   { BinOp (ArithOp Mul) $1 $3 }
     | term '/' factor   { BinOp (ArithOp Div) $1 $3 }
+    | term '%' factor   { BinOp (ArithOp Mod) $1 $3 }
+    | term '//' factor  { BinOp (ArithOp FDiv) $1 $3 }
 
 -- factor: ('+'|'-'|'~') factor | power
 -- TODO: implement signs

@@ -68,6 +68,8 @@ data ArithmeticOperator
     | Sub
     | Mul
     | Div
+    | Mod
+    | FDiv
     deriving(Eq, Show)
 
 data BitOperator

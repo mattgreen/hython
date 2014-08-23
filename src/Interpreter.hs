@@ -5,6 +5,7 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Trans.Cont
 import Data.Complex
+import Data.Fixed
 import Data.IORef
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -171,6 +172,7 @@ evalExpr (BinOp (ArithOp op) (Constant (Int l)) (Constant (Int r)))
     | op == Sub = return $ Int (l - r)
     | op == Mul = return $ Int (l * r)
     | op == Div = return $ Float (fromInteger l / fromInteger r)
+    | op == Mod = return $ Int (l `mod` r)
 
 evalExpr (BinOp (ArithOp op) (Constant (Float l)) (Constant (Float r))) =
     return $ Float (fn op l r)
@@ -179,6 +181,7 @@ evalExpr (BinOp (ArithOp op) (Constant (Float l)) (Constant (Float r))) =
     fn Sub = (-)
     fn Mul = (*)
     fn Div = (/)
+    fn Mod = mod'
 
 -- Promote ints to floats in binary operators
 evalExpr (BinOp op (Constant (Int l)) (Constant (Float r))) =
