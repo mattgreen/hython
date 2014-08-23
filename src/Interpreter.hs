@@ -1,3 +1,5 @@
+import Prelude hiding (break)
+
 import Control.Monad
 import Control.Monad.Reader
 import Control.Monad.State
@@ -6,7 +8,7 @@ import Data.Complex
 import Data.IORef
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Debug.Trace
+{-import Debug.Trace-}
 import System.Environment
 import Text.Printf
 
@@ -19,8 +21,8 @@ type EvaluatorReturnCont = Value -> Evaluator ()
 type SymbolTable = Map String Value
 
 data FlowControl = FlowControl {
-    loopContinue :: EvaluatorCont,
-    loopExit :: EvaluatorCont
+    loopBreak :: EvaluatorCont,
+    loopContinue :: EvaluatorCont
 }
 
 data Environment = Environment {
@@ -32,7 +34,7 @@ defaultEnv :: Environment
 defaultEnv = do
     let builtins = []
     let globals = Map.fromList builtins
-    Environment {scopes = [globals]}
+    Environment {scopes = [globals], fnReturn = (error "Must be in function!")}
 
 currentScope :: Evaluator SymbolTable
 currentScope = do
@@ -107,7 +109,7 @@ eval (Assignment{}) = fail "Syntax error!"
 
 eval (Break) = do
     flow <- ask
-    (loopExit flow) ()
+    (loopBreak flow) ()
 
 eval (Continue) = do
     flow <- ask
@@ -115,15 +117,13 @@ eval (Continue) = do
 
 eval (If clauses elseBlock) = do
     evalClauses clauses
-    return ()
-
-    where
-          evalClauses [] = evalBlock elseBlock
-          evalClauses (IfClause condition block : rest) = do
-            result <- evalExpr condition
-            if isTruthy result
-                then evalBlock block
-                else evalClauses rest
+  where
+    evalClauses [] = evalBlock elseBlock
+    evalClauses (IfClause condition block : rest) = do
+        result <- evalExpr condition
+        if isTruthy result
+            then evalBlock block
+            else evalClauses rest
 
 eval (Return expression) = do
     value <- evalExpr expression
@@ -132,15 +132,13 @@ eval (Return expression) = do
     (fnReturn env) value
 
 eval (While condition block) = do
-    env <- get
-
-    callCC $ \exit -> do
+    callCC $ \break -> do
         fix $ \loop -> do
             callCC $ \continue -> do
-                local (\f -> f{ loopContinue = continue, loopExit = exit }) $ do
+                local (\f -> f{ loopBreak = break, loopContinue = continue }) $ do
                     result <- evalExpr condition
                     unless (isTruthy result)
-                        (exit ())
+                        (break ())
                     evalBlock block
             loop
 
@@ -155,6 +153,16 @@ eval (Expression e) = do
     return ()
 
 evalExpr :: Expression -> Evaluator Value
+evalExpr (UnaryOp Not (Constant (Bool r))) =
+    return $ Bool (not r)
+
+evalExpr (UnaryOp op (Constant r)) =
+    fail $ printf "Unsupported operand type for %s: %s" (show op) (toString r)
+
+evalExpr (UnaryOp op expr) = do
+    r <- evalExpr expr
+    evalExpr $ UnaryOp op (Constant r)
+
 evalExpr (BinOp (ArithOp op) (Constant (Int l)) (Constant (Int r)))
     | op == Add = return $ Int (l + r)
     | op == Sub = return $ Int (l - r)
@@ -253,13 +261,7 @@ evalExpr (Variable var) = lookupSymbol var
 evalExpr (Constant c) = return c
 
 evalBlock :: [Statement] -> Evaluator ()
-evalBlock statements = do
-    case statements of
-        (s:r) -> do
-            {-(trace $ show s) eval s-}
-            eval s
-            evalBlock r
-        [] -> return ()
+evalBlock statements = mapM_ eval statements
 
 evalCall :: Value -> [Value] -> Evaluator Value
 evalCall cls@(Class {}) args = do
@@ -285,8 +287,7 @@ evalCall (Function _ params body) args = do
         evalBlock body
         return None
 
-    env <- get
-    put env { fnReturn = previousReturnCont, scopes = previousScopes }
+    modify (\e -> e{ fnReturn = previousReturnCont, scopes = previousScopes })
 
     return result
 
@@ -318,7 +319,10 @@ parseEval _ code = do
     evalBlock statements
 
 defaultFlowControl :: FlowControl
-defaultFlowControl = FlowControl { }
+defaultFlowControl = FlowControl {
+    loopBreak = (error "Must be in loop"),
+    loopContinue = (error "Must be in loop")
+}
 
 main :: IO ()
 main = do
