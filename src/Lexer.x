@@ -37,6 +37,22 @@ $delimiters = [\( \) \[ \] \{ \} \, \: \. \; \@ \=]
 
 @imagnumber = (@floatnumber | @intpart) [jJ]
 
+@stringescapeseq = \\.
+
+@shortstringcharsingle = [^\\\']
+@shortstringitemsingle = @shortstringcharsingle | @stringescapeseq
+
+@shortstringchardouble = [^\\\"]
+@shortstringitemdouble = @shortstringchardouble | @stringescapeseq
+@shortstring = ' @shortstringitemsingle* ' | \" @shortstringitemdouble* \"
+
+@longstringchar = [^\\]
+@longstringitem = @longstringchar | @stringescapeseq
+@longstring = ''' @longstringitem* ''' | \"\"\" @longstringitem* \"\"\"
+
+@stringprefix = [rRuU]
+@stringliteral = @stringprefix? (@shortstring)
+
 tokens :-
     -- Whitespace handling
     $newline $white* / $content { handleIndentation }
@@ -60,8 +76,7 @@ tokens :-
     @imagnumber                 { \_ s -> return $ Literal (Imaginary (0.0 :+ (read (legalizeImag s)))) }
 
     -- Strings
-    '[^\']*'                    { \_ s -> return $ StringLiteral (stringContent s) }
-    \"[^\"]*\"                  { \_ s -> return $ StringLiteral (stringContent s) }
+    @stringliteral              { \_ s -> return $ StringLiteral (stringContent s) }
 
     @keywordOrIdentifier        { \_ s -> return $ keywordOrIdentifier s }
 
