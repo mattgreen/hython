@@ -77,6 +77,9 @@ updateSymbol name value = do
 eval :: Statement -> Evaluator ()
 eval (Def name params body) = updateSymbol name $ Function name params body
 
+eval (ModuleDef statements) = do
+    evalBlock statements
+
 eval (ClassDef name _ statements) = do
     pushScope
     mapM_ eval statements
@@ -316,7 +319,7 @@ toString (Object _ _) = fail "Object must be associated with a class!"
 parseEval :: String -> String -> Evaluator ()
 parseEval _ code = do
     let statements = parse code
-    evalBlock statements
+    eval statements
 
 defaultFlowControl :: FlowControl
 defaultFlowControl = FlowControl {

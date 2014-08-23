@@ -18,6 +18,7 @@ data Statement
     | Pass
     | Assert Expression
     | ClassDef String [Expression] Statements
+    | ModuleDef Statements
     deriving(Eq, Show)
 
 type Statements = [Statement]
