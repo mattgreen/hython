@@ -11,6 +11,7 @@ data Statement
     | Expression Expression
     | If [IfClause] [Statement]
     | Def String [String] [Statement]
+    | Del Expressions
     | Return Expression
     | While Expression Statements Statements
     | Break
@@ -21,6 +22,7 @@ data Statement
     | ModuleDef Statements
     deriving(Eq, Show)
 
+type Expressions = [Expression]
 type Statements = [Statement]
 
 data IfClause = IfClause Expression [Statement] deriving (Eq, Show)

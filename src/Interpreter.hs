@@ -32,6 +32,9 @@ data Environment = Environment {
     fnReturn :: EvaluatorReturnCont
 }
 
+unimplemented :: Statement -> Evaluator ()
+unimplemented s = fail $ printf "Unimplemented: %s" (show s)
+
 defaultEnv :: Environment
 defaultEnv = do
     let builtins = []
@@ -150,6 +153,8 @@ eval (Pass) = return ()
 eval (Assert e) = do
     result <- evalExpr e
     unless (isTruthy result) (fail "Assertion failed!")
+
+eval s@(Del {}) = unimplemented s
 
 eval (Expression e) = do
     _ <- evalExpr e

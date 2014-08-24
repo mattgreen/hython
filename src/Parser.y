@@ -177,6 +177,7 @@ small_stmts
 --              import_stmt | global_stmt | nonlocal_stmt | assert_stmt)
 small_stmt
     : expr_stmt     { $1 }
+    | del_stmt      { $1 }
     | pass_stmt     { $1 }
     | flow_stmt     { $1 }
     | assert_stmt   { $1 }
@@ -196,6 +197,9 @@ testlist_star_expr
 --             '<<=' | '>>=' | '**=' | '//=')
 -- # For normal assignments, additional restrictions enforced by the interpreter
 -- del_stmt: 'del' exprlist
+del_stmt
+    : DEL exprlist      { Del $2 }
+
 -- pass_stmt: 'pass'
 pass_stmt
     : PASS              { Pass }
@@ -403,6 +407,10 @@ trailer
 -- subscript: test | [test] ':' [test] [sliceop]
 -- sliceop: ':' [test]
 -- exprlist: (expr|star_expr) (',' (expr|star_expr))* [',']
+-- TODO: support 1-n exprs
+exprlist
+    : or(expr, star_expr)       { [$1] }
+
 -- testlist: test (',' test)* [',']
 -- dictorsetmaker: ( (test ':' test (comp_for | (',' test ':' test)* [','])) |
 --                   (test (comp_for | (',' test)* [','])) )
