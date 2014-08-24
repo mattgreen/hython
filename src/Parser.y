@@ -78,6 +78,18 @@ TRY         {L.Keyword "try"}
 WHILE       {L.Keyword "while"}
 WITH        {L.Keyword "with"}
 YIELD       {L.Keyword "yield"}
+
+%left OR
+%left AND
+%left NOT
+%left '<' '<=' '>' '>=' '!=' '=='
+%left '|'
+%left '&'
+%left '<<' '>>'
+%left '+' '-'
+%left '*' '/' '//' '%'
+%left POS NEG COMP
+
 %%
 
 or(p,q)
@@ -324,7 +336,7 @@ xor_expr: arith_expr  { $1 }
 arith_expr
     : term                  { $1 }
     | arith_expr '+' term   { BinOp (ArithOp Add) $1 $3 }
-    | arith_expr '-' term    { BinOp (ArithOp Sub) $1 $3 }
+    | arith_expr '-' term   { BinOp (ArithOp Sub) $1 $3 }
 
 -- term: factor (('*'|'/'|'%'|'//') factor)*
 term
@@ -336,9 +348,9 @@ term
 
 -- factor: ('+'|'-'|'~') factor | power
 factor
-    : '+' factor            { UnaryOp Pos $2 }
-    | '-' factor            { UnaryOp Neg $2 }
-    | '~' factor            { UnaryOp Complement $2 }
+    : '+' factor %prec POS  { UnaryOp Pos $2 }
+    | '-' factor %prec NEG  { UnaryOp Neg $2 }
+    | '~' factor %prec COMP { UnaryOp Complement $2 }
     | power                 { $1 }
 
 -- power: atom trailer* ['**' factor]

@@ -34,7 +34,7 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [ ] Dictionary literals
  * [ ] Subscript operators
  * [ ] Set literals
- * [ ] All arithmetic operators
+ * [x] All arithmetic operators
  * [ ] All bitwise operators
  * [x] All boolean operators
  * [ ] All comparison operators
