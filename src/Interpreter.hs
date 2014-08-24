@@ -10,7 +10,7 @@ import Data.Fixed
 import Data.IORef
 import Data.Map (Map)
 import qualified Data.Map as Map
-{-import Debug.Trace-}
+import Debug.Trace
 import System.Environment
 import Text.Printf
 
@@ -287,7 +287,17 @@ evalExpr (Name var) = lookupSymbol var
 evalExpr (Constant c) = return c
 
 evalBlock :: [Statement] -> Evaluator ()
-evalBlock statements = mapM_ eval statements
+evalBlock statements = mapM_ traceEval statements
+  where
+    traceEval :: Statement -> Evaluator ()
+    traceEval s = do
+        tracing <- liftIO $ lookupEnv "TRACE"
+
+        case tracing of
+            Just _  -> (trace $ traceStmt s) eval s
+            Nothing -> eval s
+
+    traceStmt s = "*** Evaluating: " ++ (show s)
 
 evalCall :: Value -> [Value] -> Evaluator Value
 evalCall cls@(Class {}) args = do
