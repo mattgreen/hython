@@ -334,7 +334,6 @@ term
     | term '//' factor  { BinOp (ArithOp FDiv) $1 $3 }
 
 -- factor: ('+'|'-'|'~') factor | power
--- TODO: implement signs
 factor
     : '+' factor            { UnaryOp Pos $2 }
     | '-' factor            { UnaryOp Neg $2 }
