@@ -257,7 +257,8 @@ else_clause
 
 -- while_stmt: 'while' test ':' suite ['else' ':' suite]
 while_stmt
-    : WHILE test ':' suite      { While $2 $4 }
+    : WHILE test ':' suite                  { While $2 $4 [] }
+    | WHILE test ':' suite ELSE ':' suite   { While $2 $4 $7 }
 
 -- for_stmt: 'for' exprlist 'in' testlist ':' suite ['else' ':' suite]
 -- try_stmt: ('try' ':' suite

@@ -134,13 +134,14 @@ eval (Return expression) = do
     env <- get
     fnReturn env value
 
-eval (While condition block) = callCC $ \break ->
+eval (While condition block elseBlock) = callCC $ \break ->
         fix $ \loop -> do
             callCC $ \continue ->
                 local (\f -> f{ loopBreak = break, loopContinue = continue }) $ do
                     result <- evalExpr condition
-                    unless (isTruthy result)
-                        (break ())
+                    unless (isTruthy result) $ do
+                        evalBlock elseBlock
+                        break ()
                     evalBlock block
             loop
 

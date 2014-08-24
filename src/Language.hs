@@ -12,7 +12,7 @@ data Statement
     | If [IfClause] [Statement]
     | Def String [String] [Statement]
     | Return Expression
-    | While Expression [Statement]
+    | While Expression Statements Statements
     | Break
     | Continue
     | Pass
