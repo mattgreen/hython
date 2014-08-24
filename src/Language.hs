@@ -54,6 +54,9 @@ instance Show (IORef a) where
 data UnaryOperator
     = Not
     | Splat
+    | Pos
+    | Neg
+    | Complement
     deriving(Eq, Show)
 
 data Operator

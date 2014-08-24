@@ -34,6 +34,7 @@ NEWLINE     {L.Newline}
 '<>'        {L.Operator "<>"}
 '%'         {L.Operator "%"}
 '//'        {L.Operator "//"}
+'~'         {L.Operator "~"}
 '.'         {L.Delimiter "."}
 '('         {L.Delimiter "("}
 ')'         {L.Delimiter ")"}
@@ -335,7 +336,10 @@ term
 -- factor: ('+'|'-'|'~') factor | power
 -- TODO: implement signs
 factor
-    : power                 { $1 }
+    : '+' factor            { UnaryOp Pos $2 }
+    | '-' factor            { UnaryOp Neg $2 }
+    | '~' factor            { UnaryOp Complement $2 }
+    | power                 { $1 }
 
 -- power: atom trailer* ['**' factor]
 -- TODO: implement fully

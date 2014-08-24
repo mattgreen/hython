@@ -4,6 +4,7 @@ import Control.Monad
 import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Trans.Cont
+import Data.Bits
 import Data.Complex
 import Data.Fixed
 import Data.IORef
@@ -157,8 +158,23 @@ eval (Expression e) = do
     return ()
 
 evalExpr :: Expression -> Evaluator Value
-evalExpr (UnaryOp Not (Constant (Bool r))) =
-    return $ Bool (not r)
+evalExpr (UnaryOp Not (Constant (Bool v))) =
+    return $ Bool (not v)
+
+evalExpr (UnaryOp Pos (Constant v@(Int {}))) =
+    return v
+
+evalExpr (UnaryOp Pos (Constant v@(Float {}))) =
+    return v
+
+evalExpr (UnaryOp Neg (Constant (Int v))) =
+    return $ Int (- v)
+
+evalExpr (UnaryOp Neg (Constant (Float v))) =
+    return $ Float (- v)
+
+evalExpr (UnaryOp Complement (Constant (Int v))) =
+    return $ Int (complement v)
 
 evalExpr (UnaryOp op (Constant r)) =
     fail $ printf "Unsupported operand type for %s: %s" (show op) (toString r)
