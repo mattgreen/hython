@@ -73,6 +73,7 @@ data ArithmeticOperator
     | Div
     | Mod
     | FDiv
+    | Pow
     deriving(Eq, Show)
 
 data BitOperator

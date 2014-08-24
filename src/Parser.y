@@ -33,6 +33,7 @@ NEWLINE     {L.Newline}
 '>='        {L.Operator ">="}
 '<>'        {L.Operator "<>"}
 '%'         {L.Operator "%"}
+'**'        {L.Operator "**"}
 '//'        {L.Operator "//"}
 '~'         {L.Operator "~"}
 '.'         {L.Delimiter "."}
@@ -341,9 +342,9 @@ factor
     | power                 { $1 }
 
 -- power: atom trailer* ['**' factor]
--- TODO: implement fully
 power
-    : atom many0(trailer)       { handleTrailers $1 $2 }
+    : atom many0(trailer)               { handleTrailers $1 $2 }
+    | atom many0(trailer) '**' factor   { BinOp (ArithOp Pow) (handleTrailers $1 $2) $4 }
 
 -- atom: ('(' [yield_expr|testlist_comp] ')' |
 --        '[' [testlist_comp] ']' |
