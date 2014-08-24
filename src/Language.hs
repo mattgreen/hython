@@ -80,6 +80,8 @@ data BitOperator
     = BitAnd
     | BitOr
     | BitXor
+    | LShift
+    | RShift
     deriving(Eq, Show)
 
 data BooleanOperator

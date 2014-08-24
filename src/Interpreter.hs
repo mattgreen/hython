@@ -191,6 +191,21 @@ evalExpr (BinOp (ArithOp op) (Constant (Int l)) (Constant (Int r)))
   where
     floorInt = floor :: Double -> Integer
 
+evalExpr (BinOp (BitOp BitAnd) (Constant (Int l)) (Constant (Int r))) =
+    return $ Int (l .&. r)
+
+evalExpr (BinOp (BitOp BitOr) (Constant (Int l)) (Constant (Int r))) =
+    return $ Int (l .|. r)
+
+evalExpr (BinOp (BitOp BitXor) (Constant (Int l)) (Constant (Int r))) =
+    return $ Int (xor l r)
+
+evalExpr (BinOp (BitOp LShift) (Constant (Int l)) (Constant (Int r))) =
+    return $ Int (shiftL l (fromIntegral r))
+
+evalExpr (BinOp (BitOp RShift) (Constant (Int l)) (Constant (Int r))) =
+    return $ Int (shiftR l (fromIntegral r))
+
 evalExpr (BinOp (ArithOp op) (Constant (Float l)) (Constant (Float r)))
     | op == Add = return $ Float (l + r)
     | op == Sub = return $ Float (l - r)

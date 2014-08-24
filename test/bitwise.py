@@ -1,1 +1,6 @@
 print(~5)
+print(18 & 3)
+print(83 | 7)
+print(22 ^ 5)
+print(2 << 4)
+print(16 >> 2)
