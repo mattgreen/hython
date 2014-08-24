@@ -80,13 +80,15 @@ updateSymbol name value = do
     put env { scopes = updatedScope : tail (scopes env) }
 
 eval :: Statement -> Evaluator ()
-eval (Def name params body) = updateSymbol name $ Function name params body
+eval (Def name params body) = updateSymbol name function
+  where
+    function = Function name params body
 
 eval (ModuleDef statements) = evalBlock statements
 
 eval (ClassDef name _ statements) = do
     pushScope
-    mapM_ eval statements
+    evalBlock statements
     dict <- popScope
 
     updateSymbol name $ Class name dict
