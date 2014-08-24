@@ -36,7 +36,7 @@ defaultEnv :: Environment
 defaultEnv = do
     let builtins = []
     let globals = Map.fromList builtins
-    Environment {scopes = [globals], fnReturn = (error "Must be in function!")}
+    Environment {scopes = [globals], fnReturn = error "Must be in function!"}
 
 currentScope :: Evaluator SymbolTable
 currentScope = do
@@ -79,8 +79,7 @@ updateSymbol name value = do
 eval :: Statement -> Evaluator ()
 eval (Def name params body) = updateSymbol name $ Function name params body
 
-eval (ModuleDef statements) = do
-    evalBlock statements
+eval (ModuleDef statements) = evalBlock statements
 
 eval (ClassDef name _ statements) = do
     pushScope
@@ -114,14 +113,13 @@ eval (Assignment{}) = fail "Syntax error!"
 
 eval (Break) = do
     flow <- ask
-    (loopBreak flow) ()
+    loopBreak flow ()
 
 eval (Continue) = do
     flow <- ask
-    (loopContinue flow ())
+    loopContinue flow ()
 
-eval (If clauses elseBlock) = do
-    evalClauses clauses
+eval (If clauses elseBlock) = evalClauses clauses
   where
     evalClauses [] = evalBlock elseBlock
     evalClauses (IfClause condition block : rest) = do
@@ -134,12 +132,11 @@ eval (Return expression) = do
     value <- evalExpr expression
 
     env <- get
-    (fnReturn env) value
+    fnReturn env value
 
-eval (While condition block) = do
-    callCC $ \break -> do
+eval (While condition block) = callCC $ \break ->
         fix $ \loop -> do
-            callCC $ \continue -> do
+            callCC $ \continue ->
                 local (\f -> f{ loopBreak = break, loopContinue = continue }) $ do
                     result <- evalExpr condition
                     unless (isTruthy result)
@@ -287,7 +284,7 @@ evalExpr (Name var) = lookupSymbol var
 evalExpr (Constant c) = return c
 
 evalBlock :: [Statement] -> Evaluator ()
-evalBlock statements = mapM_ traceEval statements
+evalBlock = mapM_ traceEval
   where
     traceEval :: Statement -> Evaluator ()
     traceEval s = do
@@ -297,7 +294,7 @@ evalBlock statements = mapM_ traceEval statements
             Just _  -> (trace $ traceStmt s) eval s
             Nothing -> eval s
 
-    traceStmt s = "*** Evaluating: " ++ (show s)
+    traceStmt s = "*** Evaluating: " ++ show s
 
 evalCall :: Value -> [Value] -> Evaluator Value
 evalCall cls@(Class {}) args = do
@@ -356,8 +353,8 @@ parseEval _ code = do
 
 defaultFlowControl :: FlowControl
 defaultFlowControl = FlowControl {
-    loopBreak = (error "Must be in loop"),
-    loopContinue = (error "Must be in loop")
+    loopBreak = error "Must be in loop",
+    loopContinue = error "Must be in loop"
 }
 
 main :: IO ()
