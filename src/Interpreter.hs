@@ -173,15 +173,17 @@ evalExpr (BinOp (ArithOp op) (Constant (Int l)) (Constant (Int r)))
     | op == Mul = return $ Int (l * r)
     | op == Div = return $ Float (fromInteger l / fromInteger r)
     | op == Mod = return $ Int (l `mod` r)
-
-evalExpr (BinOp (ArithOp op) (Constant (Float l)) (Constant (Float r))) =
-    return $ Float (fn op l r)
+    | op == FDiv = return $ Int (floorInt (fromIntegral l / fromIntegral r))
   where
-    fn Add = (+)
-    fn Sub = (-)
-    fn Mul = (*)
-    fn Div = (/)
-    fn Mod = mod'
+    floorInt = floor :: Double -> Integer
+
+evalExpr (BinOp (ArithOp op) (Constant (Float l)) (Constant (Float r)))
+    | op == Add = return $ Float (l + r)
+    | op == Sub = return $ Float (l - r)
+    | op == Mul = return $ Float (l * r)
+    | op == Div = return $ Float (l / r)
+    | op == Mod = return $ Float (l `mod'` r)
+    | op == FDiv = return $ Float (fromInteger (floor (l / r)))
 
 -- Promote ints to floats in binary operators
 evalExpr (BinOp op (Constant (Int l)) (Constant (Float r))) =

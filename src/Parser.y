@@ -322,10 +322,9 @@ xor_expr: arith_expr  { $1 }
 arith_expr
     : term                  { $1 }
     | arith_expr '+' term   { BinOp (ArithOp Add) $1 $3 }
-    | arith_expr'-' term    { BinOp (ArithOp Sub) $1 $3 }
+    | arith_expr '-' term    { BinOp (ArithOp Sub) $1 $3 }
 
 -- term: factor (('*'|'/'|'%'|'//') factor)*
--- TODO: implement modulo/floordiv
 term
     : factor            { $1 }
     | term '*' factor   { BinOp (ArithOp Mul) $1 $3 }
