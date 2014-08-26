@@ -74,10 +74,9 @@ lookupSymbol name = do
 updateSymbol :: String -> Value -> Evaluator ()
 updateSymbol name value = do
     scope <- currentScope
-    env <- get
 
     let updatedScope = Map.insert name value scope
-    put env { scopes = updatedScope : tail (scopes env) }
+    modify $ \env -> env { scopes = updatedScope : tail (scopes env) }
 
 eval :: Statement -> Evaluator ()
 eval (Def name params body) = updateSymbol name function
@@ -96,8 +95,7 @@ eval (ClassDef name _ statements) = do
   where
     pushScope = do
         let dict = Map.empty
-        env <- get
-        put env { scopes = dict : scopes env }
+        modify $ \env -> env { scopes = dict : scopes env }
 
     popScope = do
         env <- get
