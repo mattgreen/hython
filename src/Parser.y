@@ -416,9 +416,8 @@ trailer
 -- subscript: test | [test] ':' [test] [sliceop]
 -- sliceop: ':' [test]
 -- exprlist: (expr|star_expr) (',' (expr|star_expr))* [',']
--- TODO: support 1-n exprs
 exprlist
-    : or(expr, star_expr)       { [$1] }
+    : tuple_or_expr(or(expr, star_expr))    { $1 }
 
 -- testlist: test (',' test)* [',']
 -- dictorsetmaker: ( (test ':' test (comp_for | (',' test ':' test)* [','])) |
