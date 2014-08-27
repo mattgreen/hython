@@ -120,7 +120,7 @@ many0(p)
    |         { [] }
 
 sepOptEndBy(p,sep) 
-   : sepByRev(p,sep) ',' { reverse $1 }
+   : sepByRev(p,sep) sep { reverse $1 }
    | sepByRev(p,sep) { reverse $1 }
 
 sepBy(p,sep): sepByRev(p,sep) { reverse $1 }
@@ -132,6 +132,15 @@ sepBy0(p,sep)
 sepByRev(p,sep)
    : p { [$1] }
    | sepByRev(p,sep) sep p { $3 : $1 }
+
+tuple_or_expr(p)
+    : p                         { $1 }
+    | tuple_or_expr_tuple(p)    { TupleDef $1 }
+
+tuple_or_expr_tuple(p)
+    :                               { [] }
+    | p ',' p                       { [$1, $3] }
+    | p ',' tuple_or_expr_tuple(p)  { $1 : $3 }
 
 -- single_input: NEWLINE | simple_stmt | compound_stmt NEWLINE
 -- file_input: (NEWLINE | stmt)* ENDMARKER
@@ -396,7 +405,7 @@ atom
 
 -- testlist_comp: (test|star_expr) ( comp_for | (',' (test|star_expr))* [','] )
 testlist_comp
-    : or(test, star_expr)   { $1 }
+    : tuple_or_expr(or(test, star_expr))    { $1 }
 
 -- trailer: '(' [arglist] ')' | '[' subscriptlist ']' | '.' NAME
 trailer

@@ -8,6 +8,7 @@ import Data.Bits
 import Data.Complex
 import Data.Fixed
 import Data.IORef
+import Data.List hiding (break)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Debug.Trace
@@ -301,6 +302,10 @@ evalExpr (Attribute target name) = do
         Just v  -> return v
         Nothing -> fail $ "No attribute " ++ name
 
+evalExpr (TupleDef exprs) = do
+    values <- mapM evalExpr exprs
+    return $ Tuple values
+
 evalExpr (Name var) = lookupSymbol var
 evalExpr (Constant c) = return c
 
@@ -366,6 +371,14 @@ toString (Function name _ _) = printf "<%s>" name
 toString (Class name _) = printf "<class '__main__.%s'>" name
 toString (Object (Class name _) _) = printf "<%s object>" name
 toString (Object _ _) = fail "Object must be associated with a class!"
+toString (Tuple values) =
+    printf "(%s%s)" (intercalate ", " stringValues) trailer
+  where
+    stringValues = map toString values
+    trailer = case values of
+        [_]   -> ","
+        _     -> ""
+
 
 parseEval :: String -> String -> Evaluator ()
 parseEval _ code = do

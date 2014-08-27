@@ -24,6 +24,7 @@ data Statement
 
 type Expressions = [Expression]
 type Statements = [Statement]
+type Values = [Value]
 
 data IfClause = IfClause Expression [Statement] deriving (Eq, Show)
 
@@ -34,6 +35,7 @@ data Expression
     | UnaryOp UnaryOperator Expression
     | BinOp Operator Expression Expression
     | Constant Value
+    | TupleDef Expressions
     deriving(Eq, Show)
 
 data Value
@@ -45,6 +47,7 @@ data Value
     | Function String [String] [Statement]
     | Class String (IORef AttributeDict)
     | Object Value (IORef AttributeDict)
+    | Tuple Values
     | None
     deriving(Eq, Show)
 
