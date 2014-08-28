@@ -248,9 +248,11 @@ return_stmt
 -- dotted_name: NAME ('.' NAME)*
 -- global_stmt: 'global' NAME (',' NAME)*
 -- nonlocal_stmt: 'nonlocal' NAME (',' NAME)*
+
 -- assert_stmt: 'assert' test [',' test]
 assert_stmt
-    : ASSERT sepBy(test, ',')        { Assert $ head $2 }
+    : ASSERT test           { Assert $2 (Name "AssertionError") }
+    | ASSERT test ',' test  { Assert $2 $4 }
 
 -- compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated
 compound_stmt
@@ -425,7 +427,6 @@ exprlist
 -- testlist: test (',' test)* [',']
 testlist
     : exprOrTuple(test)     { $1 }
-
 
 -- dictorsetmaker: ( (test ':' test (comp_for | (',' test ':' test)* [','])) |
 --                   (test (comp_for | (',' test)* [','])) )

@@ -17,7 +17,7 @@ data Statement
     | Break
     | Continue
     | Pass
-    | Assert Expression
+    | Assert Expression Expression
     | ClassDef String [Expression] Statements
     | ModuleDef Statements
     deriving(Eq, Show)

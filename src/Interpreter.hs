@@ -151,7 +151,7 @@ eval (While condition block elseBlock) = callCC $ \break ->
 
 eval (Pass) = return ()
 
-eval (Assert e) = do
+eval (Assert e _) = do
     result <- evalExpr e
     unless (isTruthy result) (fail "Assertion failed!")
 
