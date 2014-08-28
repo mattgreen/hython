@@ -3,6 +3,7 @@ module Parser(parse) where
 import Control.Monad.Error
 import Data.Either
 import Data.List
+import Data.Maybe
 
 import Language
 import qualified Lexer as L
@@ -133,14 +134,14 @@ sepByRev(p,sep)
    : p { [$1] }
    | sepByRev(p,sep) sep p { $3 : $1 }
 
-tuple_or_expr(p)
-    : p                         { $1 }
-    | tuple_or_expr_tuple(p)    { TupleDef $1 }
+exprOrTuple(p)
+    : p     { $1 }
+    | p ',' { TupleDef [$1] }
+    | exprOrTupleTuple(p) opt(',') { TupleDef $1 }
 
-tuple_or_expr_tuple(p)
-    :                               { [] }
-    | p ',' p                       { [$1, $3] }
-    | p ',' tuple_or_expr_tuple(p)  { $1 : $3 }
+exprOrTupleTuple(p)
+    : p ',' p { [$1, $3] }
+    | exprOrTupleTuple(p) ',' p { $1 ++ [$3] }
 
 -- single_input: NEWLINE | simple_stmt | compound_stmt NEWLINE
 -- file_input: (NEWLINE | stmt)* ENDMARKER
@@ -198,9 +199,8 @@ expr_stmt
     | testlist_star_expr '=' testlist_star_expr { Assignment $1 $3 }
 
 -- testlist_star_expr: (test|star_expr) (',' (test|star_expr))* [',']
--- TODO: implement fully
 testlist_star_expr
-    : or(test, star_expr)           { $1 }
+    : exprOrTuple(or(test, star_expr)) { $1 }
 
 -- augassign: ('+=' | '-=' | '*=' | '/=' | '%=' | '&=' | '|=' | '^=' |
 --             '<<=' | '>>=' | '**=' | '//=')
@@ -230,7 +230,7 @@ continue_stmt
 -- return_stmt: 'return' [testlist]
 return_stmt
     : RETURN            { Return (Constant None) }
-    | RETURN test       { Return $2 }
+    | RETURN testlist   { Return $2 }
 
 -- yield_stmt: yield_expr
 -- raise_stmt: 'raise' [test ['from' test]]
@@ -395,7 +395,7 @@ power
 --        '{' [dictorsetmaker] '}' |
 --        NAME | NUMBER | STRING+ | '...' | 'None' | 'True' | 'False')
 atom
-    : '(' testlist_comp ')' { $2 }
+    : '(' opt(testlist_comp) ')' { maybe (TupleDef []) id $2 }
     | identifier            { Name $1 }
     | literal               { Constant $1 }
     | many1(string)         { Constant (String $ foldl' (++) "" $1) }
@@ -405,7 +405,7 @@ atom
 
 -- testlist_comp: (test|star_expr) ( comp_for | (',' (test|star_expr))* [','] )
 testlist_comp
-    : tuple_or_expr(or(test, star_expr))    { $1 }
+    : exprOrTuple(or(test, star_expr))  { $1 }
 
 -- trailer: '(' [arglist] ')' | '[' subscriptlist ']' | '.' NAME
 trailer
@@ -417,9 +417,13 @@ trailer
 -- sliceop: ':' [test]
 -- exprlist: (expr|star_expr) (',' (expr|star_expr))* [',']
 exprlist
-    : tuple_or_expr(or(expr, star_expr))    { $1 }
+    : exprOrTuple(or(expr, star_expr))      { $1 }
 
 -- testlist: test (',' test)* [',']
+testlist
+    : exprOrTuple(test)     { $1 }
+
+
 -- dictorsetmaker: ( (test ':' test (comp_for | (',' test ':' test)* [','])) |
 --                   (test (comp_for | (',' test)* [','])) )
 
