@@ -302,6 +302,12 @@ evalExpr (Attribute target name) = do
         Just v  -> return v
         Nothing -> fail $ "No attribute " ++ name
 
+evalExpr (TernOp condExpr thenExpr elseExpr) = do
+    condition <- evalExpr condExpr
+    evalExpr $ if isTruthy condition
+        then thenExpr
+        else elseExpr
+
 evalExpr (TupleDef exprs) = do
     values <- mapM evalExpr exprs
     return $ Tuple values

@@ -34,6 +34,7 @@ data Expression
     | Name String
     | UnaryOp UnaryOperator Expression
     | BinOp Operator Expression Expression
+    | TernOp Expression Expression Expression
     | Constant Value
     | TupleDef Expressions
     | ListDef Expressions

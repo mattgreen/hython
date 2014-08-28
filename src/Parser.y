@@ -295,7 +295,8 @@ suite
 
 -- test: or_test ['if' or_test 'else' test] | lambdef
 test
-    : or_test       { $1 }
+    : or_test                       { $1 }
+    | or_test IF or_test ELSE test  { TernOp $3 $1 $5 }
 
 -- test_nocond: or_test | lambdef_nocond
 -- lambdef: 'lambda' [varargslist] ':' test
