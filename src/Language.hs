@@ -36,6 +36,7 @@ data Expression
     | BinOp Operator Expression Expression
     | Constant Value
     | TupleDef Expressions
+    | ListDef Expressions
     deriving(Eq, Show)
 
 data Value

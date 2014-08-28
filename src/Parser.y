@@ -42,6 +42,8 @@ NEWLINE     {L.Newline}
 '<<'        {L.Operator "<<"}
 '>>'        {L.Operator ">>"}
 '.'         {L.Delimiter "."}
+'['         {L.Delimiter "["}
+']'         {L.Delimiter "]"}
 '('         {L.Delimiter "("}
 ')'         {L.Delimiter ")"}
 ':'         {L.Delimiter ":"}
@@ -395,13 +397,14 @@ power
 --        '{' [dictorsetmaker] '}' |
 --        NAME | NUMBER | STRING+ | '...' | 'None' | 'True' | 'False')
 atom
-    : '(' opt(testlist_comp) ')' { maybe (TupleDef []) id $2 }
-    | identifier            { Name $1 }
-    | literal               { Constant $1 }
-    | many1(string)         { Constant (String $ foldl' (++) "" $1) }
-    | NONE                  { Constant None }
-    | TRUE                  { Constant $ Bool True }
-    | FALSE                 { Constant $ Bool False }
+    : '(' opt(testlist_comp) ')'    { maybe (TupleDef []) id $2 }
+    | '[' opt(testlist_comp) ']'    { maybe (ListDef []) (\e -> ListDef $ expressionsOf e) $2 }
+    | identifier                    { Name $1 }
+    | literal                       { Constant $1 }
+    | many1(string)                 { Constant (String $ foldl' (++) "" $1) }
+    | NONE                          { Constant None }
+    | TRUE                          { Constant $ Bool True }
+    | FALSE                         { Constant $ Bool False }
 
 -- testlist_comp: (test|star_expr) ( comp_for | (',' (test|star_expr))* [','] )
 testlist_comp
@@ -460,6 +463,9 @@ data Trailer
     = TrailerCall [Expression]
     | TrailerAttr String
     deriving (Show, Eq)
+
+expressionsOf (TupleDef exprs)  = exprs
+expressionsOf expr              = [expr]
 
 handleTrailers expr trailers = foldl' handleTrailer expr trailers
   where
