@@ -305,6 +305,13 @@ evalExpr (Attribute target name) = do
         Just v  -> return v
         Nothing -> fail $ "No attribute " ++ name
 
+evalExpr (SliceDef startExpr stopExpr strideExpr) = do
+    start <- evalExpr startExpr
+    stop <- evalExpr stopExpr
+    stride <- evalExpr strideExpr
+
+    return $ Slice start stop stride
+
 evalExpr (Subscript expr sub) = do
     left <- evalExpr expr
     index <- evalExpr sub
@@ -312,7 +319,7 @@ evalExpr (Subscript expr sub) = do
 
   where
     evalSubscript (Tuple values) (Int i) = return $ values !! fromIntegral i
-    evalSubscript (Tuple values) _ = fail "tuple indicies must be integers"
+    evalSubscript (Tuple {}) _ = fail "tuple indicies must be integers"
 
 evalExpr (TernOp condExpr thenExpr elseExpr) = do
     condition <- evalExpr condExpr
@@ -389,6 +396,8 @@ toString (Function name _ _) = printf "<%s>" name
 toString (Class name _) = printf "<class '__main__.%s'>" name
 toString (Object (Class name _) _) = printf "<%s object>" name
 toString (Object _ _) = fail "Object must be associated with a class!"
+toString (Slice start end stride) =
+    printf "slice(%s, %s, %s)" (toString start) (toString end) (toString stride)
 toString (Tuple values) =
     printf "(%s%s)" (intercalate ", " stringValues) trailer
   where
@@ -396,7 +405,6 @@ toString (Tuple values) =
     trailer = case values of
         [_]   -> ","
         _     -> ""
-
 
 parseEval :: String -> String -> Evaluator ()
 parseEval _ code = do

@@ -38,6 +38,7 @@ data Expression
     | BinOp Operator Expression Expression
     | TernOp Expression Expression Expression
     | TupleDef Expressions
+    | SliceDef Expression Expression Expression
     | ListDef Expressions
     deriving(Eq, Show)
 
@@ -50,6 +51,7 @@ data Value
     | Function String [String] [Statement]
     | Class String (IORef AttributeDict)
     | Object Value (IORef AttributeDict)
+    | Slice Value Value Value
     | Tuple Values
     | None
     deriving(Eq, Show)

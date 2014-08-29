@@ -426,11 +426,14 @@ subscriptlist
     : exprOrTuple(subscript)        { $1 }
 
 -- subscript: test | [test] ':' [test] [sliceop]
--- TODO: implement fully
 subscript
     : test      { $1 }
+    | opt(test) ':' opt(test) opt(sliceop)  { handleSlice $1 $3 $4 }
 
 -- sliceop: ':' [test]
+sliceop
+    : ':' opt(test)         { maybe (Constant None) id $2 }
+
 -- exprlist: (expr|star_expr) (',' (expr|star_expr))* [',']
 exprlist
     : exprOrTuple(or(expr, star_expr))      { $1 }
@@ -475,10 +478,15 @@ data Trailer
     = TrailerCall [Expression]
     | TrailerAttr String
     | TrailerSub Expression
+    | TrailerSlice
     deriving (Show, Eq)
 
 expressionsOf (TupleDef exprs)  = exprs
 expressionsOf expr              = [expr]
+
+handleSlice start stop stride = SliceDef (unwrap start) (unwrap stop) (unwrap stride)
+  where
+    unwrap arg = maybe (Constant None) id arg
 
 handleTrailers expr trailers = foldl' handleTrailer expr trailers
   where
