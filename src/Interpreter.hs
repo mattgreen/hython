@@ -194,9 +194,12 @@ evalExpr (BinOp (ArithOp op) (Constant (Int l)) (Constant (Int r)))
     | op == Div = return $ Float (fromInteger l / fromInteger r)
     | op == Mod = return $ Int (l `mod` r)
     | op == FDiv = return $ Int (floorInt (fromIntegral l / fromIntegral r))
-    | op == Pow = return $ Int (l ^ r)
+    | op == Pow = return pow
   where
     floorInt = floor :: Double -> Integer
+    pow
+      | r < 0       = Float $ fromIntegral l ^^ r
+      | otherwise   = Int $ l ^ r
 
 evalExpr (BinOp (BitOp BitAnd) (Constant (Int l)) (Constant (Int r))) =
     return $ Int (l .&. r)

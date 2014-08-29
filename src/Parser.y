@@ -86,16 +86,19 @@ WHILE       {L.Keyword "while"}
 WITH        {L.Keyword "with"}
 YIELD       {L.Keyword "yield"}
 
+%left LAMBDA
+%left IF ELSE
 %left OR
 %left AND
-%left NOT
-%left '<' '<=' '>' '>=' '!=' '=='
+%left IN IS '<' '<=' '>' '>=' '!=' '=='
 %left '|'
+%left '^'
 %left '&'
 %left '<<' '>>'
 %left '+' '-'
 %left '*' '/' '//' '%'
 %left POS NEG COMP
+%right '**'
 
 %%
 
