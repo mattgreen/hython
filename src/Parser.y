@@ -231,8 +231,7 @@ continue_stmt
 
 -- return_stmt: 'return' [testlist]
 return_stmt
-    : RETURN            { Return (Constant None) }
-    | RETURN testlist   { Return $2 }
+    : RETURN opt(testlist)   { Return $ maybe (Constant None) id $2 }
 
 -- yield_stmt: yield_expr
 -- raise_stmt: 'raise' [test ['from' test]]
