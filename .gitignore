@@ -1,4 +1,5 @@
 .cabal-sandbox
+cabal.sandbox.config
 dist
 hython
 src/Lexer.hs
