@@ -28,8 +28,8 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] Adjacent string literal concatenation
  * [x] Function calls
  * [x] Attribute access
- * [ ] Tuples
- * [ ] List literals
+ * [x] Tuples
+ * [x] List literals
  * [ ] List comprehensions
  * [ ] Dictionary literals
  * [ ] Subscript operators
@@ -42,7 +42,7 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] `break` statement
  * [x] `class` statement
  * [x] `def` statement
- * [ ] `del` statement
+ * [x] `del` statement
  * [ ] `except` statement
  * [ ] `finally` statement
  * [ ] `global` statement
