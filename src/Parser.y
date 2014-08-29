@@ -418,10 +418,18 @@ testlist_comp
 -- trailer: '(' [arglist] ')' | '[' subscriptlist ']' | '.' NAME
 trailer
     : '(' arglist ')'       { TrailerCall $2 }
+    | '[' subscriptlist ']' { TrailerSub $2 }
     | '.' identifier        { TrailerAttr $2 }
 
 -- subscriptlist: subscript (',' subscript)* [',']
+subscriptlist
+    : exprOrTuple(subscript)        { $1 }
+
 -- subscript: test | [test] ':' [test] [sliceop]
+-- TODO: implement fully
+subscript
+    : test      { $1 }
+
 -- sliceop: ':' [test]
 -- exprlist: (expr|star_expr) (',' (expr|star_expr))* [',']
 exprlist
@@ -466,6 +474,7 @@ argument
 data Trailer
     = TrailerCall [Expression]
     | TrailerAttr String
+    | TrailerSub Expression
     deriving (Show, Eq)
 
 expressionsOf (TupleDef exprs)  = exprs
@@ -473,8 +482,9 @@ expressionsOf expr              = [expr]
 
 handleTrailers expr trailers = foldl' handleTrailer expr trailers
   where
-    handleTrailer expr (TrailerCall args) = Call expr args
-    handleTrailer expr (TrailerAttr name) = Attribute expr name
+    handleTrailer expr (TrailerCall args)   = Call expr args
+    handleTrailer expr (TrailerAttr name)   = Attribute expr name
+    handleTrailer expr (TrailerSub sub)     = Subscript expr sub
 
 tokenize code = L.tokenize code
 parse code = L.evalP parseTokens code

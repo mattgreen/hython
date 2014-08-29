@@ -305,6 +305,15 @@ evalExpr (Attribute target name) = do
         Just v  -> return v
         Nothing -> fail $ "No attribute " ++ name
 
+evalExpr (Subscript expr sub) = do
+    left <- evalExpr expr
+    index <- evalExpr sub
+    evalSubscript left index
+
+  where
+    evalSubscript (Tuple values) (Int i) = return $ values !! fromIntegral i
+    evalSubscript (Tuple values) _ = fail "tuple indicies must be integers"
+
 evalExpr (TernOp condExpr thenExpr elseExpr) = do
     condition <- evalExpr condExpr
     evalExpr $ if isTruthy condition

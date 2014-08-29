@@ -32,10 +32,11 @@ data Expression
     = Call Expression [Expression]
     | Attribute Expression String
     | Name String
+    | Constant Value
+    | Subscript Expression Expression
     | UnaryOp UnaryOperator Expression
     | BinOp Operator Expression Expression
     | TernOp Expression Expression Expression
-    | Constant Value
     | TupleDef Expressions
     | ListDef Expressions
     deriving(Eq, Show)
