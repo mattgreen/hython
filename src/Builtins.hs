@@ -8,16 +8,26 @@ import Language
 type BuiltInFunction = Values -> IO Value
 
 builtinFunctions :: [(String, BuiltInFunction)]
-builtinFunctions = [("print", print), ("str", str)]
+builtinFunctions = [("bool", bool), ("print", print), ("slice", slice), ("str", str')]
+
+bool :: Values -> IO Value
+bool([])    = return $ Bool False
+bool([x])   = return $ Bool (isTrue x)
+bool _      = fail "bool() takes at most 1 argument"
 
 print :: Values -> IO Value
 print args = do
-    let s = show $ head args
+    let s = unwords $ map str args
     putStrLn s
     return None
 
-str :: Values -> IO Value
-str v = do
+slice :: Values -> IO Value
+slice (end:[])              = return $ Slice None end None
+slice (start:end:stride:[]) = return $ Slice start end stride
+slice _                     = fail "blah"
+
+str' :: Values -> IO Value
+str' v = do
     let s = show (head v)
     return $ String s
 

@@ -184,7 +184,7 @@ evalExpr (UnaryOp Complement (Constant (Int v))) =
     return $ Int (complement v)
 
 evalExpr (UnaryOp op (Constant r)) =
-    fail $ printf "Unsupported operand type for %s: %s" (show op) (show r)
+    fail $ printf "Unsupported operand type for %s: %s" (show op) (str r)
 
 evalExpr (UnaryOp op expr) = do
     r <- evalExpr expr
@@ -275,7 +275,7 @@ evalExpr (BinOp (CompOp NotEq) (Constant l) (Constant r)) =
     return $ Bool (l /= r)
 
 evalExpr (BinOp op (Constant l) (Constant r)) =
-    fail $ printf "Unsupported operand type(s) for %s: %s %s" (show op) (show l) (show r)
+    fail $ printf "Unsupported operand type(s) for %s: %s %s" (show op) (str l) (str r)
 
 evalExpr (BinOp op l r) = do
     left <- evalExpr l
@@ -379,7 +379,7 @@ evalCall (Function _ params body) args = do
 
     return result
 
-evalCall v _ = fail $ "Unable to call " ++ show v
+evalCall v _ = fail $ "Unable to call " ++ str v
 
 parseEval :: String -> String -> Evaluator ()
 parseEval _ code = do

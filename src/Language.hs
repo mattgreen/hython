@@ -57,7 +57,7 @@ data Value
     | Slice Value Value Value
     | Tuple Values
     | None
-    deriving(Eq)
+    deriving(Eq, Show)
 
 type AttributeDict = Map String Value
 
@@ -111,29 +111,33 @@ data ComparisonOperator
 instance Show (IORef a) where
     show _ = "<ioref>"
 
-instance Show Value where
-    show None                   = "None"
-    show (Bool v)               = show v
-    show (String v)             = v
-    show (Int v)                = show v
-    show (Float v)              = show v
-    show (Imaginary v)
-        | realPart v == 0       = show (imagPart v) ++ "j"
-        | otherwise             = show v
-    show (Function name _ _)    = printf "<%s>" name
-    show (BuiltinFn name)       = printf "<built-in function %s>" name
-    show (Class name _)         = printf "<class '__main__.%s'>" name
-    show (Object (Class name _) _) = printf "<%s object>" name
-    show (Object _ _)           = "<invalid object>"
-    show (Slice start end stride) =
+class Printable a where
+    str :: a -> String
+
+instance Printable Value where
+    str None                        = "None"
+    str (Bool v)                    = show v
+    str (String v)                  = v
+    str (Int v)                     = show v
+    str (Float v)                   = show v
+    str (Imaginary v)
+        | realPart v == 0           = show (imagPart v) ++ "j"
+        | otherwise                 = show v
+    str (Function name _ _)         = printf "<%s>" name
+    str (BuiltinFn name)            = printf "<built-in function %s>" name
+    str (Class name _)              = printf "<class '__main__.%s'>" name
+    str (Object (Class name _) _)   = printf "<%s object>" name
+    str (Object _ _)                = "<invalid object>"
+    str (Slice start end stride) =
         printf "slice(%s, %s, %s)" (show start) (show end) (show stride)
-    show (Tuple values) =
+    str (Tuple values) =
         printf "(%s%s)" (intercalate ", " stringValues) trailer
       where
-        stringValues = map show values
+        stringValues = map str values
         trailer = case values of
             [_]   -> ","
             _     -> ""
+
 class Truthy a where
     isTrue :: a -> Bool
 
