@@ -479,7 +479,7 @@ data Trailer
     | TrailerAttr String
     | TrailerSub Expression
     | TrailerSlice
-    deriving (Show, Eq)
+    deriving (Eq, Show)
 
 expressionsOf (TupleDef exprs)  = exprs
 expressionsOf expr              = [expr]

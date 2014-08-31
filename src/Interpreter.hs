@@ -15,6 +15,7 @@ import Debug.Trace
 import System.Environment
 import Text.Printf
 
+import Builtins
 import Language
 import Parser
 
@@ -30,6 +31,7 @@ data FlowControl = FlowControl {
 
 data Environment = Environment {
     scopes :: [SymbolTable],
+    builtins :: [(String, BuiltInFunction)],
     fnReturn :: EvaluatorReturnCont
 }
 
@@ -37,10 +39,8 @@ unimplemented :: Statement -> Evaluator ()
 unimplemented s = fail $ printf "Unimplemented: %s" (show s)
 
 defaultEnv :: Environment
-defaultEnv = do
-    let builtins = []
-    let globals = Map.fromList builtins
-    Environment {scopes = [globals], fnReturn = error "Must be in function!"}
+defaultEnv =
+    Environment {builtins = builtinFunctions, scopes = [Map.fromList []], fnReturn = error "Must be in function!"}
 
 currentScope :: Evaluator SymbolTable
 currentScope = do
@@ -69,8 +69,13 @@ lookupSymbol :: String -> Evaluator Value
 lookupSymbol name = do
     scope <- currentScope
     case Map.lookup name scope of
-        Nothing -> fail $ "Unknown symbol: " ++ name
         Just v  -> return v
+        Nothing -> do
+            env <- get
+            case lookup name (builtins env) of
+                Nothing -> fail $ "Unknown symbol : " ++ name
+                Just _  -> return $ BuiltinFn name
+
 
 updateSymbol :: String -> Value -> Evaluator ()
 updateSymbol name value = do
@@ -279,11 +284,6 @@ evalExpr (BinOp op l r) = do
     right <- evalExpr r
     evalExpr $ BinOp op (Constant left) (Constant right)
 
-evalExpr (Call (Name "print") args) = do
-    arg <- liftM toString (evalExpr (head args))
-    liftIO $ putStrLn arg
-    return None
-
 evalExpr (Call (Attribute obj name) args) = do
     receiver <- evalExpr obj
     evalArgs <- mapM evalExpr args
@@ -358,6 +358,12 @@ evalCall cls@(Class {}) args = do
         Nothing -> return None
 
     return obj
+
+evalCall (BuiltinFn name) args = do
+    env <- get
+    case lookup name (builtins env) of
+        Just fn -> liftIO $ fn args
+        Nothing -> fail "no built-in with name"
 
 evalCall (Function _ params body) args = do
     env <- get

@@ -48,6 +48,7 @@ data Value
     | Float Double
     | Imaginary (Complex Double)
     | Bool Bool
+    | BuiltinFn String
     | Function String [String] [Statement]
     | Class String (IORef AttributeDict)
     | Object Value (IORef AttributeDict)
@@ -99,6 +100,12 @@ data BooleanOperator
     | Or
     deriving(Eq, Show)
 
-data ComparisonOperator = Eq | NotEq | LessThan | LessThanEq | GreaterThan | GreaterThanEq
+data ComparisonOperator
+    = Eq
+    | NotEq
+    | LessThan
+    | LessThanEq
+    | GreaterThan
+    | GreaterThanEq
     deriving(Eq, Show)
 

@@ -94,7 +94,7 @@ data Token
      | Operator String
      | Delimiter String
      | EOF
-     deriving (Eq,Show)
+     deriving (Eq, Show)
 
 keywordOrIdentifier :: String -> Token
 keywordOrIdentifier s
