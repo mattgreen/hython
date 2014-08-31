@@ -134,3 +134,11 @@ instance Show Value where
         trailer = case values of
             [_]   -> ","
             _     -> ""
+class Truthy a where
+    isTrue :: a -> Bool
+
+instance Truthy Value where
+    isTrue (Int 0)      = False
+    isTrue (Bool False) = False
+    isTrue (None)       = False
+    isTrue _            = True

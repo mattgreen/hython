@@ -131,7 +131,7 @@ eval (If clauses elseBlock) = evalClauses clauses
     evalClauses [] = evalBlock elseBlock
     evalClauses (IfClause condition block : rest) = do
         result <- evalExpr condition
-        if isTruthy result
+        if isTrue result
             then evalBlock block
             else evalClauses rest
 
@@ -146,7 +146,7 @@ eval (While condition block elseBlock) = callCC $ \break ->
             callCC $ \continue ->
                 local (\f -> f{ loopBreak = break, loopContinue = continue }) $ do
                     result <- evalExpr condition
-                    unless (isTruthy result) $ do
+                    unless (isTrue result) $ do
                         evalBlock elseBlock
                         break ()
                     evalBlock block
@@ -156,7 +156,7 @@ eval (Pass) = return ()
 
 eval (Assert e _) = do
     result <- evalExpr e
-    unless (isTruthy result) (fail "Assertion failed!")
+    unless (isTrue result) (fail "Assertion failed!")
 
 eval s@(Del {}) = unimplemented s
 
@@ -321,7 +321,7 @@ evalExpr (Subscript expr sub) = do
 
 evalExpr (TernOp condExpr thenExpr elseExpr) = do
     condition <- evalExpr condExpr
-    evalExpr $ if isTruthy condition
+    evalExpr $ if isTrue condition
         then thenExpr
         else elseExpr
 
@@ -380,12 +380,6 @@ evalCall (Function _ params body) args = do
     return result
 
 evalCall v _ = fail $ "Unable to call " ++ show v
-
-isTruthy :: Value -> Bool
-isTruthy (Int 0) = False
-isTruthy (Bool False) = False
-isTruthy (None) = False
-isTruthy _ = True
 
 parseEval :: String -> String -> Evaluator ()
 parseEval _ code = do
