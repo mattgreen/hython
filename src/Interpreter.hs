@@ -5,10 +5,8 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Trans.Cont
 import Data.Bits
-import Data.Complex
 import Data.Fixed
 import Data.IORef
-import Data.List hiding (break)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Debug.Trace
@@ -186,7 +184,7 @@ evalExpr (UnaryOp Complement (Constant (Int v))) =
     return $ Int (complement v)
 
 evalExpr (UnaryOp op (Constant r)) =
-    fail $ printf "Unsupported operand type for %s: %s" (show op) (toString r)
+    fail $ printf "Unsupported operand type for %s: %s" (show op) (show r)
 
 evalExpr (UnaryOp op expr) = do
     r <- evalExpr expr
@@ -277,7 +275,7 @@ evalExpr (BinOp (CompOp NotEq) (Constant l) (Constant r)) =
     return $ Bool (l /= r)
 
 evalExpr (BinOp op (Constant l) (Constant r)) =
-    fail $ printf "Unsupported operand type(s) for %s: %s %s" (show op) (toString l) (toString r)
+    fail $ printf "Unsupported operand type(s) for %s: %s %s" (show op) (show l) (show r)
 
 evalExpr (BinOp op l r) = do
     left <- evalExpr l
@@ -381,36 +379,13 @@ evalCall (Function _ params body) args = do
 
     return result
 
-evalCall v _ = fail $ "Unable to call " ++ toString v
+evalCall v _ = fail $ "Unable to call " ++ show v
 
 isTruthy :: Value -> Bool
 isTruthy (Int 0) = False
 isTruthy (Bool False) = False
 isTruthy (None) = False
 isTruthy _ = True
-
-toString :: Value -> String
-toString (None) = "None"
-toString (Bool v) = show v
-toString (String v) = v
-toString (Int v) = show v
-toString (Float v) = show v
-toString (Imaginary v)
-    | realPart v == 0   = show (imagPart v) ++ "j"
-    | otherwise         = show v
-toString (Function name _ _) = printf "<%s>" name
-toString (Class name _) = printf "<class '__main__.%s'>" name
-toString (Object (Class name _) _) = printf "<%s object>" name
-toString (Object _ _) = fail "Object must be associated with a class!"
-toString (Slice start end stride) =
-    printf "slice(%s, %s, %s)" (toString start) (toString end) (toString stride)
-toString (Tuple values) =
-    printf "(%s%s)" (intercalate ", " stringValues) trailer
-  where
-    stringValues = map toString values
-    trailer = case values of
-        [_]   -> ","
-        _     -> ""
 
 parseEval :: String -> String -> Evaluator ()
 parseEval _ code = do

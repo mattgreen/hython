@@ -4,7 +4,9 @@ module Language where
 
 import Data.Complex
 import Data.IORef
+import Data.List
 import Data.Map (Map)
+import Text.Printf
 
 data Statement
     = Assignment Expression Expression
@@ -55,12 +57,9 @@ data Value
     | Slice Value Value Value
     | Tuple Values
     | None
-    deriving(Eq, Show)
+    deriving(Eq)
 
 type AttributeDict = Map String Value
-
-instance Show (IORef a) where
-    show _ = "<ioref>"
 
 data UnaryOperator
     = Not
@@ -109,3 +108,29 @@ data ComparisonOperator
     | GreaterThanEq
     deriving(Eq, Show)
 
+instance Show (IORef a) where
+    show _ = "<ioref>"
+
+instance Show Value where
+    show None                   = "None"
+    show (Bool v)               = show v
+    show (String v)             = v
+    show (Int v)                = show v
+    show (Float v)              = show v
+    show (Imaginary v)
+        | realPart v == 0       = show (imagPart v) ++ "j"
+        | otherwise             = show v
+    show (Function name _ _)    = printf "<%s>" name
+    show (BuiltinFn name)       = printf "<built-in function %s>" name
+    show (Class name _)         = printf "<class '__main__.%s'>" name
+    show (Object (Class name _) _) = printf "<%s object>" name
+    show (Object _ _)           = "<invalid object>"
+    show (Slice start end stride) =
+        printf "slice(%s, %s, %s)" (show start) (show end) (show stride)
+    show (Tuple values) =
+        printf "(%s%s)" (intercalate ", " stringValues) trailer
+      where
+        stringValues = map show values
+        trailer = case values of
+            [_]   -> ","
+            _     -> ""
