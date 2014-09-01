@@ -42,8 +42,8 @@ defaultEnv =
 
 currentScope :: Evaluator SymbolTable
 currentScope = do
-    env <- get
-    return $ head $ scopes env
+    current <- gets scopes
+    return $ head current
 
 getAttr :: String -> Value -> Evaluator (Maybe Value)
 getAttr attr (Object _ ref) = do
@@ -69,8 +69,8 @@ lookupSymbol name = do
     case Map.lookup name scope of
         Just v  -> return v
         Nothing -> do
-            env <- get
-            case lookup name (builtins env) of
+            builtinFns <- gets builtins
+            case lookup name builtinFns of
                 Nothing -> fail $ "Unknown symbol : " ++ name
                 Just _  -> return $ BuiltinFn name
 
@@ -102,9 +102,9 @@ eval (ClassDef name _ statements) = do
         modify $ \env -> env { scopes = dict : scopes env }
 
     popScope = do
-        env <- get
-        let dict = head $ scopes env
-        put env { scopes = tail $ scopes env }
+        currentScopes <- gets scopes
+        let dict = head currentScopes
+        modify $ \e -> e{ scopes = tail currentScopes }
         liftIO $ newIORef dict
 
 eval (Assignment (Name var) expr) = do
@@ -138,8 +138,8 @@ eval (If clauses elseBlock) = evalClauses clauses
 eval (Return expression) = do
     value <- evalExpr expression
 
-    env <- get
-    fnReturn env value
+    returnCont <- gets fnReturn
+    returnCont value
 
 eval (While condition block elseBlock) = callCC $ \break ->
         fix $ \loop -> do
@@ -358,20 +358,18 @@ evalCall cls@(Class {}) args = do
     return obj
 
 evalCall (BuiltinFn name) args = do
-    env <- get
-    case lookup name (builtins env) of
+    builtinFns <- gets builtins
+    case lookup name builtinFns of
         Just fn -> liftIO $ fn args
         Nothing -> fail "no built-in with name"
 
 evalCall (Function _ params body) args = do
-    env <- get
-
-    let previousReturnCont = fnReturn env
-    let previousScopes = scopes env
-    let scope = Map.union (Map.fromList $ zip params args) (last $ scopes env)
+    previousReturnCont <- gets fnReturn
+    previousScopes <- gets scopes
+    let scope = Map.union (Map.fromList $ zip params args) (last previousScopes)
 
     result <- callCC $ \returnCont -> do
-        put env { fnReturn = returnCont, scopes = scope : previousScopes }
+        modify $ \e -> e{ fnReturn = returnCont, scopes = scope : previousScopes }
         evalBlock body
         return None
 
