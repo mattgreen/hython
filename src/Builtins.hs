@@ -28,6 +28,6 @@ slice _                     = fail "blah"
 
 str' :: Values -> IO Value
 str' v = do
-    let s = show (head v)
+    let s = str (head v)
     return $ String s
 
