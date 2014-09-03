@@ -45,11 +45,11 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] `del` statement
  * [ ] `except` statement
  * [ ] `finally` statement
- * [ ] `global` statement
+ * [x] `global` statement
  * [x] `if`/`elif`/`else` statements
  * [ ] `import` statement (and friends)
  * [ ] `lambda` statement
- * [ ] `nonlocal` statement
+ * [x] `nonlocal` statement
  * [x] `pass` statement
  * [ ] `raise` statement
  * [x] `return` statement

@@ -126,6 +126,8 @@ eval (Continue) = do
     flow <- ask
     loopContinue flow ()
 
+eval s@(Global {}) = unimplemented s
+
 eval (If clauses elseBlock) = evalClauses clauses
   where
     evalClauses [] = evalBlock elseBlock
@@ -134,6 +136,8 @@ eval (If clauses elseBlock) = evalClauses clauses
         if isTrue result
             then evalBlock block
             else evalClauses rest
+
+eval s@(Nonlocal {}) = unimplemented s
 
 eval (Return expression) = do
     value <- evalExpr expression

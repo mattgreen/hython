@@ -195,6 +195,8 @@ small_stmt
     | del_stmt      { $1 }
     | pass_stmt     { $1 }
     | flow_stmt     { $1 }
+    | global_stmt   { $1 }
+    | nonlocal_stmt { $1 }
     | assert_stmt   { $1 }
 
 -- expr_stmt: testlist_star_expr (augassign (yield_expr|testlist) |
@@ -248,8 +250,14 @@ return_stmt
 -- import_as_names: import_as_name (',' import_as_name)* [',']
 -- dotted_as_names: dotted_as_name (',' dotted_as_name)*
 -- dotted_name: NAME ('.' NAME)*
+
 -- global_stmt: 'global' NAME (',' NAME)*
+global_stmt
+    : GLOBAL sepBy(identifier, ',') { Global $ names $2 }
+
 -- nonlocal_stmt: 'nonlocal' NAME (',' NAME)*
+nonlocal_stmt
+    : NONLOCAL sepBy(identifier, ',')   { Nonlocal $ names $2 }
 
 -- assert_stmt: 'assert' test [',' test]
 assert_stmt
@@ -493,6 +501,9 @@ handleTrailers expr trailers = foldl' handleTrailer expr trailers
     handleTrailer expr (TrailerCall args)   = Call expr args
     handleTrailer expr (TrailerAttr name)   = Attribute expr name
     handleTrailer expr (TrailerSub sub)     = Subscript expr sub
+
+names :: [String] -> [Expression]
+names xs = map Name xs
 
 tokenize code = L.tokenize code
 parse code = L.evalP parseTokens code

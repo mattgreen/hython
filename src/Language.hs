@@ -20,6 +20,8 @@ data Statement
     | Continue
     | Pass
     | Assert Expression Expression
+    | Global Expressions
+    | Nonlocal Expressions
     | ClassDef String [Expression] Statements
     | ModuleDef Statements
     deriving(Eq, Show)
