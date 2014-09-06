@@ -13,7 +13,7 @@ import Debug.Trace
 import System.Environment
 import Text.Printf
 
-import Builtins
+import Builtins (pow, str, builtinFunctions, BuiltInFunction)
 import Language
 import Parser
 
@@ -206,8 +206,9 @@ evalExpr (UnaryOp Neg (Constant (Float v))) =
 evalExpr (UnaryOp Complement (Constant (Int v))) =
     return $ Int (complement v)
 
-evalExpr (UnaryOp op (Constant r)) =
-    fail $ printf "Unsupported operand type for %s: %s" (show op) (str r)
+evalExpr (UnaryOp op (Constant r)) = do
+    strExpr <- liftIO $ str r
+    fail $ printf "Unsupported operand type for %s: %s" (show op) strExpr
 
 evalExpr (UnaryOp op expr) = do
     r <- evalExpr expr
@@ -294,8 +295,10 @@ evalExpr (BinOp (CompOp Eq) (Constant l) (Constant r)) =
 evalExpr (BinOp (CompOp NotEq) (Constant l) (Constant r)) =
     return $ Bool (l /= r)
 
-evalExpr (BinOp op (Constant l) (Constant r)) =
-    fail $ printf "Unsupported operand type(s) for %s: %s %s" (show op) (str l) (str r)
+evalExpr (BinOp op (Constant l) (Constant r)) = do
+    left <- liftIO $ str l
+    right <- liftIO $ str r
+    fail $ printf "Unsupported operand type(s) for %s: %s %s" (show op) left right
 
 evalExpr (BinOp op l r) = do
     left <- evalExpr l
@@ -332,12 +335,18 @@ evalExpr (SliceDef startExpr stopExpr strideExpr) = do
 
     return $ Slice start stop stride
 
+evalExpr (ListDef exprs) = do
+    values <- mapM evalExpr exprs
+    ref <- liftIO $ newIORef values
+    return $ List ref
+
 evalExpr (Subscript expr sub) = do
     left <- evalExpr expr
     index <- evalExpr sub
     evalSubscript left index
 
   where
+    {-evalSubscript (List values) (Int i) = return $-}
     evalSubscript (Tuple values) (Int i) = return $ values !! fromIntegral i
     evalSubscript (Tuple {}) _ = fail "tuple indicies must be integers"
 
@@ -399,7 +408,9 @@ evalCall (Function _ params body) args = do
 
     return result
 
-evalCall v _ = fail $ "Unable to call " ++ str v
+evalCall v _ = do
+    s <- liftIO $ str v
+    fail $ "Unable to call " ++ s
 
 parseEval :: String -> String -> Evaluator ()
 parseEval _ code = do

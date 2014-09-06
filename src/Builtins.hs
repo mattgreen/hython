@@ -1,8 +1,13 @@
-module Builtins (builtinFunctions, pow, BuiltInFunction)
+module Builtins
 where
 
 import Prelude hiding (print)
+
+import Data.Complex
 import Data.Fixed
+import Data.IORef
+import Data.List
+import Text.Printf
 
 import Language
 
@@ -43,8 +48,8 @@ pow _ = fail "pow() takes at least two arguments"
 
 print :: Values -> IO Value
 print args = do
-    let s = unwords $ map str args
-    putStrLn s
+    stringArgs <- mapM str args
+    putStrLn $ unwords stringArgs
     return None
 
 slice :: Values -> IO Value
@@ -52,8 +57,37 @@ slice (end:[])              = return $ Slice None end None
 slice (start:end:stride:[]) = return $ Slice start end stride
 slice _                     = fail "blah"
 
+str :: Value -> IO String
+str None                        = return "None"
+str (Bool v)                    = return $ show v
+str (String v)                  = return $ v
+str (Int v)                     = return $ show v
+str (Float v)                   = return $ show v
+str (Imaginary v)
+    | realPart v == 0           = return $ show (imagPart v) ++ "j"
+    | otherwise                 = return $ show v
+str (Function name _ _)         = return $ printf "<%s>" name
+str (BuiltinFn name)            = return $ printf "<built-in function %s>" name
+str (Class name _)              = return $ printf "<class '__main__.%s'>" name
+str (Object (Class name _) _)   = return $ printf "<%s object>" name
+str (Object _ _)                = return $ "<invalid object>"
+str (Slice start end stride) =
+    return $ printf "slice(%s, %s, %s)" (show start) (show end) (show stride)
+str (Tuple values) = do
+    stringValues <- mapM str values
+    return $ printf "(%s%s)" (intercalate ", " stringValues) trailer
+
+    where
+        trailer = case values of
+                      [_]   -> ","
+                      _     -> ""
+str (List ref) = do
+    values <- readIORef ref
+    stringValues <- mapM str values
+    return $ printf "[%s]" (intercalate ", " stringValues)
+
 str' :: Values -> IO Value
 str' v = do
-    let s = str (head v)
+    s <- str (head v)
     return $ String s
 
