@@ -232,6 +232,7 @@ flow_stmt
     : break_stmt        { $1 }
     | continue_stmt     { $1 }
     | return_stmt       { $1 }
+    | raise_stmt        { $1 }
 
 -- break_stmt: 'break'
 break_stmt
@@ -247,6 +248,11 @@ return_stmt
 
 -- yield_stmt: yield_expr
 -- raise_stmt: 'raise' [test ['from' test]]
+raise_stmt
+    : RAISE                 { Reraise }
+    | RAISE test            { Raise $2 (Constant None) }
+    | RAISE test FROM test  { Raise $2 $4 }
+
 -- import_stmt: import_name | import_from
 -- import_name: 'import' dotted_as_names
 -- # note below: the ('.' | '...') is necessary because '...' is tokenized as ELLIPSIS

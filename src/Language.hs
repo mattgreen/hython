@@ -15,6 +15,8 @@ data Statement
     | Def String [String] [Statement]
     | Del Expression
     | For Expression Expression Statements Statements
+    | Raise Expression Expression
+    | Reraise
     | Return Expression
     | Try ExceptClauses Statements Statements Statements
     | While Expression Statements Statements
@@ -42,7 +44,6 @@ type ExceptClauses  = [ExceptClause]
 
 type Expressions = [Expression]
 type Values = [Value]
-
 
 data Expression
     = Call Expression [Expression]

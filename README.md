@@ -50,7 +50,7 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] `lambda` statement
  * [x] `nonlocal` statement
  * [x] `pass` statement
- * [ ] `raise` statement
+ * [x] `raise` statement
  * [x] `return` statement
  * [x] `try` statement
  * [x] `while` statement

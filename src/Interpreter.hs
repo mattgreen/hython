@@ -142,6 +142,9 @@ eval (If clauses elseBlock) = evalClauses clauses
 
 eval s@(Nonlocal {}) = unimplemented s
 
+eval s@(Raise {}) = unimplemented s
+eval s@(Reraise {}) = unimplemented s
+
 eval (Return expression) = do
     value <- evalExpr expression
 
