@@ -43,8 +43,6 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] `class` statement
  * [x] `def` statement
  * [x] `del` statement
- * [ ] `except` statement
- * [ ] `finally` statement
  * [x] `for` statement
  * [x] `global` statement
  * [x] `if`/`elif`/`else` statements
@@ -54,7 +52,7 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] `pass` statement
  * [ ] `raise` statement
  * [x] `return` statement
- * [ ] `try` statement
+ * [x] `try` statement
  * [x] `while` statement
  * [x] `with` statement
  * [ ] `yield` statement

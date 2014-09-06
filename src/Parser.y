@@ -276,6 +276,7 @@ compound_stmt
     : if_stmt       { $1 }
     | while_stmt    { $1 }
     | for_stmt      { $1 }
+    | try_stmt      { $1 }
     | with_stmt     { $1 }
     | funcdef       { $1 }
     | classdef      { $1 }
@@ -306,6 +307,17 @@ for_stmt
 --             ['else' ':' suite]
 --             ['finally' ':' suite] |
 --            'finally' ':' suite))
+try_stmt
+    : TRY ':' suite many1(except_clauses) else_clause finally_clause    { Try $4 $3 $5 $6 }
+    | TRY ':' suite FINALLY ':' suite                                   { Try [] $3 [] $6 }
+
+except_clauses
+    : except_clause ':' suite   { $1 $3 }
+
+finally_clause
+    :                           { [] }
+    | FINALLY ':' suite         { $3 }
+
 -- with_stmt: 'with' with_item (',' with_item)*  ':' suite
 with_stmt
     : WITH sepBy(with_item, ',') ':' suite  { With $2 $4 }
@@ -317,6 +329,10 @@ with_item
 
 -- # NB compile.c makes sure that the default except clause is last
 -- except_clause: 'except' [test ['as' NAME]]
+except_clause
+    : EXCEPT                    { CatchAllClause }
+    | EXCEPT test               { ExceptClause $2 }
+    | EXCEPT test AS identifier { ExceptClause (As $2 (Name $4)) }
 
 -- suite: simple_stmt | NEWLINE INDENT stmt+ DEDENT
 suite

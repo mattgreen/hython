@@ -148,6 +148,8 @@ eval (Return expression) = do
     returnCont <- gets fnReturn
     returnCont value
 
+eval s@(Try {}) = unimplemented s
+
 eval (While condition block elseBlock) = callCC $ \break ->
         fix $ \loop -> do
             callCC $ \continue ->

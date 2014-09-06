@@ -16,6 +16,7 @@ data Statement
     | Del Expression
     | For Expression Expression Statements Statements
     | Return Expression
+    | Try ExceptClauses Statements Statements Statements
     | While Expression Statements Statements
     | With Expressions Statements
     | Break
@@ -28,11 +29,20 @@ data Statement
     | ModuleDef Statements
     deriving(Eq, Show)
 
+data IfClause = IfClause Expression [Statement] deriving (Eq, Show)
+
+data ExceptClause
+    = ExceptClause Expression Statements
+    | CatchAllClause Statements
+    deriving (Eq, Show)
+
+type Statements     = [Statement]
+type IfClauses      = [IfClause]
+type ExceptClauses  = [ExceptClause]
+
 type Expressions = [Expression]
-type Statements = [Statement]
 type Values = [Value]
 
-data IfClause = IfClause Expression [Statement] deriving (Eq, Show)
 
 data Expression
     = Call Expression [Expression]
