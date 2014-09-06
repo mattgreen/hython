@@ -9,6 +9,7 @@ print(3/5)
 print(5%2)
 print(5//2)
 print(5**3)
+print(0**0)
 
 # Floating point arithmetic
 print(+5.0)
@@ -20,6 +21,7 @@ print(1.0 / 4.8)
 print(5.0 % 2.0)
 print(5.0 // 2.0)
 print(5.0 ** 3.4)
+print(0.0 ** 0.0)
 
 # TODO: imaginary number arithmetic
 
