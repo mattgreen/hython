@@ -56,7 +56,7 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] `return` statement
  * [ ] `try` statement
  * [x] `while` statement
- * [ ] `with` statement
+ * [x] `with` statement
  * [ ] `yield` statement
  * [ ] Keyword arguments to functions
  * [ ] Default arguments to functions

@@ -55,6 +55,7 @@ DEDENT      {L.Dedent}
 
 AND         {L.Keyword "and"}
 ASSERT      {L.Keyword "assert"}
+AS          {L.Keyword "as"}
 BREAK       {L.Keyword "break"}
 CLASS       {L.Keyword "class"}
 CONTINUE    {L.Keyword "continue"}
@@ -269,6 +270,7 @@ compound_stmt
     : if_stmt       { $1 }
     | while_stmt    { $1 }
     | for_stmt      { $1 }
+    | with_stmt     { $1 }
     | funcdef       { $1 }
     | classdef      { $1 }
 
@@ -299,7 +301,14 @@ for_stmt
 --             ['finally' ':' suite] |
 --            'finally' ':' suite))
 -- with_stmt: 'with' with_item (',' with_item)*  ':' suite
+with_stmt
+    : WITH sepBy(with_item, ',') ':' suite  { With $2 $4 }
+
 -- with_item: test ['as' expr]
+with_item
+    : test                  { $1 }
+    | test AS expr          { As $1 $3 }
+
 -- # NB compile.c makes sure that the default except clause is last
 -- except_clause: 'except' [test ['as' NAME]]
 

@@ -159,6 +159,8 @@ eval (While condition block elseBlock) = callCC $ \break ->
                     evalBlock block
             loop
 
+eval s@(With {}) = unimplemented s
+
 eval (Pass) = return ()
 
 eval (Assert e _) = do
@@ -172,6 +174,15 @@ eval (Expression e) = do
     return ()
 
 evalExpr :: Expression -> Evaluator Value
+evalExpr (As expr binding) = do
+    value <- evalExpr expr
+
+    case binding of
+        Name n  -> updateSymbol n value
+        _       -> fail "unhandled binding type"
+
+    return value
+
 evalExpr (UnaryOp Not (Constant (Bool v))) =
     return $ Bool (not v)
 

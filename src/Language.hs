@@ -17,6 +17,7 @@ data Statement
     | For Expression Expression Statements Statements
     | Return Expression
     | While Expression Statements Statements
+    | With Expressions Statements
     | Break
     | Continue
     | Pass
@@ -39,6 +40,7 @@ data Expression
     | Name String
     | Constant Value
     | Subscript Expression Expression
+    | As Expression Expression
     | UnaryOp UnaryOperator Expression
     | BinOp Operator Expression Expression
     | TernOp Expression Expression Expression
