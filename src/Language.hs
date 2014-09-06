@@ -41,6 +41,7 @@ data Expression
     | Constant Value
     | Subscript Expression Expression
     | As Expression Expression
+    | Lambda [String] Expression
     | UnaryOp UnaryOperator Expression
     | BinOp Operator Expression Expression
     | TernOp Expression Expression Expression

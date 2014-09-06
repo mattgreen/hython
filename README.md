@@ -49,7 +49,7 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] `global` statement
  * [x] `if`/`elif`/`else` statements
  * [ ] `import` statement (and friends)
- * [ ] `lambda` statement
+ * [x] `lambda` statement
  * [x] `nonlocal` statement
  * [x] `pass` statement
  * [ ] `raise` statement

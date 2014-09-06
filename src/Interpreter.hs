@@ -311,6 +311,8 @@ evalExpr (Call e args) = do
     evalArgs <- mapM evalExpr args
     evalCall f evalArgs
 
+evalExpr e@(Lambda {}) = fail $ "Unimplemented: " ++ show e
+
 evalExpr (Attribute target name) = do
     receiver <- evalExpr target
     attribute <- getAttr name receiver

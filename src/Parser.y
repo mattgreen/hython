@@ -174,7 +174,13 @@ parameters
 -- varargslist: (vfpdef ['=' test] (',' vfpdef ['=' test])* [','
 --        ['*' [vfpdef] (',' vfpdef ['=' test])* [',' '**' vfpdef] | '**' vfpdef]]
 --      |  '*' [vfpdef] (',' vfpdef ['=' test])* [',' '**' vfpdef] | '**' vfpdef)
+-- TODO: obviously wrong
+varargslist
+    : sepBy0(identifier, ',')   { $1 }
+
 -- vfpdef: NAME
+vfpdef
+    : identifier    { $1 }
 
 -- stmt: simple_stmt | compound_stmt
 stmt
@@ -321,10 +327,21 @@ suite
 test
     : or_test                       { $1 }
     | or_test IF or_test ELSE test  { TernOp $3 $1 $5 }
+    | lambdef                       { $1 }
 
 -- test_nocond: or_test | lambdef_nocond
+test_nocond
+    : or_test               { $1 }
+    | lambdef_nocond        { $1 }
+
 -- lambdef: 'lambda' [varargslist] ':' test
+lambdef
+    : LAMBDA varargslist ':' test   { Lambda $2 $4 }
+
 -- lambdef_nocond: 'lambda' [varargslist] ':' test_nocond
+lambdef_nocond
+    : LAMBDA varargslist ':' test_nocond    { Lambda $2 $4 }
+
 -- or_test: and_test ('or' and_test)*
 -- TODO: implement 0-n clauses
 or_test
