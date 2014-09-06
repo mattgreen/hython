@@ -5,7 +5,7 @@ module Language where
 import Data.Complex
 import Data.IORef
 import Data.List
-import Data.Map (Map)
+import Data.HashMap.Strict (HashMap)
 import Text.Printf
 
 data Statement
@@ -61,7 +61,7 @@ data Value
     | None
     deriving(Eq, Show)
 
-type AttributeDict = Map String Value
+type AttributeDict = HashMap String Value
 
 data UnaryOperator
     = Not

@@ -7,8 +7,8 @@ import Control.Monad.Trans.Cont
 import Data.Bits
 import Data.Fixed
 import Data.IORef
-import Data.Map (Map)
-import qualified Data.Map as Map
+import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as Map
 import Debug.Trace
 import System.Environment
 import Text.Printf
@@ -20,7 +20,7 @@ import Parser
 type Evaluator = ContT () (ReaderT FlowControl (StateT Environment IO))
 type EvaluatorCont = () -> Evaluator ()
 type EvaluatorReturnCont = Value -> Evaluator ()
-type SymbolTable = Map String Value
+type SymbolTable = HashMap String Value
 
 data FlowControl = FlowControl {
     loopBreak :: EvaluatorCont,
