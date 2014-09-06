@@ -268,6 +268,7 @@ assert_stmt
 compound_stmt
     : if_stmt       { $1 }
     | while_stmt    { $1 }
+    | for_stmt      { $1 }
     | funcdef       { $1 }
     | classdef      { $1 }
 
@@ -288,6 +289,10 @@ while_stmt
     | WHILE test ':' suite ELSE ':' suite   { While $2 $4 $7 }
 
 -- for_stmt: 'for' exprlist 'in' testlist ':' suite ['else' ':' suite]
+for_stmt
+    : FOR exprlist IN testlist ':' suite                { For $2 $4 $6 [] }
+    | FOR exprlist IN testlist ':' suite ELSE ':' suite { For $2 $4 $6 $9 }
+
 -- try_stmt: ('try' ':' suite
 --            ((except_clause ':' suite)+
 --             ['else' ':' suite]

@@ -126,6 +126,9 @@ eval (Continue) = do
     flow <- ask
     loopContinue flow ()
 
+-- Needs EH to implement iterator protocol
+eval s@(For {}) = unimplemented s
+
 eval s@(Global {}) = unimplemented s
 
 eval (If clauses elseBlock) = evalClauses clauses

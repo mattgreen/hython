@@ -45,6 +45,7 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] `del` statement
  * [ ] `except` statement
  * [ ] `finally` statement
+ * [x] `for` statement
  * [x] `global` statement
  * [x] `if`/`elif`/`else` statements
  * [ ] `import` statement (and friends)

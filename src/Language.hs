@@ -14,6 +14,7 @@ data Statement
     | If [IfClause] [Statement]
     | Def String [String] [Statement]
     | Del Expression
+    | For Expression Expression Statements Statements
     | Return Expression
     | While Expression Statements Statements
     | Break
