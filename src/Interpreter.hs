@@ -346,7 +346,10 @@ evalExpr (Subscript expr sub) = do
     evalSubscript left index
 
   where
-    {-evalSubscript (List values) (Int i) = return $-}
+    evalSubscript (List ref) (Int i) = do
+        values <- liftIO $ readIORef ref
+        return $ values !! fromIntegral i
+    evalSubscript (List {}) _ = fail "list indicies must be integers"
     evalSubscript (Tuple values) (Int i) = return $ values !! fromIntegral i
     evalSubscript (Tuple {}) _ = fail "tuple indicies must be integers"
 
