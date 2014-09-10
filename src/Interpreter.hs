@@ -352,6 +352,8 @@ evalExpr (Subscript expr sub) = do
     evalSubscript (List {}) _ = fail "list indicies must be integers"
     evalSubscript (Tuple values) (Int i) = return $ values !! fromIntegral i
     evalSubscript (Tuple {}) _ = fail "tuple indicies must be integers"
+    evalSubscript (String s) (Int i) = return $ String [s !! fromIntegral i]
+    evalSubscript _ _ = fail "invalid subscript"
 
 evalExpr (TernOp condExpr thenExpr elseExpr) = do
     condition <- evalExpr condExpr
