@@ -365,6 +365,9 @@ evalExpr (TupleDef exprs) = do
     values <- mapM evalExpr exprs
     return $ Tuple values
 
+evalExpr (From {}) = fail "Unimplemented: from"
+evalExpr (Yield {}) = fail "Unimplemented: yield"
+
 evalExpr (Name var) = lookupSymbol var
 evalExpr (Constant c) = return c
 

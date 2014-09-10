@@ -50,6 +50,8 @@ data Expression
     | Constant Value
     | Subscript Expression Expression
     | As Expression Expression
+    | Yield Expression
+    | From Expression
     | Lambda [String] Expression
     | UnaryOp UnaryOperator Expression
     | BinOp Operator Expression Expression

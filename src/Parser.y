@@ -210,7 +210,7 @@ small_stmt
 --                      ('=' (yield_expr|testlist_star_expr))*)
 expr_stmt
     : testlist_star_expr          { Expression $1 }
-    | testlist_star_expr '=' testlist_star_expr { Assignment $1 $3 }
+    | testlist_star_expr '=' or(yield_expr, testlist_star_expr) { Assignment $1 $3 }
 
 -- testlist_star_expr: (test|star_expr) (',' (test|star_expr))* [',']
 testlist_star_expr
@@ -233,6 +233,7 @@ flow_stmt
     | continue_stmt     { $1 }
     | return_stmt       { $1 }
     | raise_stmt        { $1 }
+    | yield_stmt        { $1 }
 
 -- break_stmt: 'break'
 break_stmt
@@ -247,6 +248,9 @@ return_stmt
     : RETURN opt(testlist)   { Return $ maybe (Constant None) id $2 }
 
 -- yield_stmt: yield_expr
+yield_stmt
+    : yield_expr        { Expression $1 }
+
 -- raise_stmt: 'raise' [test ['from' test]]
 raise_stmt
     : RAISE                 { Reraise }
@@ -463,7 +467,7 @@ power
 --        '{' [dictorsetmaker] '}' |
 --        NAME | NUMBER | STRING+ | '...' | 'None' | 'True' | 'False')
 atom
-    : '(' opt(testlist_comp) ')'    { maybe (TupleDef []) id $2 }
+    : '(' opt(or(yield_expr, testlist_comp)) ')'    { maybe (TupleDef []) id $2 }
     | '[' opt(testlist_comp) ']'    { maybe (ListDef []) (\e -> ListDef $ expressionsOf e) $2 }
     | identifier                    { Name $1 }
     | literal                       { Constant $1 }
@@ -532,7 +536,13 @@ argument
 -- encoding_decl: NAME
 -- 
 -- yield_expr: 'yield' [yield_arg]
+yield_expr
+    : YIELD yield_arg       { Yield $2 }
+
 -- yield_arg: 'from' test | testlist
+yield_arg
+    : FROM test             { From $2 }
+    | testlist              { $1 }
 {
 
 data Trailer

@@ -32,7 +32,7 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] List literals
  * [ ] List comprehensions
  * [ ] Dictionary literals
- * [ ] Subscript operators
+ * [x] Subscript operators
  * [ ] Set literals
  * [x] All arithmetic operators
  * [x] All bitwise operators
@@ -55,7 +55,7 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] `try` statement
  * [x] `while` statement
  * [x] `with` statement
- * [ ] `yield` statement
+ * [x] `yield` statement
  * [ ] Keyword arguments to functions
  * [ ] Default arguments to functions
 
