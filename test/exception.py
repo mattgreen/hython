@@ -1,4 +1,9 @@
 try:
+    print("Hello")
+except:
+    print("Shouldn't see this")
+
+try:
     raise Exception("hello")
 except:
     print("Caught the exception!")

@@ -31,6 +31,10 @@ data Environment = Environment {
     fnReturn :: EvaluatorReturnCont
 }
 
+-- Need to track:
+-- handler continuation
+-- frame depth
+
 data FlowControl = FlowControl {
     exceptHandler :: EvaluatorExceptCont,
     loopBreak :: EvaluatorCont,
@@ -180,14 +184,15 @@ eval (Try clauses block _ _) = do
         Nothing             -> return ()
 
   where
+    getHandler None = Nothing
     getHandler exception =
-        case Data.List.find (handlerMatches exception) clauses of
+        case Data.List.find (handlerFor exception) clauses of
             Just (ExceptClause _ handlerBlock)  -> Just handlerBlock
             Just (CatchAllClause handlerBlock)  -> Just handlerBlock
             Nothing                             -> Nothing
 
-    handlerMatches _ (ExceptClause _ _) = False
-    handlerMatches _ (CatchAllClause _) = True
+    handlerFor _ (ExceptClause _ _) = False
+    handlerFor _ (CatchAllClause _) = True
 
 eval (While condition block elseBlock) = callCC $ \break ->
         fix $ \loop -> do
