@@ -174,12 +174,14 @@ eval (Return expression) = do
     returnCont value
 
 eval (Try clauses block elseBlock finallyBlock) = do
+    previousHandler <- asks exceptHandler
+
     exception <- callCC $ \handler -> do
         local (\f -> f { exceptHandler = handler }) $
             evalBlock block
         return None
 
-    _handled <- case exception of
+    handled <- case exception of
         None -> do
             evalBlock elseBlock
             return True
@@ -192,6 +194,9 @@ eval (Try clauses block elseBlock finallyBlock) = do
             Nothing -> return False
 
     evalBlock finallyBlock
+
+    unless handled $
+        previousHandler exception
 
   where
     getHandler None = Nothing

@@ -38,3 +38,47 @@ try:
 except:
     print("Caught exception from f()")
 
+def g():
+    try:
+        print("Begin")
+        raise Exception("boom")
+    finally:
+        print("End")
+
+try:
+    g()
+except:
+    print("Caught")
+finally:
+    print("Cleaned up!")
+
+def h():
+    try:
+        print("Begin")
+        raise Exception("boom")
+    except:
+        print("Safe!")
+    finally:
+        print("End")
+
+try:
+    h()
+except:
+    print("Not caught here")
+else:
+    print("this is run")
+finally:
+    print("Cleaned up!")
+
+#def test_handlers_cleaned_up():
+    #try:
+        #return 10
+    #except:
+        #print("you should never see me")
+
+#try:
+    #test_handlers_cleaned_up()
+    #raise Exception("test")
+#except:
+    #print("Should only see me")
+
