@@ -32,18 +32,18 @@ len([x])    = case x of
 len _       = fail "len() takes exactly one argument"
 
 pow :: Values -> IO Value
-pow (Int l:Int r:[])
+pow [Int l, Int r]
     | r < 0     = return $ Float (fromIntegral l ^^ r)
     | otherwise = return $ Int $ l ^ r
 
-pow (Int l:Int r:Int m:[]) = do
+pow [Int l, Int r, Int m] = do
     result <- pow [Int l, Int r]
     case result of
         Float v    -> return $ Float (v `mod'` fromIntegral m)
         Int v      -> return $ Int (v `mod` m)
 
-pow (Float l:Float r:[]) = return $ Float (l ** r)
-pow (Float l:Float r:Float m:[]) = do
+pow [Float l, Float r] = return $ Float (l ** r)
+pow [Float l, Float r, Float m] = do
     (Float result) <- pow [Float l, Float r]
     return $ Float (result `mod'` m)
 
@@ -56,8 +56,8 @@ print args = do
     return None
 
 slice :: Values -> IO Value
-slice (end:[])              = return $ Slice None end None
-slice (start:end:stride:[]) = return $ Slice start end stride
+slice [end]                 = return $ Slice None end None
+slice [start, end, stride]  = return $ Slice start end stride
 slice _                     = fail "blah"
 
 str :: Value -> IO String
