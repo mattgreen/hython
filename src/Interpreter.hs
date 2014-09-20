@@ -9,6 +9,7 @@ import Data.Fixed
 import Data.IORef
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
+import Data.List hiding (break)
 import Debug.Trace
 import System.Environment
 import Text.Printf
@@ -174,15 +175,19 @@ eval (Try clauses block _ _) = do
             evalBlock block
         return None
 
-    case exception of
-        None    -> return ()
-        _       -> mapM_ evalHandler clauses
-
-    return ()
+    case getHandler exception of
+        Just handlerBlock   -> evalBlock handlerBlock
+        Nothing             -> return ()
 
   where
-    evalHandler (CatchAllClause handler) =
-        evalBlock handler
+    getHandler exception =
+        case Data.List.find (handlerMatches exception) clauses of
+            Just (ExceptClause _ handlerBlock)  -> Just handlerBlock
+            Just (CatchAllClause handlerBlock)  -> Just handlerBlock
+            Nothing                             -> Nothing
+
+    handlerMatches _ (ExceptClause _ _) = False
+    handlerMatches _ (CatchAllClause _) = True
 
 eval (While condition block elseBlock) = callCC $ \break ->
         fix $ \loop -> do
