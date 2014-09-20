@@ -22,23 +22,34 @@ type EvaluatorCont = () -> Evaluator ()
 type EvaluatorReturnCont = Value -> Evaluator ()
 type SymbolTable = HashMap String Value
 
-data FlowControl = FlowControl {
-    loopBreak :: EvaluatorCont,
-    loopContinue :: EvaluatorCont
-}
-
 data Environment = Environment {
+    frames :: [String],
     scopes :: [SymbolTable],
     builtins :: [(String, BuiltInFunction)],
     fnReturn :: EvaluatorReturnCont
+}
+
+data FlowControl = FlowControl {
+    loopBreak :: EvaluatorCont,
+    loopContinue :: EvaluatorCont
 }
 
 unimplemented :: Statement -> Evaluator ()
 unimplemented s = fail $ printf "Unimplemented: %s" (show s)
 
 defaultEnv :: Environment
-defaultEnv =
-    Environment {builtins = builtinFunctions, scopes = [Map.fromList []], fnReturn = error "Must be in function!"}
+defaultEnv = Environment {
+    builtins = builtinFunctions,
+    frames = ["<module>"],
+    scopes = [Map.fromList []],
+    fnReturn = error "Must be in function!"
+}
+
+defaultFlowControl :: FlowControl
+defaultFlowControl = FlowControl {
+    loopBreak = error "Must be in loop",
+    loopContinue = error "Must be in loop"
+}
 
 currentScope :: Evaluator SymbolTable
 currentScope = do
@@ -402,17 +413,17 @@ evalCall (BuiltinFn name) args = do
         Just fn -> liftIO $ fn args
         Nothing -> fail "no built-in with name"
 
-evalCall (Function _ params body) args = do
+evalCall (Function name params body) args = do
     previousReturnCont <- gets fnReturn
     previousScopes <- gets scopes
     let scope = Map.union (Map.fromList $ zip params args) (last previousScopes)
 
     result <- callCC $ \returnCont -> do
-        modify $ \e -> e{ fnReturn = returnCont, scopes = scope : previousScopes }
+        modify $ \e -> e{ frames = name : frames e, fnReturn = returnCont, scopes = scope : previousScopes }
         evalBlock body
         return None
 
-    modify $ \e -> e{ fnReturn = previousReturnCont, scopes = previousScopes }
+    modify $ \e -> e{ frames = tail $ frames e, fnReturn = previousReturnCont, scopes = previousScopes }
 
     return result
 
@@ -424,12 +435,6 @@ parseEval :: String -> String -> Evaluator ()
 parseEval _ code = do
     let statements = parse code
     eval statements
-
-defaultFlowControl :: FlowControl
-defaultFlowControl = FlowControl {
-    loopBreak = error "Must be in loop",
-    loopContinue = error "Must be in loop"
-}
 
 main :: IO ()
 main = do
