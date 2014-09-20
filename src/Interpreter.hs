@@ -20,6 +20,7 @@ import Parser
 type Evaluator = ContT () (ReaderT FlowControl (StateT Environment IO))
 type EvaluatorCont = () -> Evaluator ()
 type EvaluatorReturnCont = Value -> Evaluator ()
+type EvaluatorExceptCont = Value -> Evaluator ()
 type SymbolTable = HashMap String Value
 
 data Environment = Environment {
@@ -30,6 +31,7 @@ data Environment = Environment {
 }
 
 data FlowControl = FlowControl {
+    exceptHandler :: EvaluatorExceptCont,
     loopBreak :: EvaluatorCont,
     loopContinue :: EvaluatorCont
 }
@@ -47,6 +49,7 @@ defaultEnv = Environment {
 
 defaultFlowControl :: FlowControl
 defaultFlowControl = FlowControl {
+    exceptHandler = error "Must be in exception handler",
     loopBreak = error "Must be in loop",
     loopContinue = error "Must be in loop"
 }
@@ -153,7 +156,10 @@ eval (If clauses elseBlock) = evalClauses clauses
 
 eval s@(Nonlocal {}) = unimplemented s
 
-eval s@(Raise {}) = unimplemented s
+eval (Raise {}) = do
+    flow <- ask
+    exceptHandler flow (Int 42)
+
 eval s@(Reraise {}) = unimplemented s
 
 eval (Return expression) = do
@@ -162,7 +168,21 @@ eval (Return expression) = do
     returnCont <- gets fnReturn
     returnCont value
 
-eval s@(Try {}) = unimplemented s
+eval (Try clauses block _ _) = do
+    exception <- callCC $ \handler -> do
+        local (\f -> f { exceptHandler = handler }) $
+            evalBlock block
+        return None
+
+    case exception of
+        None    -> return ()
+        _       -> mapM_ evalHandler clauses
+
+    return ()
+
+  where
+    evalHandler (CatchAllClause handler) =
+        evalBlock handler
 
 eval (While condition block elseBlock) = callCC $ \break ->
         fix $ \loop -> do
