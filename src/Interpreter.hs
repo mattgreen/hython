@@ -173,15 +173,25 @@ eval (Return expression) = do
     returnCont <- gets fnReturn
     returnCont value
 
-eval (Try clauses block _ _) = do
+eval (Try clauses block elseBlock finallyBlock) = do
     exception <- callCC $ \handler -> do
         local (\f -> f { exceptHandler = handler }) $
             evalBlock block
         return None
 
-    case getHandler exception of
-        Just handlerBlock   -> evalBlock handlerBlock
-        Nothing             -> return ()
+    _handled <- case exception of
+        None -> do
+            evalBlock elseBlock
+            return True
+
+        _ -> case getHandler exception of
+            Just handlerBlock -> do
+                evalBlock handlerBlock
+                return True
+
+            Nothing -> return False
+
+    evalBlock finallyBlock
 
   where
     getHandler None = Nothing
