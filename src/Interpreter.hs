@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 import Prelude hiding (break)
 
 import Control.Monad
@@ -25,6 +27,7 @@ type EvaluatorExceptCont = Value -> Evaluator ()
 type SymbolTable = HashMap String Value
 
 data Environment = Environment {
+    exceptHandler :: EvaluatorExceptCont,
     frames :: [String],
     scopes :: [SymbolTable],
     builtins :: [(String, BuiltInFunction)],
@@ -36,7 +39,6 @@ data Environment = Environment {
 -- frame depth
 
 data FlowControl = FlowControl {
-    exceptHandler :: EvaluatorExceptCont,
     loopBreak :: EvaluatorCont,
     loopContinue :: EvaluatorCont
 }
@@ -46,6 +48,7 @@ unimplemented s = fail $ printf "Unimplemented: %s" (show s)
 
 defaultEnv :: Environment
 defaultEnv = Environment {
+    exceptHandler = error "Must be in exception handler",
     builtins = builtinFunctions,
     frames = ["<module>"],
     scopes = [Map.fromList []],
@@ -54,7 +57,6 @@ defaultEnv = Environment {
 
 defaultFlowControl :: FlowControl
 defaultFlowControl = FlowControl {
-    exceptHandler = error "Must be in exception handler",
     loopBreak = error "Must be in loop",
     loopContinue = error "Must be in loop"
 }
@@ -101,6 +103,11 @@ updateSymbol name value = do
     let updatedScope = Map.insert name value scope
     modify $ \env -> env { scopes = updatedScope : tail (scopes env) }
 
+restoreHandler :: (MonadState Environment m) => EvaluatorExceptCont -> (t -> m b) -> t -> m b
+restoreHandler previousHandler action value = do
+    modify $ \e -> e { exceptHandler = previousHandler }
+    action value
+
 eval :: Statement -> Evaluator ()
 eval (Def name params body) = updateSymbol name function
   where
@@ -138,12 +145,12 @@ eval (Assignment (Attribute var attr) expr) = do
 eval (Assignment{}) = fail "Syntax error!"
 
 eval (Break) = do
-    flow <- ask
-    loopBreak flow ()
+    break <- asks loopBreak
+    break ()
 
 eval (Continue) = do
-    flow <- ask
-    loopContinue flow ()
+    continue <- asks loopContinue
+    continue ()
 
 -- Needs EH to implement iterator protocol
 eval s@(For {}) = unimplemented s
@@ -162,8 +169,8 @@ eval (If clauses elseBlock) = evalClauses clauses
 eval s@(Nonlocal {}) = unimplemented s
 
 eval (Raise {}) = do
-    flow <- ask
-    exceptHandler flow (Int 42)
+    handler <- gets exceptHandler
+    handler (Int 42)
 
 eval s@(Reraise {}) = unimplemented s
 
@@ -174,11 +181,11 @@ eval (Return expression) = do
     returnCont value
 
 eval (Try clauses block elseBlock finallyBlock) = do
-    previousHandler <- asks exceptHandler
+    previousHandler <- gets exceptHandler
 
     exception <- callCC $ \handler -> do
-        local (\f -> f { exceptHandler = handler }) $
-            evalBlock block
+        modify $ \e -> e { exceptHandler = handler }
+        evalBlock block
         return None
 
     handled <- case exception of
@@ -209,10 +216,16 @@ eval (Try clauses block elseBlock finallyBlock) = do
     handlerFor _ (ExceptClause _ _) = False
     handlerFor _ (CatchAllClause _) = True
 
-eval (While condition block elseBlock) = callCC $ \break ->
+eval (While condition block elseBlock) = do
+    handler <- gets exceptHandler
+
+    callCC $ \break ->
         fix $ \loop -> do
-            callCC $ \continue ->
-                local (\f -> f{ loopBreak = break, loopContinue = continue }) $ do
+            callCC $ \continue -> do
+                let breakHandler = restoreHandler handler break
+                let continueHandler = restoreHandler handler continue
+
+                local (\f -> f{ loopBreak = breakHandler, loopContinue = continueHandler }) $ do
                     result <- evalExpr condition
                     unless (isTrue result) $ do
                         evalBlock elseBlock
@@ -459,12 +472,13 @@ evalCall (BuiltinFn name) args = do
         Nothing -> fail "no built-in with name"
 
 evalCall (Function name params body) args = do
+    previousHandler <- gets exceptHandler
     previousReturnCont <- gets fnReturn
     previousScopes <- gets scopes
     let scope = Map.union (Map.fromList $ zip params args) (last previousScopes)
 
     result <- callCC $ \returnCont -> do
-        modify $ \e -> e{ frames = name : frames e, fnReturn = returnCont, scopes = scope : previousScopes }
+        modify $ \e -> e{ frames = name : frames e, fnReturn = restoreHandler previousHandler returnCont, scopes = scope : previousScopes }
         evalBlock body
         return None
 
