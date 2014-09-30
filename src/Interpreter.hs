@@ -12,6 +12,7 @@ import Data.IORef
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
 import Data.List hiding (break)
+import Data.Maybe
 import Debug.Trace
 import System.Environment
 import Text.Printf
@@ -27,6 +28,7 @@ type EvaluatorExceptCont = Value -> Evaluator ()
 type SymbolTable = HashMap String Value
 
 data Config = Config {
+    tracingEnabled :: Bool
 }
 
 data Environment = Environment {
@@ -46,9 +48,11 @@ data Environment = Environment {
 unimplemented :: Statement -> Evaluator ()
 unimplemented s = fail $ printf "Unimplemented: %s" (show s)
 
-defaultConfig :: Config
-defaultConfig = Config {
-}
+defaultConfig :: IO Config
+defaultConfig = do
+    tracing <- lookupEnv "TRACE"
+
+    return Config { tracingEnabled = isJust tracing }
 
 defaultEnv :: Environment
 defaultEnv = Environment {
@@ -446,11 +450,10 @@ evalBlock = mapM_ traceEval
   where
     traceEval :: Statement -> Evaluator ()
     traceEval s = do
-        tracing <- liftIO $ lookupEnv "TRACE"
-
-        case tracing of
-            Just _  -> (trace $ traceStmt s) eval s
-            Nothing -> eval s
+        tracing <- asks tracingEnabled
+        if tracing
+            then (trace $ traceStmt s) eval s
+            else eval s
 
     traceStmt s = "*** Evaluating: " ++ show s
 
@@ -502,6 +505,8 @@ main :: IO ()
 main = do
     [filename] <- getArgs
     code <- readFile filename
+    config <- defaultConfig
+    let env = defaultEnv
 
-    _ <- runStateT (runReaderT (runContT (parseEval filename code) return) defaultConfig) defaultEnv
+    _ <- runStateT (runReaderT (runContT (parseEval filename code) return) config) env
     return ()
