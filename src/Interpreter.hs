@@ -33,13 +33,15 @@ data Config = Config {
 
 data Environment = Environment {
     exceptHandler :: EvaluatorExceptCont,
-    frames :: [String],
+    frames :: [Frame],
     scopes :: [SymbolTable],
     builtins :: [(String, BuiltInFunction)],
     fnReturn :: EvaluatorReturnCont,
     loopBreak :: EvaluatorCont,
     loopContinue :: EvaluatorCont
 }
+
+data Frame = Frame String SymbolTable
 
 -- Need to track:
 -- handler continuation
@@ -58,7 +60,7 @@ defaultEnv :: Environment
 defaultEnv = Environment {
     exceptHandler = error "Must be in exception handler",
     builtins = builtinFunctions,
-    frames = ["<module>"],
+    frames = [Frame "<module>" (Map.fromList [])],
     scopes = [Map.fromList []],
     fnReturn = error "Must be in function!",
     loopBreak = error "Must be in loop",
@@ -478,15 +480,15 @@ evalCall (BuiltinFn name) args = do
 evalCall (Function name params body) args = do
     env <- get
 
-    previousScopes <- gets scopes
-    let scope = Map.union (Map.fromList $ zip params args) (last previousScopes)
+    currentScopes <- gets scopes
+    let scope = Map.union (Map.fromList $ zip params args) $ last currentScopes
 
     callCC $ \returnCont -> do
         let returnHandler returnValue = do
             put env
             returnCont returnValue
 
-        modify $ \e -> e{ frames = name : frames e, fnReturn = returnHandler, scopes = scope : previousScopes }
+        modify $ \e -> e{ frames = Frame name scope : frames e, fnReturn = returnHandler, scopes = scope : currentScopes }
         evalBlock body
         returnHandler None
 
