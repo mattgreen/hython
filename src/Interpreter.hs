@@ -5,7 +5,7 @@ import Prelude hiding (break)
 import Control.Monad
 import Control.Monad.Reader
 import Control.Monad.State
-import Control.Monad.Trans.Cont
+import Control.Monad.Trans.Cont hiding (cont)
 import Data.Bits
 import Data.Fixed
 import Data.IORef
@@ -20,31 +20,35 @@ import Builtins (pow, str, builtinFunctions, BuiltInFunction)
 import Language
 import Parser
 
-type Evaluator = ContT () (ReaderT FlowControl (StateT Environment IO))
+type Evaluator = ContT () (ReaderT Config (StateT Environment IO))
 type EvaluatorCont = () -> Evaluator ()
 type EvaluatorReturnCont = Value -> Evaluator ()
 type EvaluatorExceptCont = Value -> Evaluator ()
 type SymbolTable = HashMap String Value
+
+data Config = Config {
+}
 
 data Environment = Environment {
     exceptHandler :: EvaluatorExceptCont,
     frames :: [String],
     scopes :: [SymbolTable],
     builtins :: [(String, BuiltInFunction)],
-    fnReturn :: EvaluatorReturnCont
+    fnReturn :: EvaluatorReturnCont,
+    loopBreak :: EvaluatorCont,
+    loopContinue :: EvaluatorCont
 }
 
 -- Need to track:
 -- handler continuation
 -- frame depth
 
-data FlowControl = FlowControl {
-    loopBreak :: EvaluatorCont,
-    loopContinue :: EvaluatorCont
-}
-
 unimplemented :: Statement -> Evaluator ()
 unimplemented s = fail $ printf "Unimplemented: %s" (show s)
+
+defaultConfig :: Config
+defaultConfig = Config {
+}
 
 defaultEnv :: Environment
 defaultEnv = Environment {
@@ -52,11 +56,7 @@ defaultEnv = Environment {
     builtins = builtinFunctions,
     frames = ["<module>"],
     scopes = [Map.fromList []],
-    fnReturn = error "Must be in function!"
-}
-
-defaultFlowControl :: FlowControl
-defaultFlowControl = FlowControl {
+    fnReturn = error "Must be in function!",
     loopBreak = error "Must be in loop",
     loopContinue = error "Must be in loop"
 }
@@ -103,11 +103,6 @@ updateSymbol name value = do
     let updatedScope = Map.insert name value scope
     modify $ \env -> env { scopes = updatedScope : tail (scopes env) }
 
-restoreHandler :: (MonadState Environment m) => EvaluatorExceptCont -> (t -> m b) -> t -> m b
-restoreHandler previousHandler action value = do
-    modify $ \e -> e { exceptHandler = previousHandler }
-    action value
-
 eval :: Statement -> Evaluator ()
 eval (Def name params body) = updateSymbol name function
   where
@@ -145,11 +140,11 @@ eval (Assignment (Attribute var attr) expr) = do
 eval (Assignment{}) = fail "Syntax error!"
 
 eval (Break) = do
-    break <- asks loopBreak
+    break <- gets loopBreak
     break ()
 
 eval (Continue) = do
-    continue <- asks loopContinue
+    continue <- gets loopContinue
     continue ()
 
 -- Needs EH to implement iterator protocol
@@ -217,21 +212,26 @@ eval (Try clauses block elseBlock finallyBlock) = do
     handlerFor _ (CatchAllClause _) = True
 
 eval (While condition block elseBlock) = do
-    handler <- gets exceptHandler
+    env <- get
 
-    callCC $ \break ->
+    callCC $ \breakCont ->
         fix $ \loop -> do
-            callCC $ \continue -> do
-                let breakHandler = restoreHandler handler break
-                let continueHandler = restoreHandler handler continue
+            callCC $ \continueCont -> do
+                let breakHandler = restoreHandler env breakCont
+                let continueHandler = restoreHandler env continueCont
 
-                local (\f -> f{ loopBreak = breakHandler, loopContinue = continueHandler }) $ do
-                    result <- evalExpr condition
-                    unless (isTrue result) $ do
-                        evalBlock elseBlock
-                        break ()
-                    evalBlock block
+                modify $ \e -> e{ loopBreak = breakHandler, loopContinue = continueHandler }
+
+                result <- evalExpr condition
+                unless (isTrue result) $ do
+                    evalBlock elseBlock
+                    breakHandler ()
+                evalBlock block
             loop
+  where
+    restoreHandler env cont value = do
+        modify $ \e -> e{ exceptHandler = exceptHandler env }
+        cont value
 
 eval s@(With {}) = unimplemented s
 
@@ -478,7 +478,9 @@ evalCall (Function name params body) args = do
     let scope = Map.union (Map.fromList $ zip params args) (last previousScopes)
 
     callCC $ \returnCont -> do
-        let returnHandler = restore env $ \returnValue -> returnCont returnValue
+        let returnHandler returnValue = do
+            put env
+            returnCont returnValue
 
         modify $ \e -> e{ frames = name : frames e, fnReturn = returnHandler, scopes = scope : previousScopes }
         evalBlock body
@@ -495,15 +497,10 @@ parseEval _ code = do
     let statements = parse code
     eval statements
 
-restore :: Environment -> (Value -> Evaluator ()) -> Value -> Evaluator ()
-restore env action value = do
-    put env
-    action value
-
 main :: IO ()
 main = do
     [filename] <- getArgs
     code <- readFile filename
 
-    _ <- runStateT (runReaderT (runContT (parseEval filename code) return) defaultFlowControl) defaultEnv
+    _ <- runStateT (runReaderT (runContT (parseEval filename code) return) defaultConfig) defaultEnv
     return ()
