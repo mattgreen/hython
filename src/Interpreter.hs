@@ -472,12 +472,13 @@ evalCall (BuiltinFn name) args = do
         Nothing -> fail "no built-in with name"
 
 evalCall (Function name params body) args = do
-    previousEnv <- get
+    env <- get
+
     previousScopes <- gets scopes
     let scope = Map.union (Map.fromList $ zip params args) (last previousScopes)
 
     callCC $ \returnCont -> do
-        let returnHandler = cleanup previousEnv $ \returnValue -> returnCont returnValue
+        let returnHandler = restore env $ \returnValue -> returnCont returnValue
 
         modify $ \e -> e{ frames = name : frames e, fnReturn = returnHandler, scopes = scope : previousScopes }
         evalBlock body
@@ -494,9 +495,9 @@ parseEval _ code = do
     let statements = parse code
     eval statements
 
-cleanup :: Environment -> (Value -> Evaluator ()) -> Value -> Evaluator ()
-cleanup previous action value = do
-    put previous
+restore :: Environment -> (Value -> Evaluator ()) -> Value -> Evaluator ()
+restore env action value = do
+    put env
     action value
 
 main :: IO ()
