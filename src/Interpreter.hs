@@ -229,6 +229,7 @@ eval (While condition block elseBlock) = do
                 evalBlock block
             loop
   where
+    -- TODO: shouldn't we be putting the previous break/continue back?
     restoreHandler env cont value = do
         modify $ \e -> e{ exceptHandler = exceptHandler env }
         cont value
