@@ -15,6 +15,7 @@ import Data.List hiding (break)
 import Data.Maybe
 import Debug.Trace
 import System.Environment
+import System.Exit
 import Text.Printf
 
 import Builtins (pow, str, builtinFunctions, BuiltInFunction)
@@ -47,8 +48,10 @@ data Frame = Frame String SymbolTable
 -- handler continuation
 -- frame depth
 
-unimplemented :: Statement -> Evaluator ()
-unimplemented s = fail $ printf "Unimplemented: %s" (show s)
+unimplemented :: String -> Evaluator ()
+unimplemented s = do
+    _ <- raiseError "NotImplementedError" (s ++ " not yet implemented")
+    return ()
 
 defaultConfig :: IO Config
 defaultConfig = do
@@ -98,9 +101,8 @@ lookupSymbol name = do
         Nothing -> do
             builtinFns <- gets builtins
             case lookup name builtinFns of
-                Nothing -> fail $ "Unknown symbol : " ++ name
                 Just _  -> return $ BuiltinFn name
-
+                Nothing -> raiseError "NameError" (printf "name '%s' is not defined" name)
 
 updateSymbol :: String -> Value -> Evaluator ()
 updateSymbol name value = do
@@ -108,6 +110,13 @@ updateSymbol name value = do
 
     let updatedScope = Map.insert name value scope
     modify $ \env -> env { scopes = updatedScope : tail (scopes env) }
+
+raiseError :: String -> String -> Evaluator Value
+raiseError errorClass message = do
+    _ <- liftIO $ do
+        putStrLn $ printf "%s: %s" errorClass message
+        exitFailure
+    return None
 
 eval :: Statement -> Evaluator ()
 eval (Def name params body) = updateSymbol name function
@@ -143,7 +152,9 @@ eval (Assignment (Attribute var attr) expr) = do
     target <- evalExpr var
     setAttr attr value target
 
-eval (Assignment{}) = fail "Syntax error!"
+eval (Assignment{}) = do
+    _ <- raiseError "SyntaxError" "invalid assignment"
+    return ()
 
 eval (Break) = do
     break <- gets loopBreak
@@ -154,9 +165,13 @@ eval (Continue) = do
     continue ()
 
 -- Needs EH to implement iterator protocol
-eval s@(For {}) = unimplemented s
+eval (For {}) = do
+    unimplemented "for keyword"
+    return ()
 
-eval s@(Global {}) = unimplemented s
+eval (Global {}) = do
+    unimplemented "global keyword"
+    return ()
 
 eval (If clauses elseBlock) = evalClauses clauses
   where
@@ -167,13 +182,17 @@ eval (If clauses elseBlock) = evalClauses clauses
             then evalBlock block
             else evalClauses rest
 
-eval s@(Nonlocal {}) = unimplemented s
+eval (Nonlocal {}) = do
+    unimplemented "nonlocal keyword"
+    return ()
 
 eval (Raise {}) = do
     handler <- gets exceptHandler
     handler (Int 42)
 
-eval s@(Reraise {}) = unimplemented s
+eval (Reraise {}) = do
+    unimplemented "empty raise keyword"
+    return ()
 
 eval (Return expression) = do
     value <- evalExpr expression
@@ -240,15 +259,22 @@ eval (While condition block elseBlock) = do
         modify $ \e -> e{ exceptHandler = exceptHandler env }
         cont value
 
-eval s@(With {}) = unimplemented s
+eval (With {}) = do
+    unimplemented "with keyword"
+    return ()
 
 eval (Pass) = return ()
 
 eval (Assert e _) = do
     result <- evalExpr e
-    unless (isTrue result) (fail "Assertion failed!")
 
-eval s@(Del {}) = unimplemented s
+    unless (isTrue result) $ do
+        _ <- raiseError "AssertionError" ""
+        return ()
+
+eval (Del {}) = do
+    unimplemented "del keyword"
+    return ()
 
 eval (Expression e) = do
     _ <- evalExpr e
@@ -395,14 +421,16 @@ evalExpr (Call e args) = do
     evalArgs <- mapM evalExpr args
     evalCall f evalArgs
 
-evalExpr e@(Lambda {}) = fail $ "Unimplemented: " ++ show e
+evalExpr (Lambda {}) = do
+    unimplemented "lambda exprs"
+    return None
 
 evalExpr (Attribute target name) = do
     receiver <- evalExpr target
     attribute <- getAttr name receiver
     case attribute of
         Just v  -> return v
-        Nothing -> fail $ "No attribute " ++ name
+        Nothing -> raiseError "AttributeError" (printf "object has no attribute '%s'" name)
 
 evalExpr (SliceDef startExpr stopExpr strideExpr) = do
     start <- evalExpr startExpr
@@ -425,11 +453,11 @@ evalExpr (Subscript expr sub) = do
     evalSubscript (List ref) (Int i) = do
         values <- liftIO $ readIORef ref
         return $ values !! fromIntegral i
-    evalSubscript (List {}) _ = fail "list indicies must be integers"
+    evalSubscript (List {}) _ = raiseError "TypeError" "list indicies must be integers"
     evalSubscript (Tuple values) (Int i) = return $ values !! fromIntegral i
-    evalSubscript (Tuple {}) _ = fail "tuple indicies must be integers"
+    evalSubscript (Tuple {}) _ = raiseError "TypeError" "tuple indicies must be integers"
     evalSubscript (String s) (Int i) = return $ String [s !! fromIntegral i]
-    evalSubscript _ _ = fail "invalid subscript"
+    evalSubscript _ _ = raiseError "TypeError" "object is not subscriptable"
 
 evalExpr (TernOp condExpr thenExpr elseExpr) = do
     condition <- evalExpr condExpr
@@ -441,8 +469,13 @@ evalExpr (TupleDef exprs) = do
     values <- mapM evalExpr exprs
     return $ Tuple values
 
-evalExpr (From {}) = fail "Unimplemented: from"
-evalExpr (Yield {}) = fail "Unimplemented: yield"
+evalExpr (From {}) = do
+    unimplemented "from expr"
+    return None
+
+evalExpr (Yield {}) = do
+    unimplemented "yield expr"
+    return None
 
 evalExpr (Name var) = lookupSymbol var
 evalExpr (Constant c) = return c
@@ -496,7 +529,7 @@ evalCall (Function name params body) args = do
 
 evalCall v _ = do
     s <- liftIO $ str v
-    fail $ "Unable to call " ++ s
+    raiseError "SystemError" ("don't know how to call " ++ s)
 
 parseEval :: String -> String -> Evaluator ()
 parseEval _ code = do
