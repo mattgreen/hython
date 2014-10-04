@@ -204,7 +204,7 @@ eval (Try clauses block elseBlock finallyBlock) = do
     previousHandler <- gets exceptHandler
 
     exception <- callCC $ \handler -> do
-        modify $ \e -> e { exceptHandler = handler }
+        modify $ \e -> e { exceptHandler = handler, fnReturn = chain e fnReturn, loopBreak = chain e loopBreak, loopContinue = chain e loopContinue }
         evalBlock block
         return None
 
@@ -226,6 +226,11 @@ eval (Try clauses block elseBlock finallyBlock) = do
         previousHandler exception
 
   where
+    chain env fn arg = do
+        let handler = fn env
+        evalBlock finallyBlock
+        handler arg
+
     getHandler None = Nothing
     getHandler exception =
         case Data.List.find (handlerFor exception) clauses of

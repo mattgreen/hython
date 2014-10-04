@@ -120,3 +120,40 @@ try:
 except:
     print("Should only see me")
 
+# Testing that finally is run when return is used
+def test_finally_with_return():
+    try:
+        print("Before return")
+        return "return"
+
+    finally:
+        print("Finally")
+
+print(test_finally_with_return())
+
+# Test that finally is run when break is used
+def test_finally_with_break():
+    while True:
+        try:
+            print("Before break")
+            break
+
+        finally:
+            print("Finally")
+
+print(test_finally_with_break())
+
+# Test that finally is run when continue is used
+def test_finally_with_continue():
+    i = 0
+
+    while i == 0:
+        try:
+            print("Before continue")
+            i = i + 1
+            continue
+
+        finally:
+            print("Finally")
+
+print(test_finally_with_continue())
