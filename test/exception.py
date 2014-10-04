@@ -157,3 +157,16 @@ def test_finally_with_continue():
             print("Finally")
 
 print(test_finally_with_continue())
+
+def test_raise_in_exception_handler():
+    try:
+        print("Before first raise")
+        raise Exception("oops")
+    except:
+        print("Handling")
+        raise Exception("again")
+
+try:
+    test_raise_in_exception_handler()
+except:
+    print("Second exception caught")

@@ -201,12 +201,15 @@ eval (Return expression) = do
     returnCont value
 
 eval (Try clauses block elseBlock finallyBlock) = do
+    env <- get
     previousHandler <- gets exceptHandler
 
     exception <- callCC $ \handler -> do
         modify $ \e -> e { exceptHandler = handler, fnReturn = chain e fnReturn, loopBreak = chain e loopBreak, loopContinue = chain e loopContinue }
         evalBlock block
         return None
+
+    modify $ const env
 
     handled <- case exception of
         None -> do
