@@ -158,6 +158,7 @@ def test_finally_with_continue():
 
 print(test_finally_with_continue())
 
+# Do we handle exceptions raised in the exception handler?
 def test_raise_in_exception_handler():
     try:
         print("Before first raise")
@@ -168,5 +169,19 @@ def test_raise_in_exception_handler():
 
 try:
     test_raise_in_exception_handler()
+except:
+    print("Second exception caught")
+
+# Do we handle exceptions raised in the finally block?
+def test_raise_in_finally():
+    try:
+        print("Before first raise")
+        raise Exception("oops")
+    finally:
+        print("Handling")
+        raise Exception("again")
+
+try:
+    test_raise_in_finally()
 except:
     print("Second exception caught")
