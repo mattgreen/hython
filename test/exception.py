@@ -185,3 +185,32 @@ try:
     test_raise_in_finally()
 except:
     print("Second exception caught")
+
+# Exception handling should unwind to the try
+def test_unwind():
+    a = 42
+    print(a)
+
+    raise Exception("goodbye!")
+
+a = 14
+try:
+    test_unwind()
+except:
+    print(a)
+
+# Exceptions raised within exception handlers require that the finally block be run
+def test_finally_block_run_when_raising_in_exception_handler():
+    try:
+        print("Before first raise")
+        raise Exception("oops")
+    except:
+        print("Except")
+        raise Exception("Not again!")
+    finally:
+        print("Finally")
+
+try:
+    test_finally_block_run_when_raising_in_exception_handler()
+except:
+    print("Second exception caught")

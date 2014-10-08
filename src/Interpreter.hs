@@ -209,7 +209,7 @@ eval (Try clauses block elseBlock finallyBlock) = do
         evalBlock block
         return None
 
-    modify $ const env
+    modify $ \e -> env { frames = unwindTo (frames e) (length $ frames env) }
 
     handled <- case exception of
         None -> do
@@ -218,7 +218,9 @@ eval (Try clauses block elseBlock finallyBlock) = do
 
         _ -> case getHandler exception of
             Just handlerBlock -> do
+                modify $ \e -> e { exceptHandler = chain e exceptHandler }
                 evalBlock handlerBlock
+                modify $ \e -> e { exceptHandler = previousHandler }
                 return True
 
             Nothing -> return False
@@ -243,6 +245,10 @@ eval (Try clauses block elseBlock finallyBlock) = do
 
     handlerFor _ (ExceptClause _ _) = False
     handlerFor _ (CatchAllClause _) = True
+
+    unwindTo stackFrames depth
+      | length stackFrames > depth  = unwindTo (tail stackFrames) depth
+      | otherwise                   = stackFrames
 
 eval (While condition block elseBlock) = do
     env <- get
