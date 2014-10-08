@@ -214,3 +214,22 @@ try:
     test_finally_block_run_when_raising_in_exception_handler()
 except:
     print("Second exception caught")
+
+# Exceptions raised within finally blocks should be handled properly
+def test_finally_block_raises_exception():
+    try:
+        print("Before raise")
+        raise Exception("oops")
+    except:
+        print("Caught")
+        raise Exception("Uh oh!")
+    finally:
+        print("Finally")
+        raise Exception("ARGHHH")
+        print("Shouldn't see me")
+
+try:
+    print("test_finally_block_raises_exception()")
+    test_finally_block_raises_exception()
+except:
+    print("All done")

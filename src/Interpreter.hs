@@ -218,13 +218,14 @@ eval (Try clauses block elseBlock finallyBlock) = do
 
         _ -> case getHandler exception of
             Just handlerBlock -> do
-                modify $ \e -> e { exceptHandler = chain e exceptHandler }
+                modify $ \e -> e { exceptHandler = chainExceptHandler previousHandler (exceptHandler e) }
                 evalBlock handlerBlock
                 modify $ \e -> e { exceptHandler = previousHandler }
                 return True
 
             Nothing -> return False
 
+    modify $ \e -> e { exceptHandler = previousHandler }
     evalBlock finallyBlock
 
     unless handled $
@@ -233,6 +234,11 @@ eval (Try clauses block elseBlock finallyBlock) = do
   where
     chain env fn arg = do
         let handler = fn env
+        evalBlock finallyBlock
+        handler arg
+
+    chainExceptHandler previous handler arg = do
+        modify $ \e -> e{ exceptHandler = previous }
         evalBlock finallyBlock
         handler arg
 
