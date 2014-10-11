@@ -18,7 +18,7 @@ import System.Environment
 import System.Exit
 import Text.Printf
 
-import Builtins (pow, str, builtinFunctions, BuiltInFunction)
+import qualified Builtins (classOf, evalBuiltinFn, isSubClass, pow, str, builtins)
 import Language
 import Parser
 
@@ -36,17 +36,13 @@ data Environment = Environment {
     exceptHandler :: EvaluatorExceptCont,
     frames :: [Frame],
     scopes :: [SymbolTable],
-    builtins :: [(String, BuiltInFunction)],
+    builtins :: [(String, Value)],
     fnReturn :: EvaluatorReturnCont,
     loopBreak :: EvaluatorCont,
     loopContinue :: EvaluatorCont
 }
 
 data Frame = Frame String SymbolTable
-
--- Need to track:
--- handler continuation
--- frame depth
 
 unimplemented :: String -> Evaluator ()
 unimplemented s = do
@@ -59,16 +55,19 @@ defaultConfig = do
 
     return Config { tracingEnabled = isJust tracing }
 
-defaultEnv :: Environment
-defaultEnv = Environment {
-    exceptHandler = error "Must be in exception handler",
-    builtins = builtinFunctions,
-    frames = [Frame "<module>" (Map.fromList [])],
-    scopes = [Map.fromList []],
-    fnReturn = error "Must be in function!",
-    loopBreak = error "Must be in loop",
-    loopContinue = error "Must be in loop"
-}
+defaultEnv :: IO Environment
+defaultEnv = do
+    builtinsList <- Builtins.builtins
+
+    return $ Environment {
+        exceptHandler = error "Must be in exception handler",
+        builtins = builtinsList,
+        frames = [Frame "<module>" (Map.fromList [])],
+        scopes = [Map.fromList []],
+        fnReturn = error "Must be in function!",
+        loopBreak = error "Must be in loop",
+        loopContinue = error "Must be in loop"
+    }
 
 currentScope :: Evaluator SymbolTable
 currentScope = do
@@ -79,7 +78,7 @@ getAttr :: String -> Value -> Evaluator (Maybe Value)
 getAttr attr (Object _ ref) = do
     dict <- liftIO $ readIORef ref
     return $ Map.lookup attr dict
-getAttr attr (Class _ ref) = do
+getAttr attr (Class _ _ ref) = do
     dict <- liftIO $ readIORef ref
     return $ Map.lookup attr dict
 getAttr _ _ = fail "Only classes and objects have attrs!"
@@ -90,7 +89,7 @@ getClassAttr _ _ = fail "Only objects have class attrs!"
 
 setAttr :: String -> Value -> Value -> Evaluator ()
 setAttr attr value (Object _ ref)   = liftIO $ modifyIORef ref (Map.insert attr value)
-setAttr attr value (Class _ ref)    = liftIO $ modifyIORef ref (Map.insert attr value)
+setAttr attr value (Class _ _ ref)  = liftIO $ modifyIORef ref (Map.insert attr value)
 setAttr _ _ _                       = fail "Only objects have attrs!"
 
 lookupSymbol :: String -> Evaluator Value
@@ -99,9 +98,9 @@ lookupSymbol name = do
     case Map.lookup name scope of
         Just v  -> return v
         Nothing -> do
-            builtinFns <- gets builtins
-            case lookup name builtinFns of
-                Just _  -> return $ BuiltinFn name
+            builtinSymbols <- gets builtins
+            case lookup name builtinSymbols of
+                Just v  -> return v
                 Nothing -> raiseError "NameError" (printf "name '%s' is not defined" name)
 
 updateSymbol :: String -> Value -> Evaluator ()
@@ -125,14 +124,17 @@ eval (Def name params body) = updateSymbol name function
 
 eval (ModuleDef statements) = evalBlock statements
 
-eval (ClassDef name _ statements) = do
+eval (ClassDef name bases statements) = do
+    baseClasses <- evalBases bases
     pushScope
     evalBlock statements
     dict <- popScope
 
-    updateSymbol name $ Class name dict
+    updateSymbol name $ Class name baseClasses dict
 
   where
+    evalBases = mapM evalExpr
+
     pushScope = do
         let dict = Map.empty
         modify $ \env -> env { scopes = dict : scopes env }
@@ -186,9 +188,17 @@ eval (Nonlocal {}) = do
     unimplemented "nonlocal keyword"
     return ()
 
-eval (Raise {}) = do
-    handler <- gets exceptHandler
-    handler (Int 42)
+eval (Raise expr _from) = do
+    exception <- evalExpr expr
+    baseException <- evalExpr (Name "BaseException")
+
+    if Builtins.isSubClass (Builtins.classOf exception) baseException
+        then do
+            handler <- gets exceptHandler
+            handler exception
+        else do
+            _ <- raiseError "TypeError" "must raise subclass of BaseException"
+            return ()
 
 eval (Reraise {}) = do
     unimplemented "empty raise keyword"
@@ -329,7 +339,7 @@ evalExpr (UnaryOp Complement (Constant (Int v))) =
     return $ Int (complement v)
 
 evalExpr (UnaryOp op (Constant r)) = do
-    strExpr <- liftIO $ str r
+    strExpr <- liftIO $ Builtins.str r
     fail $ printf "Unsupported operand type for %s: %s" (show op) strExpr
 
 evalExpr (UnaryOp op expr) = do
@@ -343,7 +353,7 @@ evalExpr (BinOp (ArithOp op) (Constant (Int l)) (Constant (Int r)))
     | op == Div = return $ Float (fromInteger l / fromInteger r)
     | op == Mod = return $ Int (l `mod` r)
     | op == FDiv = return $ Int (floorInt (fromIntegral l / fromIntegral r))
-    | op == Pow = liftIO $ pow [Int l, Int r]
+    | op == Pow = liftIO $ Builtins.pow [Int l, Int r]
   where
     floorInt = floor :: Double -> Integer
 
@@ -369,7 +379,7 @@ evalExpr (BinOp (ArithOp op) (Constant (Float l)) (Constant (Float r)))
     | op == Div = return $ Float (l / r)
     | op == Mod = return $ Float (l `mod'` r)
     | op == FDiv = return $ Float (fromInteger (floor (l / r)))
-    | op == Pow = liftIO $ pow [Float l, Float r]
+    | op == Pow = liftIO $ Builtins.pow [Float l, Float r]
 
 -- Promote ints to floats in binary operators
 evalExpr (BinOp op (Constant (Int l)) (Constant (Float r))) =
@@ -418,8 +428,8 @@ evalExpr (BinOp (CompOp NotEq) (Constant l) (Constant r)) =
     return $ Bool (l /= r)
 
 evalExpr (BinOp op (Constant l) (Constant r)) = do
-    left <- liftIO $ str l
-    right <- liftIO $ str r
+    left <- liftIO $ Builtins.str l
+    right <- liftIO $ Builtins.str r
     fail $ printf "Unsupported operand type(s) for %s: %s %s" (show op) left right
 
 evalExpr (BinOp op l r) = do
@@ -525,10 +535,7 @@ evalCall cls@(Class {}) args = do
     return obj
 
 evalCall (BuiltinFn name) args = do
-    builtinFns <- gets builtins
-    case lookup name builtinFns of
-        Just fn -> liftIO $ fn args
-        Nothing -> fail "no built-in with name"
+    liftIO $ Builtins.evalBuiltinFn name args
 
 evalCall (Function name params body) args = do
     env <- get
@@ -548,7 +555,7 @@ evalCall (Function name params body) args = do
         return None
 
 evalCall v _ = do
-    s <- liftIO $ str v
+    s <- liftIO $ Builtins.str v
     raiseError "SystemError" ("don't know how to call " ++ s)
 
 parseEval :: String -> String -> Evaluator ()
@@ -561,7 +568,7 @@ main = do
     [filename] <- getArgs
     code <- readFile filename
     config <- defaultConfig
-    let env = defaultEnv
+    env <- defaultEnv
 
     _ <- runStateT (runReaderT (runContT (parseEval filename code) return) config) env
     return ()

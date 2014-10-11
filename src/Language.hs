@@ -69,7 +69,7 @@ data Value
     | Bool Bool
     | BuiltinFn String
     | Function String [String] [Statement]
-    | Class String (IORef AttributeDict)
+    | Class String Values (IORef AttributeDict)
     | Object Value (IORef AttributeDict)
     | Slice Value Value Value
     | Tuple Values

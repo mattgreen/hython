@@ -4,7 +4,7 @@ build-type:       Simple
 cabal-version:    >= 1.2
 
 executable        hython
-  build-depends:  base, containers, hlint, mtl, array, utf8-string, regex-base, regex-compat, transformers, unordered-containers
+  build-depends:  base, containers, mtl, array, utf8-string, regex-base, regex-compat, transformers, unordered-containers
   build-tools:    alex, happy
   other-modules:  Lexer, Parser, Builtins
   hs-source-dirs: src

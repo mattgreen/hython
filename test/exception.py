@@ -1,4 +1,3 @@
-# Non-exceptional case of try/except
 try:
     print("Hello")
 except:
