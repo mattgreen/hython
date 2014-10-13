@@ -247,3 +247,14 @@ try:
 except BaseException:
     print("Caught")
 
+# Should skip incorrect handlers
+try:
+    raise Exception("test")
+except TypeError:
+    print("TypeError")
+except NameError:
+    print("NameError")
+except Exception:
+    print("Exception")
+except BaseException:
+    print("BaseException")
