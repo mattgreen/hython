@@ -258,3 +258,10 @@ except Exception:
     print("Exception")
 except BaseException:
     print("BaseException")
+
+# Should assign the exception to the name given by the handler
+try:
+    raise Exception("test")
+except Exception as e:
+    if e != None:
+        print("Exists!")

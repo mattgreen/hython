@@ -102,6 +102,13 @@ lookupSymbol name = do
                 Just v  -> return v
                 Nothing -> raiseError "NameError" (printf "name '%s' is not defined" name)
 
+removeSymbol :: String -> Evaluator ()
+removeSymbol name = do
+    scope <- currentScope
+
+    let updatedScope = Map.delete name scope
+    modify $ \env -> env { scopes = updatedScope : tail (scopes env) }
+
 updateSymbol :: String -> Value -> Evaluator ()
 updateSymbol name value = do
     scope <- currentScope
@@ -218,8 +225,10 @@ eval (Try exceptClauses block elseBlock finallyBlock) = do
         evalBlock block
         return None
 
+    -- Unwind stack
     modify $ \e -> env { frames = unwindTo (frames e) (length $ frames env) }
 
+    -- Search for matching handler
     handled <- case exception of
         None -> do
             evalBlock elseBlock
@@ -228,10 +237,15 @@ eval (Try exceptClauses block elseBlock finallyBlock) = do
         _ -> do
             clause <- getClause exceptClauses exception
             case clause of
-                Just (ExceptClause _ handlerBlock) -> do
+                Just (ExceptClause _ name handlerBlock) -> do
+                    bindException name exception
                     modify $ \e -> e { exceptHandler = chainExceptHandler previousHandler (exceptHandler e) }
+
                     evalBlock handlerBlock
+
                     modify $ \e -> e { exceptHandler = previousHandler }
+                    unbindException name
+
                     return True
 
                 Nothing -> return False
@@ -243,6 +257,12 @@ eval (Try exceptClauses block elseBlock finallyBlock) = do
         previousHandler exception
 
   where
+    bindException "" _ = return ()
+    bindException name exception = updateSymbol name exception
+
+    unbindException "" = return ()
+    unbindException name = removeSymbol name
+
     chain env fn arg = do
         let handler = fn env
         evalBlock finallyBlock
@@ -254,7 +274,7 @@ eval (Try exceptClauses block elseBlock finallyBlock) = do
         handler arg
 
     getClause [] _ = return Nothing
-    getClause (c@(ExceptClause classExpr _):clauses) exception = do
+    getClause (c@(ExceptClause classExpr _ _):clauses) exception = do
         cls <- evalExpr classExpr
         if Builtins.isSubClass (Builtins.classOf exception) cls
             then return $ Just c

@@ -32,7 +32,7 @@ data Statement
 data IfClause = IfClause Expression [Statement] deriving (Eq, Show)
 
 data ExceptClause
-    = ExceptClause Expression Statements
+    = ExceptClause Expression String Statements
     deriving (Eq, Show)
 
 type Statements     = [Statement]
