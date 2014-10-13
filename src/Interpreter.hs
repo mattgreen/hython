@@ -11,7 +11,6 @@ import Data.Fixed
 import Data.IORef
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
-import Data.List hiding (break)
 import Data.Maybe
 import Debug.Trace
 import System.Environment
@@ -59,7 +58,7 @@ defaultEnv :: IO Environment
 defaultEnv = do
     builtinsList <- Builtins.builtins
 
-    return $ Environment {
+    return Environment {
         exceptHandler = error "Must be in exception handler",
         builtins = builtinsList,
         frames = [Frame "<module>" (Map.fromList [])],
@@ -210,7 +209,7 @@ eval (Return expression) = do
     returnCont <- gets fnReturn
     returnCont value
 
-eval (Try clauses block elseBlock finallyBlock) = do
+eval (Try exceptClauses block elseBlock finallyBlock) = do
     env <- get
     previousHandler <- gets exceptHandler
 
@@ -226,14 +225,16 @@ eval (Try clauses block elseBlock finallyBlock) = do
             evalBlock elseBlock
             return True
 
-        _ -> case getHandler exception of
-            Just handlerBlock -> do
-                modify $ \e -> e { exceptHandler = chainExceptHandler previousHandler (exceptHandler e) }
-                evalBlock handlerBlock
-                modify $ \e -> e { exceptHandler = previousHandler }
-                return True
+        _ -> do
+            clause <- getClause exceptClauses exception
+            case clause of
+                Just (ExceptClause _ handlerBlock) -> do
+                    modify $ \e -> e { exceptHandler = chainExceptHandler previousHandler (exceptHandler e) }
+                    evalBlock handlerBlock
+                    modify $ \e -> e { exceptHandler = previousHandler }
+                    return True
 
-            Nothing -> return False
+                Nothing -> return False
 
     modify $ \e -> e { exceptHandler = previousHandler }
     evalBlock finallyBlock
@@ -252,15 +253,12 @@ eval (Try clauses block elseBlock finallyBlock) = do
         evalBlock finallyBlock
         handler arg
 
-    getHandler None = Nothing
-    getHandler exception =
-        case Data.List.find (handlerFor exception) clauses of
-            Just (ExceptClause _ handlerBlock)  -> Just handlerBlock
-            Just (CatchAllClause handlerBlock)  -> Just handlerBlock
-            Nothing                             -> Nothing
-
-    handlerFor _ (ExceptClause _ _) = False
-    handlerFor _ (CatchAllClause _) = True
+    getClause [] _ = return Nothing
+    getClause (c@(ExceptClause classExpr _):clauses) exception = do
+        cls <- evalExpr classExpr
+        if Builtins.isSubClass (Builtins.classOf exception) cls
+            then return $ Just c
+            else getClause clauses exception
 
     unwindTo stackFrames depth
       | length stackFrames > depth  = unwindTo (tail stackFrames) depth
@@ -534,8 +532,7 @@ evalCall cls@(Class {}) args = do
 
     return obj
 
-evalCall (BuiltinFn name) args = do
-    liftIO $ Builtins.evalBuiltinFn name args
+evalCall (BuiltinFn name) args = liftIO $ Builtins.evalBuiltinFn name args
 
 evalCall (Function name params body) args = do
     env <- get

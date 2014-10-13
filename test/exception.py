@@ -232,3 +232,18 @@ try:
     test_finally_block_raises_exception()
 except:
     print("All done")
+
+# Handler with same class should match
+try:
+    raise Exception("test")
+
+except Exception:
+    print("Caught")
+
+# Handler with base class should match
+try:
+    raise Exception("test")
+
+except BaseException:
+    print("Caught")
+

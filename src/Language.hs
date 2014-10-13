@@ -33,7 +33,6 @@ data IfClause = IfClause Expression [Statement] deriving (Eq, Show)
 
 data ExceptClause
     = ExceptClause Expression Statements
-    | CatchAllClause Statements
     deriving (Eq, Show)
 
 type Statements     = [Statement]

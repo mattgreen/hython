@@ -340,7 +340,7 @@ with_item
 -- # NB compile.c makes sure that the default except clause is last
 -- except_clause: 'except' [test ['as' NAME]]
 except_clause
-    : EXCEPT                    { CatchAllClause }
+    : EXCEPT                    { ExceptClause (Name "BaseException") }
     | EXCEPT test               { ExceptClause $2 }
     | EXCEPT test AS identifier { ExceptClause (As $2 (Name $4)) }
 
