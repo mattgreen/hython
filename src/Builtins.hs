@@ -3,7 +3,6 @@ where
 
 import Prelude hiding (print)
 
-import Debug.Trace
 import Data.Complex
 import Data.Fixed
 import Data.IORef
@@ -29,14 +28,44 @@ builtins = do
     object <- defClass "object" []
     baseException <- defClass "BaseException" [object]
     exception <- defClass "Exception" [baseException]
+    stopIteration <- defClass "StopIteration" [exception]
+    arithmeticError <- defClass "ArithmeticError" [exception]
+    assertionError <- defClass "AssertionError" [exception]
+    attributeError <- defClass "AttributeError" [exception]
+    bufferError <- defClass "BufferError" [exception]
+    eofError <- defClass "EOFError" [exception]
+    importError <- defClass "ImportError" [exception]
+    lookupError <- defClass "LookupError" [exception]
+    memoryError <- defClass "MemoryError" [exception]
     nameError <- defClass "NameError" [exception]
+    osError <- defClass "OSError" [exception]
+    referenceError <- defClass "ReferenceError" [exception]
+    runtimeError <- defClass "RuntimeError" [exception]
+    syntaxError <- defClass "SyntaxError" [exception]
     typeError <- defClass "TypeError" [exception]
+    valueError <- defClass "ValueError" [exception]
+    warning <- defClass "Warning" [exception]
 
     let builtinClasses = [("object", object),
                           ("BaseException", baseException),
                           ("Exception", exception),
+                          ("StopIteration", stopIteration),
+                          ("ArithmeticError", arithmeticError),
+                          ("AssertionError", assertionError),
+                          ("AttributeError", attributeError),
+                          ("BufferError", bufferError),
+                          ("EOFError", eofError),
+                          ("ImportError", importError),
+                          ("LookupError", lookupError),
+                          ("MemoryError", memoryError),
                           ("NameError", nameError),
-                          ("TypeError", typeError)]
+                          ("OSError", osError),
+                          ("ReferenceError", referenceError),
+                          ("RuntimeError", runtimeError),
+                          ("SyntaxError", syntaxError),
+                          ("TypeError", typeError),
+                          ("ValueError", valueError),
+                          ("Warning", warning)]
 
     let builtinFns = map defBuiltin ["bool", "len", "print", "pow", "slice", "str"]
 
