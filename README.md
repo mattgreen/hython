@@ -70,7 +70,7 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] Classes
  * [ ] Inheritance
  * [ ] Modules
- * [ ] Exception handling
+ * [x] Exception handling
  * [ ] Generators
  * [ ] Standard built-in functions
  * [ ] Built-in exception types
