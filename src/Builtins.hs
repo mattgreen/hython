@@ -29,10 +29,14 @@ builtins = do
     object <- defClass "object" []
     baseException <- defClass "BaseException" [object]
     exception <- defClass "Exception" [baseException]
+    nameError <- defClass "NameError" [exception]
+    typeError <- defClass "TypeError" [exception]
 
     let builtinClasses = [("object", object),
                           ("BaseException", baseException),
-                          ("Exception", exception)]
+                          ("Exception", exception),
+                          ("NameError", nameError),
+                          ("TypeError", typeError)]
 
     let builtinFns = map defBuiltin ["bool", "len", "print", "pow", "slice", "str"]
 
