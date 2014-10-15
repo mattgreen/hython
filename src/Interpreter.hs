@@ -250,13 +250,15 @@ eval (Try exceptClauses block elseBlock finallyBlock) = do
             clause <- getClause exceptClauses exception
             case clause of
                 Just (ExceptClause _ name handlerBlock) -> do
-                    bindException name exception
+                    let exceptionBound = name /= ""
+
                     modify $ \e -> e { exceptHandler = chainExceptHandler previousHandler (exceptHandler e) }
+                    when exceptionBound $ updateSymbol name exception
 
                     evalBlock handlerBlock
 
+                    when exceptionBound $ removeSymbol name
                     modify $ \e -> e { exceptHandler = previousHandler }
-                    unbindException name
 
                     return True
 
@@ -269,12 +271,6 @@ eval (Try exceptClauses block elseBlock finallyBlock) = do
         previousHandler exception
 
   where
-    bindException "" _ = return ()
-    bindException name exception = updateSymbol name exception
-
-    unbindException "" = return ()
-    unbindException name = removeSymbol name
-
     chain env fn arg = do
         let handler = fn env
         evalBlock finallyBlock
