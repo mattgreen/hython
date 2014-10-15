@@ -32,6 +32,7 @@ data Config = Config {
 }
 
 data Environment = Environment {
+    currentException :: Value,
     exceptHandler :: EvaluatorExceptCont,
     frames :: [Frame],
     scopes :: [SymbolTable],
@@ -59,6 +60,7 @@ defaultEnv = do
     builtinsList <- Builtins.builtins
 
     return Environment {
+        currentException = None,
         exceptHandler = error "Must be in exception handler",
         builtins = builtinsList,
         frames = [Frame "<module>" (Map.fromList [])],
@@ -200,15 +202,25 @@ eval (Raise expr _from) = do
 
     if Builtins.isSubClass (Builtins.classOf exception) baseException
         then do
+            modify $ \e -> e{ currentException = exception }
+
             handler <- gets exceptHandler
             handler exception
         else do
             _ <- raiseError "TypeError" "must raise subclass of BaseException"
             return ()
 
-eval (Reraise {}) = do
-    unimplemented "empty raise keyword"
-    return ()
+eval (Reraise) = do
+    exception <- gets currentException
+
+    case exception of
+        None -> do
+            _ <- raiseError "RuntimeError" "No active exception to reraise"
+            return ()
+
+        _ -> do
+            handler <- gets exceptHandler
+            handler exception
 
 eval (Return expression) = do
     value <- evalExpr expression
@@ -226,7 +238,7 @@ eval (Try exceptClauses block elseBlock finallyBlock) = do
         return None
 
     -- Unwind stack
-    modify $ \e -> env { frames = unwindTo (frames e) (length $ frames env) }
+    modify $ \e -> e { exceptHandler = previousHandler, frames = unwindTo (frames e) (length $ frames env), scopes = scopes env }
 
     -- Search for matching handler
     handled <- case exception of

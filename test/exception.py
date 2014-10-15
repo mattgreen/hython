@@ -278,3 +278,32 @@ try:
 
 except Exception:
     print("Caught")
+
+# Test that re-raising exceptions works as it should
+def test_reraise():
+    try:
+        raise Exception("hmm")
+
+    except Exception:
+        print("Inside catch")
+        raise
+
+try:
+    test_reraise()
+
+except Exception:
+    print("Caught again")
+
+def test_reraise_catchall():
+    try:
+        raise Exception("hmm")
+
+    except:
+        print("Inside catch")
+        raise
+
+try:
+    test_reraise_catchall()
+
+except Exception:
+    print("Caught again")
