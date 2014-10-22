@@ -68,15 +68,15 @@ data Value
     | Bool Bool
     | BuiltinFn String
     | Function String [String] [Statement]
-    | Class String Values (IORef AttributeDict)
-    | Object Value (IORef AttributeDict)
+    | Class String Values AttributeDict
+    | Object Value AttributeDict
     | Slice Value Value Value
     | Tuple Values
     | List (IORef Values)
     | None
     deriving(Eq, Show)
 
-type AttributeDict = HashMap String Value
+type AttributeDict = IORef (HashMap String (IORef Value))
 
 data UnaryOperator
     = Not

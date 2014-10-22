@@ -75,13 +75,41 @@ currentScope = do
     current <- gets scopes
     return $ head current
 
+newAttributeDict :: [(String, Value)] -> IO AttributeDict
+newAttributeDict values = do
+    contents <- mapM wrap values
+    newIORef $ Map.fromList contents
+
+  where
+    wrap (key,value) = do
+        ref <- newIORef value
+        return (key, ref)
+
+
+readAttr :: String -> AttributeDict -> IO (Maybe Value)
+readAttr attr ref = do
+    dict <- readIORef ref
+    case Map.lookup attr dict of
+        Just valueRef -> do
+            value <- readIORef valueRef
+            return $ Just value
+        Nothing -> return Nothing
+
+removeAttr :: String -> AttributeDict -> IO ()
+removeAttr attr ref = modifyIORef ref (Map.delete attr)
+
+writeAttr :: String -> Value -> AttributeDict -> IO ()
+writeAttr attr value ref = do
+    dict <- readIORef ref
+    case Map.lookup attr dict of
+        Just existing   -> modifyIORef existing (const value)
+        Nothing         -> do
+            valueRef <- newIORef value
+            modifyIORef ref (Map.insert attr valueRef)
+
 getAttr :: String -> Value -> Evaluator (Maybe Value)
-getAttr attr (Object _ ref) = do
-    dict <- liftIO $ readIORef ref
-    return $ Map.lookup attr dict
-getAttr attr (Class _ _ ref) = do
-    dict <- liftIO $ readIORef ref
-    return $ Map.lookup attr dict
+getAttr attr (Object _ ref) = liftIO $ readAttr attr ref
+getAttr attr (Class _ _ ref) = liftIO $ readAttr attr ref
 getAttr _ _ = fail "Only classes and objects have attrs!"
 
 getClassAttr :: String -> Value -> Evaluator (Maybe Value)
@@ -89,8 +117,8 @@ getClassAttr attr (Object cls _) = getAttr attr cls
 getClassAttr _ _ = fail "Only objects have class attrs!"
 
 setAttr :: String -> Value -> Value -> Evaluator ()
-setAttr attr value (Object _ ref)   = liftIO $ modifyIORef ref (Map.insert attr value)
-setAttr attr value (Class _ _ ref)  = liftIO $ modifyIORef ref (Map.insert attr value)
+setAttr attr value (Object _ ref)   = liftIO $ writeAttr attr value ref
+setAttr attr value (Class _ _ ref)  = liftIO $ writeAttr attr value ref
 setAttr _ _ _                       = fail "Only objects have attrs!"
 
 lookupSymbol :: String -> Evaluator Value
@@ -137,8 +165,9 @@ eval (ClassDef name bases statements) = do
     pushScope
     evalBlock statements
     dict <- popScope
+    attributeDict <- liftIO $ newAttributeDict (Map.toList dict)
 
-    updateSymbol name $ Class name baseClasses dict
+    updateSymbol name $ Class name baseClasses attributeDict
 
   where
     evalBases = mapM evalExpr
@@ -151,7 +180,7 @@ eval (ClassDef name bases statements) = do
         currentScopes <- gets scopes
         let dict = head currentScopes
         modify $ \e -> e{ scopes = tail currentScopes }
-        liftIO $ newIORef dict
+        return dict
 
 eval (Assignment (Name var) expr) = do
     value <- evalExpr expr
@@ -550,7 +579,8 @@ evalBlock = mapM_ traceEval
 
 evalCall :: Value -> [Value] -> Evaluator Value
 evalCall cls@(Class {}) args = do
-    dict <- liftIO $ newIORef (Map.fromList [("__class__", cls)])
+    let values = [("__class__", cls)]
+    dict <- liftIO $ newAttributeDict values
     let obj = Object cls dict
     ctor <- getAttr "__init__" cls
 
