@@ -169,3 +169,50 @@ defClass :: String -> Values -> IO Value
 defClass name bases = do
     dict <- newIORef Map.empty
     return $ Class name bases dict
+
+getAttr :: String -> Value -> IO (Maybe Value)
+getAttr attr (Object _ ref) = readAttr attr ref
+getAttr attr (Class _ _ ref) = readAttr attr ref
+getAttr _ _ = fail "Only classes and objects have attrs!"
+
+getClassAttr :: String -> Value -> IO (Maybe Value)
+getClassAttr attr (Object cls _) = getAttr attr cls
+getClassAttr _ _ = fail "Only objects have class attrs!"
+
+setAttr :: String -> Value -> Value -> IO ()
+setAttr attr value (Object _ ref)   = writeAttr attr value ref
+setAttr attr value (Class _ _ ref)  = writeAttr attr value ref
+setAttr _ _ _                       = fail "Only objects have attrs!"
+
+newAttributeDict :: [(String, Value)] -> IO AttributeDict
+newAttributeDict values = do
+    contents <- mapM wrap values
+    newIORef $ Map.fromList contents
+
+  where
+    wrap (key,value) = do
+        ref <- newIORef value
+        return (key, ref)
+
+
+readAttr :: String -> AttributeDict -> IO (Maybe Value)
+readAttr attr ref = do
+    dict <- readIORef ref
+    case Map.lookup attr dict of
+        Just valueRef -> do
+            value <- readIORef valueRef
+            return $ Just value
+        Nothing -> return Nothing
+
+removeAttr :: String -> AttributeDict -> IO ()
+removeAttr attr ref = modifyIORef ref (Map.delete attr)
+
+writeAttr :: String -> Value -> AttributeDict -> IO ()
+writeAttr attr value ref = do
+    dict <- readIORef ref
+    case Map.lookup attr dict of
+        Just existing   -> modifyIORef existing (const value)
+        Nothing         -> do
+            valueRef <- newIORef value
+            modifyIORef ref (Map.insert attr valueRef)
+

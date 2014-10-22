@@ -17,7 +17,8 @@ import System.Environment
 import System.Exit
 import Text.Printf
 
-import qualified Builtins (classOf, evalBuiltinFn, isSubClass, pow, str, builtins)
+import Builtins hiding (builtins)
+import qualified Builtins (builtins)
 import Language
 import Parser
 
@@ -74,52 +75,6 @@ currentScope :: Evaluator SymbolTable
 currentScope = do
     current <- gets scopes
     return $ head current
-
-newAttributeDict :: [(String, Value)] -> IO AttributeDict
-newAttributeDict values = do
-    contents <- mapM wrap values
-    newIORef $ Map.fromList contents
-
-  where
-    wrap (key,value) = do
-        ref <- newIORef value
-        return (key, ref)
-
-
-readAttr :: String -> AttributeDict -> IO (Maybe Value)
-readAttr attr ref = do
-    dict <- readIORef ref
-    case Map.lookup attr dict of
-        Just valueRef -> do
-            value <- readIORef valueRef
-            return $ Just value
-        Nothing -> return Nothing
-
-removeAttr :: String -> AttributeDict -> IO ()
-removeAttr attr ref = modifyIORef ref (Map.delete attr)
-
-writeAttr :: String -> Value -> AttributeDict -> IO ()
-writeAttr attr value ref = do
-    dict <- readIORef ref
-    case Map.lookup attr dict of
-        Just existing   -> modifyIORef existing (const value)
-        Nothing         -> do
-            valueRef <- newIORef value
-            modifyIORef ref (Map.insert attr valueRef)
-
-getAttr :: String -> Value -> Evaluator (Maybe Value)
-getAttr attr (Object _ ref) = liftIO $ readAttr attr ref
-getAttr attr (Class _ _ ref) = liftIO $ readAttr attr ref
-getAttr _ _ = fail "Only classes and objects have attrs!"
-
-getClassAttr :: String -> Value -> Evaluator (Maybe Value)
-getClassAttr attr (Object cls _) = getAttr attr cls
-getClassAttr _ _ = fail "Only objects have class attrs!"
-
-setAttr :: String -> Value -> Value -> Evaluator ()
-setAttr attr value (Object _ ref)   = liftIO $ writeAttr attr value ref
-setAttr attr value (Class _ _ ref)  = liftIO $ writeAttr attr value ref
-setAttr _ _ _                       = fail "Only objects have attrs!"
 
 lookupSymbol :: String -> Evaluator Value
 lookupSymbol name = do
@@ -189,7 +144,7 @@ eval (Assignment (Name var) expr) = do
 eval (Assignment (Attribute var attr) expr) = do
     value <- evalExpr expr
     target <- evalExpr var
-    setAttr attr value target
+    liftIO $ setAttr attr value target
 
 eval (Assignment{}) = do
     _ <- raiseError "SyntaxError" "invalid assignment"
@@ -229,7 +184,7 @@ eval (Raise expr _from) = do
     exception <- evalExpr expr
     baseException <- evalExpr (Name "BaseException")
 
-    if Builtins.isSubClass (Builtins.classOf exception) baseException
+    if isSubClass (classOf exception) baseException
         then do
             modify $ \e -> e{ currentException = exception }
 
@@ -313,7 +268,7 @@ eval (Try exceptClauses block elseBlock finallyBlock) = do
     getClause [] _ = return Nothing
     getClause (c@(ExceptClause classExpr _ _):clauses) exception = do
         cls <- evalExpr classExpr
-        if Builtins.isSubClass (Builtins.classOf exception) cls
+        if isSubClass (classOf exception) cls
             then return $ Just c
             else getClause clauses exception
 
@@ -394,7 +349,7 @@ evalExpr (UnaryOp Complement (Constant (Int v))) =
     return $ Int (complement v)
 
 evalExpr (UnaryOp op (Constant r)) = do
-    strExpr <- liftIO $ Builtins.str r
+    strExpr <- liftIO $ str r
     fail $ printf "Unsupported operand type for %s: %s" (show op) strExpr
 
 evalExpr (UnaryOp op expr) = do
@@ -408,7 +363,7 @@ evalExpr (BinOp (ArithOp op) (Constant (Int l)) (Constant (Int r)))
     | op == Div = return $ Float (fromInteger l / fromInteger r)
     | op == Mod = return $ Int (l `mod` r)
     | op == FDiv = return $ Int (floorInt (fromIntegral l / fromIntegral r))
-    | op == Pow = liftIO $ Builtins.pow [Int l, Int r]
+    | op == Pow = liftIO $ pow [Int l, Int r]
   where
     floorInt = floor :: Double -> Integer
 
@@ -434,7 +389,7 @@ evalExpr (BinOp (ArithOp op) (Constant (Float l)) (Constant (Float r)))
     | op == Div = return $ Float (l / r)
     | op == Mod = return $ Float (l `mod'` r)
     | op == FDiv = return $ Float (fromInteger (floor (l / r)))
-    | op == Pow = liftIO $ Builtins.pow [Float l, Float r]
+    | op == Pow = liftIO $ pow [Float l, Float r]
 
 -- Promote ints to floats in binary operators
 evalExpr (BinOp op (Constant (Int l)) (Constant (Float r))) =
@@ -483,8 +438,8 @@ evalExpr (BinOp (CompOp NotEq) (Constant l) (Constant r)) =
     return $ Bool (l /= r)
 
 evalExpr (BinOp op (Constant l) (Constant r)) = do
-    left <- liftIO $ Builtins.str l
-    right <- liftIO $ Builtins.str r
+    left <- liftIO $ str l
+    right <- liftIO $ str r
     fail $ printf "Unsupported operand type(s) for %s: %s %s" (show op) left right
 
 evalExpr (BinOp op l r) = do
@@ -495,7 +450,7 @@ evalExpr (BinOp op l r) = do
 evalExpr (Call (Attribute obj name) args) = do
     receiver <- evalExpr obj
     evalArgs <- mapM evalExpr args
-    method <- getClassAttr name receiver
+    method <- liftIO $ getClassAttr name receiver
 
     case method of
         Just f  -> evalCall f (receiver: evalArgs)
@@ -512,7 +467,7 @@ evalExpr (Lambda {}) = do
 
 evalExpr (Attribute target name) = do
     receiver <- evalExpr target
-    attribute <- getAttr name receiver
+    attribute <- liftIO $ getAttr name receiver
     case attribute of
         Just v  -> return v
         Nothing -> raiseError "AttributeError" (printf "object has no attribute '%s'" name)
@@ -582,7 +537,7 @@ evalCall cls@(Class {}) args = do
     let values = [("__class__", cls)]
     dict <- liftIO $ newAttributeDict values
     let obj = Object cls dict
-    ctor <- getAttr "__init__" cls
+    ctor <- liftIO $ getAttr "__init__" cls
 
     _ <- case ctor of
         Just f  -> evalCall f (obj : args)
@@ -590,7 +545,7 @@ evalCall cls@(Class {}) args = do
 
     return obj
 
-evalCall (BuiltinFn name) args = liftIO $ Builtins.evalBuiltinFn name args
+evalCall (BuiltinFn name) args = liftIO $ evalBuiltinFn name args
 
 evalCall (Function name params body) args = do
     env <- get
@@ -610,7 +565,7 @@ evalCall (Function name params body) args = do
         return None
 
 evalCall v _ = do
-    s <- liftIO $ Builtins.str v
+    s <- liftIO $ str v
     raiseError "SystemError" ("don't know how to call " ++ s)
 
 parseEval :: String -> String -> Evaluator ()
