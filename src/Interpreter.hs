@@ -1,5 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 
+module Interpreter (interpret)
+where
+
 import Prelude hiding (break)
 
 import Control.Monad
@@ -568,17 +571,13 @@ evalCall v _ = do
     s <- liftIO $ str v
     raiseError "SystemError" ("don't know how to call " ++ s)
 
-parseEval :: String -> String -> Evaluator ()
-parseEval _ code = do
-    let statements = parse code
-    eval statements
+interpret :: String -> String -> IO ()
+interpret _source code = do
+    config  <- defaultConfig
+    env     <- defaultEnv
 
-main :: IO ()
-main = do
-    [filename] <- getArgs
-    code <- readFile filename
-    config <- defaultConfig
-    env <- defaultEnv
-
-    _ <- runStateT (runReaderT (runContT (parseEval filename code) return) config) env
+    _ <- runStateT (runReaderT (runContT parseEval return) config) env
     return ()
+
+  where
+    parseEval = eval (parse code)
