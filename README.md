@@ -77,11 +77,25 @@ The goal of this project is to become more familiar with Haskell. It is not to p
 
 ## Running
 
-To build:
+Clone the repository:
+
+    $ git clone https://github.com/mattgreen/hython.git
+    $ cd hython
+
+Initialize a Cabal sandbox:
+
+    $ cabal sandbox init
+
+Install dependencies:
+
+    $ cabal install --only-dependencies
+    $ cabal install alex happy hlint
+
+Build:
 
     $ make
 
-To test:
+Run automated test suite:
 
     $ make test
 
