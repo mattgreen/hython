@@ -65,14 +65,34 @@ defaultEnv = do
 
     return Environment {
         currentException = None,
-        exceptHandler = error "Must be in exception handler",
+        exceptHandler = defaultExceptionHandler,
         builtins = builtinsList,
         frames = [Frame "<module>" (Map.fromList [])],
         scopes = [Map.fromList []],
-        fnReturn = error "Must be in function!",
-        loopBreak = error "Must be in loop",
-        loopContinue = error "Must be in loop"
+        fnReturn = defaultReturnHandler,
+        loopBreak = defaultBreakHandler,
+        loopContinue = defaultContinueHandler
     }
+
+defaultExceptionHandler :: Value -> Evaluator ()
+defaultExceptionHandler _exception = liftIO $ do
+    putStrLn "Exception: <msg>"
+    exitFailure
+
+defaultBreakHandler :: () -> Evaluator ()
+defaultBreakHandler () = do
+    _ <- raiseError "SyntaxError" "'break' outside loop"
+    return ()
+
+defaultContinueHandler :: () -> Evaluator ()
+defaultContinueHandler () = do
+    _ <- raiseError "SyntaxError" "'continue' not properly in loop"
+    return ()
+
+defaultReturnHandler :: Value -> Evaluator ()
+defaultReturnHandler _ = do
+    _ <- raiseError "SyntaxError" "'return' outside function"
+    return ()
 
 currentScope :: Evaluator SymbolTable
 currentScope = do
