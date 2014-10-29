@@ -20,7 +20,9 @@ import System.Environment
 import System.Exit
 import Text.Printf
 
+import Attributes
 import Builtins hiding (builtins)
+import Classes
 import qualified Builtins (builtins)
 import Language
 import Parser
@@ -473,7 +475,7 @@ evalExpr (BinOp op l r) = do
 evalExpr (Call (Attribute obj name) args) = do
     receiver <- evalExpr obj
     evalArgs <- mapM evalExpr args
-    method <- liftIO $ getClassAttr name receiver
+    method <- liftIO $ getAttr name receiver
 
     case method of
         Just f  -> evalCall f (receiver: evalArgs)
@@ -557,16 +559,14 @@ evalBlock = mapM_ traceEval
 
 evalCall :: Value -> [Value] -> Evaluator Value
 evalCall cls@(Class {}) args = do
-    let values = [("__class__", cls)]
-    dict <- liftIO $ newAttributeDict values
-    let obj = Object cls dict
-    ctor <- liftIO $ getAttr "__init__" cls
+    object <- liftIO $ newObject cls
 
+    ctor <- liftIO $ getAttr "__init__" cls
     _ <- case ctor of
-        Just f  -> evalCall f (obj : args)
+        Just f  -> evalCall f (object : args)
         Nothing -> return None
 
-    return obj
+    return object
 
 evalCall (BuiltinFn name) args = liftIO $ evalBuiltinFn name args
 

@@ -10,6 +10,8 @@ import qualified Data.HashMap.Strict as Map
 import Data.List
 import Text.Printf
 
+import Attributes
+import Classes
 import Language
 
 type BuiltInFunction = Values -> IO Value
@@ -25,26 +27,26 @@ evalBuiltinFn name      = fail $ "no built-in with name " ++ name
 
 builtins :: IO [(String, Value)]
 builtins = do
-    object <- defClass "object" []
-    baseException <- defClass "BaseException" [object]
-    exception <- defClass "Exception" [baseException]
-    stopIteration <- defClass "StopIteration" [exception]
-    arithmeticError <- defClass "ArithmeticError" [exception]
-    assertionError <- defClass "AssertionError" [exception]
-    attributeError <- defClass "AttributeError" [exception]
-    bufferError <- defClass "BufferError" [exception]
-    eofError <- defClass "EOFError" [exception]
-    importError <- defClass "ImportError" [exception]
-    lookupError <- defClass "LookupError" [exception]
-    memoryError <- defClass "MemoryError" [exception]
-    nameError <- defClass "NameError" [exception]
-    osError <- defClass "OSError" [exception]
-    referenceError <- defClass "ReferenceError" [exception]
-    runtimeError <- defClass "RuntimeError" [exception]
-    syntaxError <- defClass "SyntaxError" [exception]
-    typeError <- defClass "TypeError" [exception]
-    valueError <- defClass "ValueError" [exception]
-    warning <- defClass "Warning" [exception]
+    object <- newClass "object" []
+    baseException <- newClass "BaseException" [object]
+    exception <- newClass "Exception" [baseException]
+    stopIteration <- newClass "StopIteration" [exception]
+    arithmeticError <- newClass "ArithmeticError" [exception]
+    assertionError <- newClass "AssertionError" [exception]
+    attributeError <- newClass "AttributeError" [exception]
+    bufferError <- newClass "BufferError" [exception]
+    eofError <- newClass "EOFError" [exception]
+    importError <- newClass "ImportError" [exception]
+    lookupError <- newClass "LookupError" [exception]
+    memoryError <- newClass "MemoryError" [exception]
+    nameError <- newClass "NameError" [exception]
+    osError <- newClass "OSError" [exception]
+    referenceError <- newClass "ReferenceError" [exception]
+    runtimeError <- newClass "RuntimeError" [exception]
+    syntaxError <- newClass "SyntaxError" [exception]
+    typeError <- newClass "TypeError" [exception]
+    valueError <- newClass "ValueError" [exception]
+    warning <- newClass "Warning" [exception]
 
     let builtinClasses = [("object", object),
                           ("BaseException", baseException),
@@ -81,16 +83,6 @@ bool :: Values -> IO Value
 bool([])    = return $ Bool False
 bool([x])   = return $ Bool (isTrue x)
 bool _      = fail "bool() takes at most 1 argument"
-
-classOf :: Value -> Value
-classOf (Object c@(Class {}) _) = c
-{-classOf _ = fail "classOf requires an object to be passed"-}
-
-isSubClass :: Value -> Value -> Bool
-isSubClass (Class derivedName bases _) (Class baseName _ _) = derivedName == baseName || any isBase bases
-  where
-    isBase (Class base _ _) = baseName == base
-{-isSubClass _ _ = fail "isSubClass() arg 1 must be a class"-}
 
 len :: Values -> IO Value
 len([x])    = case x of
@@ -165,54 +157,13 @@ str' v = do
     s <- str (head v)
     return $ String s
 
-defClass :: String -> Values -> IO Value
-defClass name bases = do
-    dict <- newIORef Map.empty
-    return $ Class name bases dict
-
 getAttr :: String -> Value -> IO (Maybe Value)
 getAttr attr (Object _ ref) = readAttr attr ref
 getAttr attr (Class _ _ ref) = readAttr attr ref
 getAttr _ _ = fail "Only classes and objects have attrs!"
 
-getClassAttr :: String -> Value -> IO (Maybe Value)
-getClassAttr attr (Object cls _) = getAttr attr cls
-getClassAttr _ _ = fail "Only objects have class attrs!"
-
 setAttr :: String -> Value -> Value -> IO ()
 setAttr attr value (Object _ ref)   = writeAttr attr value ref
 setAttr attr value (Class _ _ ref)  = writeAttr attr value ref
 setAttr _ _ _                       = fail "Only objects have attrs!"
-
-newAttributeDict :: [(String, Value)] -> IO AttributeDict
-newAttributeDict values = do
-    contents <- mapM wrap values
-    newIORef $ Map.fromList contents
-
-  where
-    wrap (key,value) = do
-        ref <- newIORef value
-        return (key, ref)
-
-
-readAttr :: String -> AttributeDict -> IO (Maybe Value)
-readAttr attr ref = do
-    dict <- readIORef ref
-    case Map.lookup attr dict of
-        Just valueRef -> do
-            value <- readIORef valueRef
-            return $ Just value
-        Nothing -> return Nothing
-
-removeAttr :: String -> AttributeDict -> IO ()
-removeAttr attr ref = modifyIORef ref (Map.delete attr)
-
-writeAttr :: String -> Value -> AttributeDict -> IO ()
-writeAttr attr value ref = do
-    dict <- readIORef ref
-    case Map.lookup attr dict of
-        Just existing   -> modifyIORef existing (const value)
-        Nothing         -> do
-            valueRef <- newIORef value
-            modifyIORef ref (Map.insert attr valueRef)
 
