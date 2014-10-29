@@ -51,9 +51,7 @@ data Environment = Environment {
 data Frame = Frame String SymbolTable
 
 unimplemented :: String -> Evaluator ()
-unimplemented s = do
-    _ <- raiseError "NotImplementedError" (s ++ " not yet implemented")
-    return ()
+unimplemented s = raiseError "NotImplementedError" (s ++ " not yet implemented")
 
 defaultConfig :: IO Config
 defaultConfig = do
@@ -82,19 +80,13 @@ defaultExceptionHandler _exception = liftIO $ do
     exitFailure
 
 defaultBreakHandler :: () -> Evaluator ()
-defaultBreakHandler () = do
-    _ <- raiseError "SyntaxError" "'break' outside loop"
-    return ()
+defaultBreakHandler () = raiseError "SyntaxError" "'break' outside loop"
 
 defaultContinueHandler :: () -> Evaluator ()
-defaultContinueHandler () = do
-    _ <- raiseError "SyntaxError" "'continue' not properly in loop"
-    return ()
+defaultContinueHandler () = raiseError "SyntaxError" "'continue' not properly in loop"
 
 defaultReturnHandler :: Value -> Evaluator ()
-defaultReturnHandler _ = do
-    _ <- raiseError "SyntaxError" "'return' outside function"
-    return ()
+defaultReturnHandler _ = raiseError "SyntaxError" "'return' outside function"
 
 currentScope :: Evaluator SymbolTable
 currentScope = do
@@ -110,7 +102,9 @@ lookupSymbol name = do
             builtinSymbols <- gets builtins
             case lookup name builtinSymbols of
                 Just v  -> return v
-                Nothing -> raiseError "NameError" (printf "name '%s' is not defined" name)
+                Nothing -> do
+                    raiseError "NameError" (printf "name '%s' is not defined" name)
+                    return None
 
 removeSymbol :: String -> Evaluator ()
 removeSymbol name = do
@@ -126,12 +120,13 @@ updateSymbol name value = do
     let updatedScope = Map.insert name value scope
     modify $ \env -> env { scopes = updatedScope : tail (scopes env) }
 
-raiseError :: String -> String -> Evaluator Value
-raiseError errorClass message = do
-    _ <- liftIO $ do
-        putStrLn $ printf "%s: %s" errorClass message
-        exitFailure
-    return None
+raiseError :: String -> String -> Evaluator ()
+raiseError errorClassName message = do
+    errorClass <- evalExpr (Name errorClassName)
+    exception <- evalCall errorClass [String message]
+
+    handler <- gets exceptHandler
+    handler exception
 
 eval :: Statement -> Evaluator ()
 eval (Def name params body) = updateSymbol name function
@@ -171,9 +166,7 @@ eval (Assignment (Attribute var attr) expr) = do
     target <- evalExpr var
     liftIO $ setAttr attr value target
 
-eval (Assignment{}) = do
-    _ <- raiseError "SyntaxError" "invalid assignment"
-    return ()
+eval (Assignment{}) = raiseError "SyntaxError" "invalid assignment"
 
 eval (Break) = do
     break <- gets loopBreak
@@ -215,17 +208,13 @@ eval (Raise expr _from) = do
 
             handler <- gets exceptHandler
             handler exception
-        else do
-            _ <- raiseError "TypeError" "must raise subclass of BaseException"
-            return ()
+        else raiseError "TypeError" "must raise subclass of BaseException"
 
 eval (Reraise) = do
     exception <- gets currentException
 
     case exception of
-        None -> do
-            _ <- raiseError "RuntimeError" "No active exception to reraise"
-            return ()
+        None -> raiseError "RuntimeError" "No active exception to reraise"
 
         _ -> do
             handler <- gets exceptHandler
@@ -333,9 +322,8 @@ eval (Pass) = return ()
 eval (Assert e _) = do
     result <- evalExpr e
 
-    unless (isTrue result) $ do
-        _ <- raiseError "AssertionError" ""
-        return ()
+    unless (isTrue result) $
+        raiseError "AssertionError" ""
 
 eval (Del {}) = do
     unimplemented "del keyword"
@@ -495,7 +483,9 @@ evalExpr (Attribute target name) = do
     attribute <- liftIO $ getAttr name receiver
     case attribute of
         Just v  -> return v
-        Nothing -> raiseError "AttributeError" (printf "object has no attribute '%s'" name)
+        Nothing -> do
+            raiseError "AttributeError" (printf "object has no attribute '%s'" name)
+            return None
 
 evalExpr (SliceDef startExpr stopExpr strideExpr) = do
     start <- evalExpr startExpr
@@ -518,11 +508,17 @@ evalExpr (Subscript expr sub) = do
     evalSubscript (List ref) (Int i) = do
         values <- liftIO $ readIORef ref
         return $ values !! fromIntegral i
-    evalSubscript (List {}) _ = raiseError "TypeError" "list indicies must be integers"
+    evalSubscript (List {}) _ = do
+        raiseError "TypeError" "list indicies must be integers"
+        return None
     evalSubscript (Tuple values) (Int i) = return $ values !! fromIntegral i
-    evalSubscript (Tuple {}) _ = raiseError "TypeError" "tuple indicies must be integers"
+    evalSubscript (Tuple {}) _ = do
+        raiseError "TypeError" "tuple indicies must be integers"
+        return None
     evalSubscript (String s) (Int i) = return $ String [s !! fromIntegral i]
-    evalSubscript _ _ = raiseError "TypeError" "object is not subscriptable"
+    evalSubscript _ _ = do
+        raiseError "TypeError" "object is not subscriptable"
+        return None
 
 evalExpr (TernOp condExpr thenExpr elseExpr) = do
     condition <- evalExpr condExpr
@@ -590,6 +586,7 @@ evalCall (Function name params body) args = do
 evalCall v _ = do
     s <- liftIO $ str v
     raiseError "SystemError" ("don't know how to call " ++ s)
+    return None
 
 interpret :: String -> String -> IO ()
 interpret _source code = do
