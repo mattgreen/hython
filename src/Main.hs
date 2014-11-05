@@ -1,6 +1,6 @@
 import System.Environment
 
-import Interpreter
+import Hython.Interpreter
 
 main :: IO ()
 main = do

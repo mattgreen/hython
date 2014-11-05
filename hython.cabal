@@ -6,7 +6,7 @@ cabal-version:    >= 1.2
 executable        hython
   build-depends:  base, containers, mtl, array, utf8-string, regex-base, regex-compat, transformers, unordered-containers
   build-tools:    alex, happy
-  other-modules:  Interpreter, Lexer, Parser, Builtins, Classes, Attributes
+  other-modules:  Hython.Parser.Lexer, Hython.Parser.Parser
   hs-source-dirs: src
   main-is:        Main.hs
   ghc-options:    -Wall -fno-warn-missing-signatures -debug
