@@ -203,6 +203,10 @@ eval (Import _) = do
     unimplemented "import keyword"
     return ()
 
+eval (ImportFrom _ _) = do
+    unimplemented "from...import keyword"
+    return ()
+
 eval (Nonlocal {}) = do
     unimplemented "nonlocal keyword"
     return ()
@@ -545,6 +549,14 @@ evalExpr (From {}) = do
 
 evalExpr (Yield {}) = do
     unimplemented "yield expr"
+    return None
+
+evalExpr (Glob) = do
+    unimplemented "glob"
+    return None
+
+evalExpr (RelativeImport _ _) = do
+    unimplemented "relative import"
     return None
 
 evalExpr (Name var) = lookupSymbol var
