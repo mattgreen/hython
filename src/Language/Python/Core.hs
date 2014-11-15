@@ -26,6 +26,7 @@ data Statement
     | Global Expressions
     | Nonlocal Expressions
     | ClassDef String [Expression] Statements
+    | Import [Expression]
     | ModuleDef Statements
     deriving(Eq, Show)
 

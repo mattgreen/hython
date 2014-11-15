@@ -202,6 +202,7 @@ small_stmt
     | del_stmt      { $1 }
     | pass_stmt     { $1 }
     | flow_stmt     { $1 }
+    | import_stmt   { $1 }
     | global_stmt   { $1 }
     | nonlocal_stmt { $1 }
     | assert_stmt   { $1 }
@@ -258,15 +259,30 @@ raise_stmt
     | RAISE test FROM test  { Raise $2 $4 }
 
 -- import_stmt: import_name | import_from
+import_stmt
+    : import_name               { $1 }
+
 -- import_name: 'import' dotted_as_names
+import_name
+    : IMPORT dotted_as_names    { Import $2 }
+
 -- # note below: the ('.' | '...') is necessary because '...' is tokenized as ELLIPSIS
 -- import_from: ('from' (('.' | '...')* dotted_name | ('.' | '...')+)
 --               'import' ('*' | '(' import_as_names ')' | import_as_names))
 -- import_as_name: NAME ['as' NAME]
 -- dotted_as_name: dotted_name ['as' NAME]
+dotted_as_name
+    : dotted_name                   { $1 }
+    | dotted_name AS identifier     { As $1 (Name $3) }
+
 -- import_as_names: import_as_name (',' import_as_name)* [',']
 -- dotted_as_names: dotted_as_name (',' dotted_as_name)*
+dotted_as_names
+    : sepBy(dotted_as_name, ',')    { $1 }
+
 -- dotted_name: NAME ('.' NAME)*
+dotted_name
+    : sepBy(identifier, '.')        { Name $ (intercalate "." $1) }
 
 -- global_stmt: 'global' NAME (',' NAME)*
 global_stmt

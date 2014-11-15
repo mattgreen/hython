@@ -199,6 +199,10 @@ eval (If clauses elseBlock) = evalClauses clauses
             then evalBlock block
             else evalClauses rest
 
+eval (Import _) = do
+    unimplemented "import keyword"
+    return ()
+
 eval (Nonlocal {}) = do
     unimplemented "nonlocal keyword"
     return ()
