@@ -1,7 +1,7 @@
 {
 {-# OPTIONS_GHC -w #-}
 
-module Hython.Parser.Lexer where
+module Language.Python.Lexer where
 
 import Codec.Binary.UTF8.String (encode)
 import Control.Monad.State
@@ -10,7 +10,7 @@ import Data.List
 import Data.Word
 import Text.Regex
 
-import Hython.Language
+import Language.Python.Core
 }
 
 $digit = 0-9

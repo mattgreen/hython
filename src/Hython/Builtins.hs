@@ -11,7 +11,7 @@ import Text.Printf
 
 import Hython.Attributes
 import Hython.Classes
-import Hython.Language
+import Language.Python.Core
 
 builtins :: IO [(String, Value)]
 builtins = do

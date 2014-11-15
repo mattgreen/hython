@@ -5,7 +5,7 @@ import Data.IORef
 import qualified Data.HashMap.Strict as Map
 
 import Hython.Attributes
-import Hython.Language
+import Language.Python.Core
 
 classOf :: Value -> Value
 classOf (Object c@(Class {}) _) = c

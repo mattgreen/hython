@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Hython.Language where
+module Language.Python.Core where
 
 import Data.Complex
 import Data.IORef

@@ -1,12 +1,12 @@
 {
-module Hython.Parser.Parser(parse) where
+module Language.Python.Parser (parse) where
 import Control.Monad.Error
 import Data.Either
 import Data.List
 import Data.Maybe
 
-import Hython.Language
-import qualified Hython.Parser.Lexer as L
+import Language.Python.Core
+import qualified Language.Python.Lexer as L
 }
 
 %monad      {L.P}

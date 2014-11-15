@@ -24,8 +24,8 @@ import Hython.Attributes
 import Hython.Builtins hiding (builtins)
 import Hython.Classes
 import qualified Hython.Builtins (builtins)
-import Hython.Language
-import Hython.Parser.Parser
+import Language.Python.Core
+import Language.Python.Parser
 
 type Evaluator = ContT () (ReaderT Config (StateT Environment IO))
 type EvaluatorCont = () -> Evaluator ()
