@@ -6,24 +6,12 @@ import Prelude hiding (print)
 import Data.Complex
 import Data.Fixed
 import Data.IORef
-import qualified Data.HashMap.Strict as Map
 import Data.List
 import Text.Printf
 
 import Hython.Attributes
 import Hython.Classes
 import Hython.Language
-
-type BuiltInFunction = Values -> IO Value
-
-evalBuiltinFn :: String -> Values -> IO Value
-evalBuiltinFn "bool"    = bool
-evalBuiltinFn "len"     = len
-evalBuiltinFn "print"   = print
-evalBuiltinFn "pow"     = pow
-evalBuiltinFn "slice"   = slice
-evalBuiltinFn "str"     = str'
-evalBuiltinFn name      = fail $ "no built-in with name " ++ name
 
 builtins :: IO [(String, Value)]
 builtins = do
@@ -69,15 +57,20 @@ builtins = do
                           ("ValueError", valueError),
                           ("Warning", warning)]
 
-    let builtinFns = map defBuiltin ["bool", "len", "print", "pow", "slice", "str"]
+    let builtinFns = map defBuiltin builtinFunctions
 
     return $ builtinClasses ++ builtinFns
 
   where
-    defBuiltin name = (name, BuiltinFn name)
+    defBuiltin (name, _) = (name, BuiltinFn name)
 
-{-builtinFunctions :: [(String, BuiltInFunction)]-}
-{-builtinFunctions = [("bool", bool), ("len", len), ("print", print), ("pow", pow), ("slice", slice), ("str", str')]-}
+builtinFunctions :: [(String, Values -> IO Value)]
+builtinFunctions = [("bool", bool),
+                    ("len", len),
+                    ("print", print),
+                    ("pow", pow),
+                    ("slice", slice),
+                    ("str", str')]
 
 bool :: Values -> IO Value
 bool([])    = return $ Bool False
@@ -102,8 +95,9 @@ pow [Int l, Int r]
 pow [Int l, Int r, Int m] = do
     result <- pow [Int l, Int r]
     case result of
-        Float v    -> return $ Float (v `mod'` fromIntegral m)
-        Int v      -> return $ Int (v `mod` m)
+        Float v     -> return $ Float (v `mod'` fromIntegral m)
+        Int v       -> return $ Int (v `mod` m)
+        _           -> fail "pow() should produce an Int or Float!"
 
 pow [Float l, Float r] = return $ Float (l ** r)
 pow [Float l, Float r, Float m] = do

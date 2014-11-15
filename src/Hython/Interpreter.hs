@@ -124,6 +124,7 @@ raiseError :: String -> String -> Evaluator ()
 raiseError errorClassName message = do
     errorClass <- evalExpr (Name errorClassName)
     exception <- evalCall errorClass [String message]
+    liftIO $ putStrLn message
 
     handler <- gets exceptHandler
     handler exception
@@ -564,7 +565,12 @@ evalCall cls@(Class {}) args = do
 
     return object
 
-evalCall (BuiltinFn name) args = liftIO $ evalBuiltinFn name args
+evalCall (BuiltinFn name) args = do
+    let fn = lookup name builtinFunctions
+    when (isNothing fn) $
+        raiseError "NameError" ("no built-in with name " ++ name)
+
+    liftIO $ fromJust fn args
 
 evalCall (Function name params body) args = do
     env <- get
