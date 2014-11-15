@@ -27,6 +27,7 @@ data Statement
     | Nonlocal Expressions
     | ClassDef String [Expression] Statements
     | Import [Expression]
+    | ImportFrom Expression [Expression]
     | ModuleDef Statements
     deriving(Eq, Show)
 
@@ -52,6 +53,8 @@ data Expression
     | As Expression Expression
     | Yield Expression
     | From Expression
+    | Glob
+    | RelativeImport Int Expression
     | Lambda [String] Expression
     | UnaryOp UnaryOperator Expression
     | BinOp Operator Expression Expression

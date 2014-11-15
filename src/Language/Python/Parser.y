@@ -261,6 +261,7 @@ raise_stmt
 -- import_stmt: import_name | import_from
 import_stmt
     : import_name               { $1 }
+    | import_from               { $1 }
 
 -- import_name: 'import' dotted_as_names
 import_name
@@ -269,13 +270,32 @@ import_name
 -- # note below: the ('.' | '...') is necessary because '...' is tokenized as ELLIPSIS
 -- import_from: ('from' (('.' | '...')* dotted_name | ('.' | '...')+)
 --               'import' ('*' | '(' import_as_names ')' | import_as_names))
+import_from
+    : FROM from_import IMPORT from_import_items { ImportFrom $2 $4 }
+
+from_import
+    : many0('.') dotted_name    { RelativeImport (length $1) $2 }
+    | many1('.')                { RelativeImport (length $1) Glob }
+
+from_import_items
+    : '*'                       { [Glob] }
+    | '(' import_as_names ')'   { $2 }
+    | import_as_names           { $1 }
+
 -- import_as_name: NAME ['as' NAME]
+import_as_name
+    : identifier                    { Name $1 }
+    | identifier AS identifier      { As (Name $1) (Name $3) }
+
 -- dotted_as_name: dotted_name ['as' NAME]
 dotted_as_name
     : dotted_name                   { $1 }
     | dotted_name AS identifier     { As $1 (Name $3) }
 
 -- import_as_names: import_as_name (',' import_as_name)* [',']
+import_as_names
+    : sepOptEndBy(import_as_name, ',')  { $1 }
+
 -- dotted_as_names: dotted_as_name (',' dotted_as_name)*
 dotted_as_names
     : sepBy(dotted_as_name, ',')    { $1 }
