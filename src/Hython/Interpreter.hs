@@ -24,6 +24,7 @@ import Hython.Attributes
 import Hython.Builtins hiding (builtins)
 import Hython.Classes
 import qualified Hython.Builtins (builtins)
+import Hython.Modules
 import Language.Python.Core
 import Language.Python.Parser
 
@@ -40,6 +41,7 @@ data Config = Config {
 data Environment = Environment {
     currentException :: Value,
     exceptHandler :: EvaluatorExceptCont,
+    mainModule :: ModuleInfo,
     frames :: [Frame],
     scopes :: [SymbolTable],
     builtins :: [(String, Value)],
@@ -62,10 +64,12 @@ defaultConfig = do
 defaultEnv :: IO Environment
 defaultEnv = do
     builtinsList <- Hython.Builtins.builtins
+    moduleInfo <- newModuleInfo "__main__"
 
     return Environment {
         currentException = None,
         exceptHandler = defaultExceptionHandler,
+        mainModule = moduleInfo,
         builtins = builtinsList,
         frames = [Frame "<module>" (Map.fromList [])],
         scopes = [Map.fromList []],

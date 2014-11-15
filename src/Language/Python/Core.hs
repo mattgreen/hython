@@ -68,7 +68,7 @@ data Value
     | Bool Bool
     | BuiltinFn String
     | Function String [String] [Statement]
-    | Module ModuleInfo AttributeDict
+    | Module ModuleInfo
     | Class String Values AttributeDict
     | Object Value AttributeDict
     | Slice Value Value Value
@@ -127,7 +127,8 @@ data ComparisonOperator
     deriving(Eq, Show)
 
 data ModuleInfo = ModuleInfo {
-    moduleName :: String
+    moduleName :: String,
+    moduleDict :: AttributeDict
 } deriving(Eq, Show)
 
 instance Show (IORef a) where
