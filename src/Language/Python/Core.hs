@@ -68,6 +68,7 @@ data Value
     | Bool Bool
     | BuiltinFn String
     | Function String [String] [Statement]
+    | Module ModuleInfo AttributeDict
     | Class String Values AttributeDict
     | Object Value AttributeDict
     | Slice Value Value Value
@@ -124,6 +125,10 @@ data ComparisonOperator
     | GreaterThan
     | GreaterThanEq
     deriving(Eq, Show)
+
+data ModuleInfo = ModuleInfo {
+    moduleName :: String
+} deriving(Eq, Show)
 
 instance Show (IORef a) where
     show _ = "<ioref>"
