@@ -46,6 +46,8 @@ NEWLINE     {L.Newline}
 ']'         {L.Delimiter "]"}
 '('         {L.Delimiter "("}
 ')'         {L.Delimiter ")"}
+'{'         {L.Delimiter "{"}
+'}'         {L.Delimiter "}"}
 ':'         {L.Delimiter ":"}
 '='         {L.Delimiter "="}
 ';'         {L.Delimiter ";"}
@@ -505,6 +507,7 @@ power
 atom
     : '(' opt(or(yield_expr, testlist_comp)) ')'    { maybe (TupleDef []) id $2 }
     | '[' opt(testlist_comp) ']'    { maybe (ListDef []) (\e -> ListDef $ expressionsOf e) $2 }
+    | '{' dictorsetmaker '}'        { $2 }
     | identifier                    { Name $1 }
     | literal                       { Constant $1 }
     | many1(string)                 { Constant (String $ foldl' (++) "" $1) }
@@ -545,6 +548,8 @@ testlist
 
 -- dictorsetmaker: ( (test ':' test (comp_for | (',' test ':' test)* [','])) |
 --                   (test (comp_for | (',' test)* [','])) )
+dictorsetmaker
+    : sepOptEndBy(test, ',')    { SetDef $1 }
 
 -- classdef: 'class' NAME ['(' [arglist] ')'] ':' suite
 classdef

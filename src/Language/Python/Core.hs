@@ -62,6 +62,7 @@ data Expression
     | TupleDef Expressions
     | SliceDef Expression Expression Expression
     | ListDef Expressions
+    | SetDef Expressions
     deriving(Eq, Show)
 
 data Value
