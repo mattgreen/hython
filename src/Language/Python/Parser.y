@@ -507,7 +507,7 @@ power
 atom
     : '(' opt(or(yield_expr, testlist_comp)) ')'    { maybe (TupleDef []) id $2 }
     | '[' opt(testlist_comp) ']'    { maybe (ListDef []) (\e -> ListDef $ expressionsOf e) $2 }
-    | '{' dictorsetmaker '}'        { $2 }
+    | '{' opt(dictorsetmaker) '}'   { maybe (DictDef []) (\e -> e) $2 }
     | identifier                    { Name $1 }
     | literal                       { Constant $1 }
     | many1(string)                 { Constant (String $ foldl' (++) "" $1) }
@@ -548,8 +548,13 @@ testlist
 
 -- dictorsetmaker: ( (test ':' test (comp_for | (',' test ':' test)* [','])) |
 --                   (test (comp_for | (',' test)* [','])) )
+-- TODO: add rules for comprehension
 dictorsetmaker
-    : sepOptEndBy(test, ',')    { SetDef $1 }
+    : sepOptEndBy(test, ',')        { SetDef $1 }
+    | sepOptEndBy(dict_item, ',')   { DictDef $1 }
+
+dict_item
+    : test ':' test         { ($1, $3)}
 
 -- classdef: 'class' NAME ['(' [arglist] ')'] ':' suite
 classdef

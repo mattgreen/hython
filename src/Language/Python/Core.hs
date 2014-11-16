@@ -63,6 +63,7 @@ data Expression
     | SliceDef Expression Expression Expression
     | ListDef Expressions
     | SetDef Expressions
+    | DictDef [(Expression, Expression)]
     deriving(Eq, Show)
 
 data Value

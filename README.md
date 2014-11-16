@@ -31,7 +31,7 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] Tuples
  * [x] List literals
  * [ ] List comprehensions
- * [ ] Dictionary literals
+ * [x] Dictionary literals
  * [x] Subscript operators
  * [x] Set literals
  * [x] All arithmetic operators
