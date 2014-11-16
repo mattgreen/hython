@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-module Hython.Interpreter (interpret)
+module Hython.Interpreter (interpret, parse)
 where
 
 import Prelude hiding (break)
@@ -624,4 +624,3 @@ interpret _source code = do
 
   where
     parseEval = eval (parse code)
-
