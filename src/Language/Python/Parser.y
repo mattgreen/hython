@@ -432,17 +432,17 @@ comparison
 
 -- comp_op: '<'|'>'|'=='|'>='|'<='|'<>'|'!='|'in'|'not' 'in'|'is'|'is' 'not'
 comp_op
-    : '<'   { LessThan }
-    | '>'   { GreaterThan }
-    | '=='  { Eq }
-    | '>='  { GreaterThanEq }
-    | '<='  { LessThanEq }
-    | '!='  { NotEq }
+    : '<'       { LessThan }
+    | '>'       { GreaterThan }
+    | '=='      { Eq }
+    | '>='      { GreaterThanEq }
+    | '<='      { LessThanEq }
+    | '!='      { NotEq }
+    | IN        { In }
+    | NOT IN    { NotIn }
+    | IS        { Is }
+    | IS NOT    { IsNot }
     --| '<>'
-    --| 'in'
-    --| 'not' 'in'
-    --| 'is'
-    --| 'is' 'not'
 
 -- star_expr: '*' expr
 -- TODO: implement

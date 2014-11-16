@@ -130,6 +130,10 @@ data ComparisonOperator
     | LessThanEq
     | GreaterThan
     | GreaterThanEq
+    | In
+    | NotIn
+    | Is
+    | IsNot
     deriving(Eq, Show)
 
 data ModuleInfo = ModuleInfo {
