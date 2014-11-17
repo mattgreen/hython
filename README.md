@@ -37,7 +37,7 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] All arithmetic operators
  * [x] All bitwise operators
  * [x] All boolean operators
- * [ ] All comparison operators
+ * [x] All comparison operators
  * [x] `assert` statement
  * [x] `break` statement
  * [x] `class` statement
