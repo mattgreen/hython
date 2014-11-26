@@ -12,7 +12,6 @@ import Control.Monad.Trans.Cont hiding (cont)
 import Data.Bits
 import Data.Fixed
 import Data.IORef
-import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
 import Data.Maybe
 import Debug.Trace
@@ -23,34 +22,11 @@ import Text.Printf
 import Hython.Attributes
 import Hython.Builtins hiding (builtins)
 import Hython.Classes
+import Hython.Environment
 import qualified Hython.Builtins (builtins)
 import Hython.Modules
 import Language.Python.Core
 import Language.Python.Parser
-
-type Evaluator = ContT () (ReaderT Config (StateT Environment IO))
-type EvaluatorCont = () -> Evaluator ()
-type EvaluatorReturnCont = Value -> Evaluator ()
-type EvaluatorExceptCont = Value -> Evaluator ()
-type SymbolTable = HashMap String Value
-
-data Config = Config {
-    tracingEnabled :: Bool
-}
-
-data Environment = Environment {
-    currentException :: Value,
-    exceptHandler :: EvaluatorExceptCont,
-    mainModule :: ModuleInfo,
-    frames :: [Frame],
-    scopes :: [SymbolTable],
-    builtins :: [(String, Value)],
-    fnReturn :: EvaluatorReturnCont,
-    loopBreak :: EvaluatorCont,
-    loopContinue :: EvaluatorCont
-}
-
-data Frame = Frame String SymbolTable
 
 unimplemented :: String -> Evaluator ()
 unimplemented s = raiseError "NotImplementedError" (s ++ " not yet implemented")
