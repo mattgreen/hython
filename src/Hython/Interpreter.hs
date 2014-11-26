@@ -25,6 +25,7 @@ import Hython.Classes
 import Hython.Environment
 import qualified Hython.Builtins (builtins)
 import Hython.Modules
+import Hython.Scoping
 import Language.Python.Core
 import Language.Python.Parser
 
@@ -67,38 +68,6 @@ defaultContinueHandler () = raiseError "SyntaxError" "'continue' not properly in
 
 defaultReturnHandler :: Value -> Evaluator ()
 defaultReturnHandler _ = raiseError "SyntaxError" "'return' outside function"
-
-currentScope :: Evaluator SymbolTable
-currentScope = do
-    current <- gets scopes
-    return $ head current
-
-lookupSymbol :: String -> Evaluator Value
-lookupSymbol name = do
-    scope <- currentScope
-    case Map.lookup name scope of
-        Just v  -> return v
-        Nothing -> do
-            builtinSymbols <- gets builtins
-            case lookup name builtinSymbols of
-                Just v  -> return v
-                Nothing -> do
-                    raiseError "NameError" (printf "name '%s' is not defined" name)
-                    return None
-
-removeSymbol :: String -> Evaluator ()
-removeSymbol name = do
-    scope <- currentScope
-
-    let updatedScope = Map.delete name scope
-    modify $ \env -> env { scopes = updatedScope : tail (scopes env) }
-
-updateSymbol :: String -> Value -> Evaluator ()
-updateSymbol name value = do
-    scope <- currentScope
-
-    let updatedScope = Map.insert name value scope
-    modify $ \env -> env { scopes = updatedScope : tail (scopes env) }
 
 raiseError :: String -> String -> Evaluator ()
 raiseError errorClassName message = do
@@ -535,7 +504,14 @@ evalExpr (RelativeImport _ _) = do
     unimplemented "relative import"
     return None
 
-evalExpr (Name var) = lookupSymbol var
+evalExpr (Name var) = do
+    val <- lookupSymbol var
+    case val of
+        Just s  -> return s
+        Nothing -> do
+            raiseError "NameError" (printf "name '%s' is not defined" var)
+            return None
+
 evalExpr (Constant c) = return c
 
 evalBlock :: [Statement] -> Evaluator ()
