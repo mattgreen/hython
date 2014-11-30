@@ -12,7 +12,6 @@ import Control.Monad.Trans.Cont hiding (cont)
 import Data.Bits
 import Data.Fixed
 import Data.IORef
-import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
 import Data.Maybe
 import Debug.Trace
@@ -20,37 +19,14 @@ import System.Environment
 import System.Exit
 import Text.Printf
 
-import Hython.Attributes
 import Hython.Builtins hiding (builtins)
 import Hython.Classes
+import Hython.Environment
 import qualified Hython.Builtins (builtins)
 import Hython.Modules
+import Hython.Scoping
 import Language.Python.Core
 import Language.Python.Parser
-
-type Evaluator = ContT () (ReaderT Config (StateT Environment IO))
-type EvaluatorCont = () -> Evaluator ()
-type EvaluatorReturnCont = Value -> Evaluator ()
-type EvaluatorExceptCont = Value -> Evaluator ()
-type SymbolTable = HashMap String Value
-
-data Config = Config {
-    tracingEnabled :: Bool
-}
-
-data Environment = Environment {
-    currentException :: Value,
-    exceptHandler :: EvaluatorExceptCont,
-    mainModule :: ModuleInfo,
-    frames :: [Frame],
-    scopes :: [SymbolTable],
-    builtins :: [(String, Value)],
-    fnReturn :: EvaluatorReturnCont,
-    loopBreak :: EvaluatorCont,
-    loopContinue :: EvaluatorCont
-}
-
-data Frame = Frame String SymbolTable
 
 unimplemented :: String -> Evaluator ()
 unimplemented s = raiseError "NotImplementedError" (s ++ " not yet implemented")
@@ -92,38 +68,6 @@ defaultContinueHandler () = raiseError "SyntaxError" "'continue' not properly in
 defaultReturnHandler :: Value -> Evaluator ()
 defaultReturnHandler _ = raiseError "SyntaxError" "'return' outside function"
 
-currentScope :: Evaluator SymbolTable
-currentScope = do
-    current <- gets scopes
-    return $ head current
-
-lookupSymbol :: String -> Evaluator Value
-lookupSymbol name = do
-    scope <- currentScope
-    case Map.lookup name scope of
-        Just v  -> return v
-        Nothing -> do
-            builtinSymbols <- gets builtins
-            case lookup name builtinSymbols of
-                Just v  -> return v
-                Nothing -> do
-                    raiseError "NameError" (printf "name '%s' is not defined" name)
-                    return None
-
-removeSymbol :: String -> Evaluator ()
-removeSymbol name = do
-    scope <- currentScope
-
-    let updatedScope = Map.delete name scope
-    modify $ \env -> env { scopes = updatedScope : tail (scopes env) }
-
-updateSymbol :: String -> Value -> Evaluator ()
-updateSymbol name value = do
-    scope <- currentScope
-
-    let updatedScope = Map.insert name value scope
-    modify $ \env -> env { scopes = updatedScope : tail (scopes env) }
-
 raiseError :: String -> String -> Evaluator ()
 raiseError errorClassName message = do
     errorClass <- evalExpr (Name errorClassName)
@@ -141,26 +85,11 @@ eval (Def name params body) = updateSymbol name function
 eval (ModuleDef statements) = evalBlock statements
 
 eval (ClassDef name bases statements) = do
-    baseClasses <- evalBases bases
-    pushScope
-    evalBlock statements
-    dict <- popScope
-    attributeDict <- liftIO $ newAttributeDict (Map.toList dict)
+    baseClasses <- mapM evalExpr bases
+    attributeDict <- withNewScope $
+        evalBlock statements
 
     updateSymbol name $ Class name baseClasses attributeDict
-
-  where
-    evalBases = mapM evalExpr
-
-    pushScope = do
-        let dict = Map.empty
-        modify $ \env -> env { scopes = dict : scopes env }
-
-    popScope = do
-        currentScopes <- gets scopes
-        let dict = head currentScopes
-        modify $ \e -> e{ scopes = tail currentScopes }
-        return dict
 
 eval (Assignment (Name var) expr) = do
     value <- evalExpr expr
@@ -559,7 +488,14 @@ evalExpr (RelativeImport _ _) = do
     unimplemented "relative import"
     return None
 
-evalExpr (Name var) = lookupSymbol var
+evalExpr (Name var) = do
+    val <- lookupSymbol var
+    case val of
+        Just s  -> return s
+        Nothing -> do
+            raiseError "NameError" (printf "name '%s' is not defined" var)
+            return None
+
 evalExpr (Constant c) = return c
 
 evalBlock :: [Statement] -> Evaluator ()
