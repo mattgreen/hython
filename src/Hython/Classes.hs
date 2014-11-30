@@ -4,7 +4,7 @@ where
 import Data.IORef
 import qualified Data.HashMap.Strict as Map
 
-import Hython.Attributes
+import qualified Hython.AttributeDict as AttributeDict
 import Language.Python.Core
 
 classOf :: Value -> Value
@@ -24,8 +24,8 @@ newClass name bases = do
 
 newObject :: Value -> IO Value
 newObject cls@(Class _ _ classAttributes) = do
-    instanceDict <- cloneAttributeDict classAttributes
-    writeAttr "__class__" cls instanceDict
+    instanceDict <- AttributeDict.clone classAttributes
+    AttributeDict.update "__class__" cls instanceDict
 
     return $ Object cls instanceDict
 

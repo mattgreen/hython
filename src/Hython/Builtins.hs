@@ -9,7 +9,7 @@ import Data.IORef
 import Data.List
 import Text.Printf
 
-import Hython.Attributes
+import qualified Hython.AttributeDict as AttributeDict
 import Hython.Classes
 import Language.Python.Core
 
@@ -153,13 +153,13 @@ str' v = do
     return $ String s
 
 getAttr :: String -> Value -> IO (Maybe Value)
-getAttr attr (Object _ ref) = readAttr attr ref
-getAttr attr (Class _ _ ref) = readAttr attr ref
+getAttr attr (Object _ ref) = AttributeDict.lookup attr ref
+getAttr attr (Class _ _ ref) = AttributeDict.lookup attr ref
 getAttr _ _ = fail "Only classes and objects have attrs!"
 
 setAttr :: String -> Value -> Value -> IO ()
-setAttr attr value (Object _ ref)   = writeAttr attr value ref
-setAttr attr value (Class _ _ ref)  = writeAttr attr value ref
+setAttr attr value (Object _ ref)   = AttributeDict.update attr value ref
+setAttr attr value (Class _ _ ref)  = AttributeDict.update attr value ref
 setAttr _ _ _                       = fail "Only objects have attrs!"
 
 

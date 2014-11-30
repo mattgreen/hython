@@ -5,7 +5,7 @@ import Control.Monad.State
 import qualified Data.HashMap.Strict as Map
 
 import Language.Python.Core
-import Hython.Attributes
+import qualified Hython.AttributeDict as AttributeDict
 import Hython.Environment
 
 currentScope :: Evaluator SymbolTable
@@ -23,7 +23,7 @@ withNewScope action = do
     when (length activeScopes > 1) $
         modify $ \env -> env { scopes = tail $ scopes env }
 
-    liftIO $ newAttributeDict (Map.toList dict)
+    liftIO $ AttributeDict.fromList (Map.toList dict)
 
 lookupSymbol :: String -> Evaluator (Maybe Value)
 lookupSymbol name = do

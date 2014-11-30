@@ -3,11 +3,11 @@ where
 
 import Language.Python.Core
 
-import Hython.Attributes
+import qualified Hython.AttributeDict as AttributeDict
 
 newModuleInfo :: String -> IO ModuleInfo
 newModuleInfo name = do
-    dict <- newAttributeDict []
+    dict <- AttributeDict.empty
 
     return ModuleInfo {
         moduleName = name,
