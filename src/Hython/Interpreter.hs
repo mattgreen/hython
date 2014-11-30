@@ -19,7 +19,6 @@ import System.Environment
 import System.Exit
 import Text.Printf
 
-import Hython.Attributes
 import Hython.Builtins hiding (builtins)
 import Hython.Classes
 import Hython.Environment
@@ -86,26 +85,11 @@ eval (Def name params body) = updateSymbol name function
 eval (ModuleDef statements) = evalBlock statements
 
 eval (ClassDef name bases statements) = do
-    baseClasses <- evalBases bases
-    pushScope
-    evalBlock statements
-    dict <- popScope
-    attributeDict <- liftIO $ newAttributeDict (Map.toList dict)
+    baseClasses <- mapM evalExpr bases
+    attributeDict <- withNewScope $
+        evalBlock statements
 
     updateSymbol name $ Class name baseClasses attributeDict
-
-  where
-    evalBases = mapM evalExpr
-
-    pushScope = do
-        let dict = Map.empty
-        modify $ \env -> env { scopes = dict : scopes env }
-
-    popScope = do
-        currentScopes <- gets scopes
-        let dict = head currentScopes
-        modify $ \e -> e{ scopes = tail currentScopes }
-        return dict
 
 eval (Assignment (Name var) expr) = do
     value <- evalExpr expr
