@@ -23,7 +23,7 @@ delete key dictRef = do
     writeIORef dictRef $ Map.delete key dict
 
 empty :: IO AttributeDict
-empty = newIORef $ Map.empty
+empty = newIORef Map.empty
 
 fromList :: [(String, Value)] -> IO AttributeDict
 fromList list = do
