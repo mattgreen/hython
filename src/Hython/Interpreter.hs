@@ -57,7 +57,7 @@ defaultEnv = do
         loopContinue = defaultContinueHandler
     }
 
-defaultExceptionHandler :: Value -> Evaluator ()
+defaultExceptionHandler :: Object -> Evaluator ()
 defaultExceptionHandler _exception = liftIO $ do
     putStrLn "Exception: <msg>"
     exitFailure
@@ -68,7 +68,7 @@ defaultBreakHandler () = raiseError "SyntaxError" "'break' outside loop"
 defaultContinueHandler :: () -> Evaluator ()
 defaultContinueHandler () = raiseError "SyntaxError" "'continue' not properly in loop"
 
-defaultReturnHandler :: Value -> Evaluator ()
+defaultReturnHandler :: Object -> Evaluator ()
 defaultReturnHandler _ = raiseError "SyntaxError" "'return' outside function"
 
 raiseError :: String -> String -> Evaluator ()
@@ -286,7 +286,7 @@ eval (Expression e) = do
     _ <- evalExpr e
     return ()
 
-evalExpr :: Expression -> Evaluator Value
+evalExpr :: Expression -> Evaluator Object
 evalExpr (As expr binding) = do
     value <- evalExpr expr
     scope <- currentScope
@@ -528,7 +528,7 @@ evalBlock = mapM_ traceEval
 
     traceStmt s = "*** Evaluating: " ++ show s
 
-evalCall :: Value -> [Value] -> Evaluator Value
+evalCall :: Object -> [Object] -> Evaluator Object
 evalCall cls@(Class {}) args = do
     object <- liftIO $ newObject cls
 

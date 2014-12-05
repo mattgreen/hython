@@ -12,11 +12,11 @@ data Frame = Frame String Scope
 
 type Evaluator = ContT () (ReaderT Config (StateT Environment IO))
 type EvaluatorCont = () -> Evaluator ()
-type EvaluatorReturnCont = Value -> Evaluator ()
-type EvaluatorExceptCont = Value -> Evaluator ()
+type EvaluatorReturnCont = Object -> Evaluator ()
+type EvaluatorExceptCont = Object -> Evaluator ()
 
 data Environment = Environment {
-    currentException :: Value,
+    currentException :: Object,
     exceptHandler :: EvaluatorExceptCont,
     mainModule :: ModuleInfo,
     frames :: [Frame],
@@ -25,7 +25,7 @@ data Environment = Environment {
     loopContinue :: EvaluatorCont
 }
 
-type SymbolTable = HashMap String Value
+type SymbolTable = HashMap String Object
 
 data Scope = Scope {
     enclosingScopes :: [SymbolTable],

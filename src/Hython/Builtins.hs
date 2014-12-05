@@ -13,7 +13,7 @@ import qualified Hython.AttributeDict as AttributeDict
 import Hython.Classes
 import Language.Python.Core
 
-builtins :: IO [(String, Value)]
+builtins :: IO [(String, Object)]
 builtins = do
     object <- newClass "object" []
     baseException <- newClass "BaseException" [object]
@@ -64,7 +64,7 @@ builtins = do
   where
     defBuiltin (name, _) = (name, BuiltinFn name)
 
-builtinFunctions :: [(String, Values -> IO Value)]
+builtinFunctions :: [(String, Objects -> IO Object)]
 builtinFunctions = [("bool", bool),
                     ("len", len),
                     ("print", print),
@@ -72,12 +72,12 @@ builtinFunctions = [("bool", bool),
                     ("slice", slice),
                     ("str", str')]
 
-bool :: Values -> IO Value
+bool :: Objects -> IO Object
 bool([])    = return $ Bool False
 bool([x])   = return $ Bool (isTrue x)
 bool _      = fail "bool() takes at most 1 argument"
 
-len :: Values -> IO Value
+len :: Objects -> IO Object
 len([x])    = case x of
                 (String value)  -> return $ Int (fromIntegral (length value))
                 (List ref)    -> do
@@ -87,7 +87,7 @@ len([x])    = case x of
                 _               -> fail "object has no len()"
 len _       = fail "len() takes exactly one argument"
 
-pow :: Values -> IO Value
+pow :: Objects -> IO Object
 pow [Int l, Int r]
     | r < 0     = return $ Float (fromIntegral l ^^ r)
     | otherwise = return $ Int $ l ^ r
@@ -106,18 +106,18 @@ pow [Float l, Float r, Float m] = do
 
 pow _ = fail "pow() takes at least two arguments"
 
-print :: Values -> IO Value
+print :: Objects -> IO Object
 print args = do
     stringArgs <- mapM str args
     putStrLn $ unwords stringArgs
     return None
 
-slice :: Values -> IO Value
+slice :: Objects -> IO Object
 slice [end]                 = return $ Slice None end None
 slice [start, end, stride]  = return $ Slice start end stride
 slice _                     = fail "blah"
 
-str :: Value -> IO String
+str :: Object -> IO String
 str None                        = return "None"
 str (Bool v)                    = return $ show v
 str (String v)                  = return v
@@ -147,17 +147,17 @@ str (List ref) = do
     stringValues <- mapM str values
     return $ printf "[%s]" (intercalate ", " stringValues)
 
-str' :: Values -> IO Value
+str' :: Objects -> IO Object
 str' v = do
     s <- str (head v)
     return $ String s
 
-getAttr :: String -> Value -> IO (Maybe Value)
+getAttr :: String -> Object -> IO (Maybe Object)
 getAttr attr (Object _ ref) = AttributeDict.lookup attr ref
 getAttr attr (Class _ _ ref) = AttributeDict.lookup attr ref
 getAttr _ _ = fail "Only classes and objects have attrs!"
 
-setAttr :: String -> Value -> Value -> IO ()
+setAttr :: String -> Object -> Object -> IO ()
 setAttr attr value (Object _ ref)   = AttributeDict.update attr value ref
 setAttr attr value (Class _ _ ref)  = AttributeDict.update attr value ref
 setAttr _ _ _                       = fail "Only objects have attrs!"

@@ -7,7 +7,7 @@ import qualified Data.HashMap.Strict as Map
 import Language.Python.Core
 import Hython.Environment
 
-pushEnclosingScope :: [(String, Value)] -> Scope -> Scope
+pushEnclosingScope :: [(String, Object)] -> Scope -> Scope
 pushEnclosingScope symbols scope =
     scope { enclosingScopes = Map.fromList symbols : enclosingScopes scope }
 
@@ -17,14 +17,14 @@ popEnclosingScope scope = scope { enclosingScopes = remainingScopes (enclosingSc
     remainingScopes [] = []
     remainingScopes (_:ss) = ss
 
-bindName :: String -> Value -> Scope -> Scope
+bindName :: String -> Object -> Scope -> Scope
 bindName name object scope = case enclosingScopes scope of
     []      -> scope { globalScope = bind (globalScope scope) }
     (s:ss)  -> scope { enclosingScopes = bind s : ss }
   where
     bind = Map.insert name object
 
-lookupName :: String -> Scope -> Maybe Value
+lookupName :: String -> Scope -> Maybe Object
 lookupName name scope = do
     let searchScopes = enclosingScopes scope ++ [globalScope scope] ++ [builtinScope scope]
     foldr (mplus . Map.lookup name) Nothing searchScopes

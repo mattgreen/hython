@@ -42,13 +42,13 @@ type IfClauses      = [IfClause]
 type ExceptClauses  = [ExceptClause]
 
 type Expressions = [Expression]
-type Values = [Value]
+type Objects = [Object]
 
 data Expression
     = Call Expression [Expression]
     | Attribute Expression String
     | Name String
-    | Constant Value
+    | Constant Object
     | Subscript Expression Expression
     | As Expression Expression
     | Yield Expression
@@ -66,7 +66,7 @@ data Expression
     | DictDef [(Expression, Expression)]
     deriving(Eq, Show)
 
-data Value
+data Object
     = String String
     | Int Integer
     | Float Double
@@ -75,15 +75,15 @@ data Value
     | BuiltinFn String
     | Function String [String] [Statement]
     | Module ModuleInfo
-    | Class String Values AttributeDict
-    | Object Value AttributeDict
-    | Slice Value Value Value
-    | Tuple Values
-    | List (IORef Values)
+    | Class String Objects AttributeDict
+    | Object Object AttributeDict
+    | Slice Object Object Object
+    | Tuple Objects
+    | List (IORef Objects)
     | None
     deriving(Eq, Show)
 
-type AttributeDict = IORef (HashMap String (IORef Value))
+type AttributeDict = IORef (HashMap String (IORef Object))
 
 data UnaryOperator
     = Not
@@ -147,7 +147,7 @@ instance Show (IORef a) where
 class Truthy a where
     isTrue :: a -> Bool
 
-instance Truthy Value where
+instance Truthy Object where
     isTrue (Int 0)      = False
     isTrue (Bool False) = False
     isTrue (None)       = False

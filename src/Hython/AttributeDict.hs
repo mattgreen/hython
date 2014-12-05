@@ -25,7 +25,7 @@ delete key dictRef = do
 empty :: IO AttributeDict
 empty = newIORef Map.empty
 
-fromList :: [(String, Value)] -> IO AttributeDict
+fromList :: [(String, Object)] -> IO AttributeDict
 fromList list = do
     contents <- mapM wrap list
     newIORef $ Map.fromList contents
@@ -34,7 +34,7 @@ fromList list = do
         ref <- newIORef value
         return (key, ref)
 
-lookup :: String -> AttributeDict -> IO (Maybe Value)
+lookup :: String -> AttributeDict -> IO (Maybe Object)
 lookup key dictRef = do
     dict <- readIORef dictRef
     case Map.lookup key dict of
@@ -43,7 +43,7 @@ lookup key dictRef = do
             return $ Just value
         Nothing -> return Nothing
 
-update :: String -> Value -> AttributeDict -> IO ()
+update :: String -> Object -> AttributeDict -> IO ()
 update key value dictRef = do
     dict <- readIORef dictRef
     case Map.lookup key dict of

@@ -89,7 +89,7 @@ data Token
      | Dedent
      | Identifier String
      | Keyword String
-     | Literal Value
+     | Literal Object
      | StringLiteral String
      | Operator String
      | Delimiter String
