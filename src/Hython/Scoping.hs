@@ -1,49 +1,38 @@
 module Hython.Scoping
 where
 
-import Control.Monad.State
+import Control.Monad
 import qualified Data.HashMap.Strict as Map
 
 import Language.Python.Core
-import qualified Hython.AttributeDict as AttributeDict
 import Hython.Environment
 
-currentScope :: Evaluator SymbolTable
-currentScope = do
-    current <- gets scopes
-    return $ head current
+pushEnclosingScope :: [(String, Value)] -> Scope -> Scope
+pushEnclosingScope symbols scope =
+    scope { enclosingScopes = Map.fromList symbols : enclosingScopes scope }
 
-withNewScope :: Evaluator () -> Evaluator AttributeDict
-withNewScope action = do
-    modify $ \env -> env { scopes = Map.empty : scopes env }
-    _ <- action
-    dict <- currentScope
+popEnclosingScope :: Scope -> Scope
+popEnclosingScope scope = scope { enclosingScopes = remainingScopes (enclosingScopes scope) }
+  where
+    remainingScopes [] = []
+    remainingScopes (_:ss) = ss
 
-    activeScopes <- gets scopes
-    when (length activeScopes > 1) $
-        modify $ \env -> env { scopes = tail $ scopes env }
+bindName :: String -> Value -> Scope -> Scope
+bindName name object scope = case enclosingScopes scope of
+    []      -> scope { globalScope = bind (globalScope scope) }
+    (s:ss)  -> scope { enclosingScopes = bind s : ss }
+  where
+    bind = Map.insert name object
 
-    liftIO $ AttributeDict.fromList (Map.toList dict)
+lookupName :: String -> Scope -> Maybe Value
+lookupName name scope = do
+    let searchScopes = enclosingScopes scope ++ [globalScope scope] ++ [builtinScope scope]
+    foldr (mplus . Map.lookup name) Nothing searchScopes
 
-lookupSymbol :: String -> Evaluator (Maybe Value)
-lookupSymbol name = do
-    scope <- currentScope
-    case Map.lookup name scope of
-        Just v  -> return $ Just v
-        Nothing -> do
-            builtinSymbols <- gets builtins
-            return $ lookup name builtinSymbols
+unbindName :: String -> Scope -> Scope
+unbindName name scope = case enclosingScopes scope of
+    []      -> scope { globalScope = unbind (globalScope scope) }
+    (s:ss)  -> scope { enclosingScopes = unbind s : ss }
+  where
+    unbind = Map.delete name
 
-removeSymbol :: String -> Evaluator ()
-removeSymbol name = do
-    scope <- currentScope
-
-    let updatedScope = Map.delete name scope
-    modify $ \env -> env { scopes = updatedScope : tail (scopes env) }
-
-updateSymbol :: String -> Value -> Evaluator ()
-updateSymbol name value = do
-    scope <- currentScope
-
-    let updatedScope = Map.insert name value scope
-    modify $ \env -> env { scopes = updatedScope : tail (scopes env) }

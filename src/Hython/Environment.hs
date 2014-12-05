@@ -8,9 +8,7 @@ import Data.HashMap.Strict (HashMap)
 
 import Language.Python.Core
 
-data Frame = Frame String SymbolTable
-
-type SymbolTable = HashMap String Value
+data Frame = Frame String Scope
 
 type Evaluator = ContT () (ReaderT Config (StateT Environment IO))
 type EvaluatorCont = () -> Evaluator ()
@@ -22,12 +20,18 @@ data Environment = Environment {
     exceptHandler :: EvaluatorExceptCont,
     mainModule :: ModuleInfo,
     frames :: [Frame],
-    scopes :: [SymbolTable],
-    builtins :: [(String, Value)],
     fnReturn :: EvaluatorReturnCont,
     loopBreak :: EvaluatorCont,
     loopContinue :: EvaluatorCont
 }
+
+type SymbolTable = HashMap String Value
+
+data Scope = Scope {
+    enclosingScopes :: [SymbolTable],
+    globalScope     :: SymbolTable,
+    builtinScope    :: SymbolTable
+} deriving (Show)
 
 data Config = Config {
     tracingEnabled :: Bool

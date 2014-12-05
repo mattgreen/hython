@@ -19,10 +19,10 @@ import System.Environment
 import System.Exit
 import Text.Printf
 
-import Hython.Builtins hiding (builtins)
+import qualified Hython.AttributeDict as AttributeDict
+import Hython.Builtins
 import Hython.Classes
 import Hython.Environment
-import qualified Hython.Builtins (builtins)
 import Hython.Modules
 import Hython.Scoping
 import Language.Python.Core
@@ -41,14 +41,17 @@ defaultEnv :: IO Environment
 defaultEnv = do
     builtinsList <- Hython.Builtins.builtins
     moduleInfo <- newModuleInfo "__main__"
+    let scope = Scope {
+        enclosingScopes = [],
+        globalScope = Map.fromList [],
+        builtinScope = Map.fromList builtinsList
+    }
 
     return Environment {
         currentException = None,
         exceptHandler = defaultExceptionHandler,
         mainModule = moduleInfo,
-        builtins = builtinsList,
-        frames = [Frame "<module>" (Map.fromList [])],
-        scopes = [Map.fromList []],
+        frames = [Frame "<module>" scope],
         fnReturn = defaultReturnHandler,
         loopBreak = defaultBreakHandler,
         loopContinue = defaultContinueHandler
@@ -78,7 +81,10 @@ raiseError errorClassName message = do
     handler exception
 
 eval :: Statement -> Evaluator ()
-eval (Def name params body) = updateSymbol name function
+eval (Def name params body) = do
+    scope <- currentScope
+    updateScope $ bindName name function scope
+
   where
     function = Function name params body
 
@@ -86,14 +92,18 @@ eval (ModuleDef statements) = evalBlock statements
 
 eval (ClassDef name bases statements) = do
     baseClasses <- mapM evalExpr bases
+
     attributeDict <- withNewScope $
         evalBlock statements
 
-    updateSymbol name $ Class name baseClasses attributeDict
+    scope <- currentScope
+    updateScope $ bindName name (Class name baseClasses attributeDict) scope
 
-eval (Assignment (Name var) expr) = do
+eval (Assignment (Name name) expr) = do
     value <- evalExpr expr
-    updateSymbol var value
+    scope <- currentScope
+
+    updateScope $ bindName name value scope
 
 eval (Assignment (Attribute var attr) expr) = do
     value <- evalExpr expr
@@ -178,7 +188,7 @@ eval (Try exceptClauses block elseBlock finallyBlock) = do
         return None
 
     -- Unwind stack
-    modify $ \e -> e { exceptHandler = previousHandler, frames = unwindTo (frames e) (length $ frames env), scopes = scopes env }
+    modify $ \e -> e { exceptHandler = previousHandler, frames = unwindTo (frames e) (length $ frames env) }
 
     -- Search for matching handler
     handled <- case exception of
@@ -193,11 +203,12 @@ eval (Try exceptClauses block elseBlock finallyBlock) = do
                     let exceptionBound = name /= ""
 
                     modify $ \e -> e { exceptHandler = chainExceptHandler previousHandler (exceptHandler e) }
-                    when exceptionBound $ updateSymbol name exception
 
+                    when exceptionBound $ do
+                        scope <- currentScope
+                        updateScope $ bindName name exception scope
                     evalBlock handlerBlock
 
-                    when exceptionBound $ removeSymbol name
                     modify $ \e -> e { exceptHandler = previousHandler }
 
                     return True
@@ -278,10 +289,11 @@ eval (Expression e) = do
 evalExpr :: Expression -> Evaluator Value
 evalExpr (As expr binding) = do
     value <- evalExpr expr
+    scope <- currentScope
 
     case binding of
-        Name n  -> updateSymbol n value
-        _       -> fail "unhandled binding type"
+        Name n  -> updateScope $ bindName n value scope
+        _       -> raiseError "SystemError" "unhandled binding type"
 
     return value
 
@@ -488,13 +500,19 @@ evalExpr (RelativeImport _ _) = do
     unimplemented "relative import"
     return None
 
-evalExpr (Name var) = do
-    val <- lookupSymbol var
-    case val of
-        Just s  -> return s
-        Nothing -> do
-            raiseError "NameError" (printf "name '%s' is not defined" var)
+evalExpr (Name name) = do
+    scope <- getScope
+    case lookupName name scope of
+        Just obj    -> return obj
+        Nothing     -> do
+            raiseError "NameError" (printf "name '%s' is not defined" name)
             return None
+  where
+    getScope = do
+        currentFrames <- gets frames
+        return $ scopeOf (head currentFrames)
+
+    scopeOf (Frame _ s) = s
 
 evalExpr (Constant c) = return c
 
@@ -531,15 +549,18 @@ evalCall (BuiltinFn name) args = do
 evalCall (Function name params body) args = do
     env <- get
 
-    currentScopes <- gets scopes
-    let scope = Map.union (Map.fromList $ zip params args) $ last currentScopes
+    -- TODO: check args vs arity
+    let symbols = Map.fromList $ zip params args
+
+    scope <- currentScope
+    let functionScope = scope { enclosingScopes = [symbols] }
 
     callCC $ \returnCont -> do
         let returnHandler returnValue = do
             put env
             returnCont returnValue
 
-        modify $ \e -> e{ frames = Frame name scope : frames e, fnReturn = returnHandler, scopes = scope : currentScopes }
+        modify $ \e -> e{ frames = Frame name functionScope : frames e, fnReturn = returnHandler }
         evalBlock body
         returnHandler None
 
@@ -549,6 +570,42 @@ evalCall v _ = do
     s <- liftIO $ str v
     raiseError "SystemError" ("don't know how to call " ++ s)
     return None
+
+currentFrame :: Evaluator Frame
+currentFrame = do
+    currentFrames <- gets frames
+    return $ head currentFrames
+
+
+currentScope :: Evaluator Scope
+currentScope = do
+    frame <- currentFrame
+    return $ scopeOf frame
+
+  where
+    scopeOf (Frame _ s) = s
+
+withNewScope :: Evaluator () -> Evaluator AttributeDict
+withNewScope action = do
+    scope <- currentScope
+    updateScope $ pushEnclosingScope [] scope
+
+    _ <- action
+
+    updatedScope <- currentScope
+    let namespace = topmostScope updatedScope
+    updateScope $ popEnclosingScope scope
+
+    liftIO $ AttributeDict.fromList (Map.toList namespace)
+
+  where
+    topmostScope scope = head $ enclosingScopes scope
+
+updateScope :: Scope -> Evaluator ()
+updateScope scope = do
+    Frame name _ : fs <- gets frames
+
+    modify $ \e -> e { frames = Frame name scope : fs }
 
 interpret :: String -> String -> IO ()
 interpret _source code = do
