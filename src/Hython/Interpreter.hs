@@ -24,7 +24,7 @@ import Hython.Builtins
 import Hython.Classes
 import Hython.Environment
 import Hython.Modules
-import Hython.Scoping
+import Hython.NameResolution
 import Language.Python.Core
 import Language.Python.Parser
 
@@ -102,7 +102,6 @@ eval (ClassDef name bases statements) = do
 eval (Assignment (Name name) expr) = do
     value <- evalExpr expr
     scope <- currentScope
-
     updateScope $ bindName name value scope
 
 eval (Assignment (Attribute var attr) expr) = do
@@ -575,7 +574,6 @@ currentFrame :: Evaluator Frame
 currentFrame = do
     currentFrames <- gets frames
     return $ head currentFrames
-
 
 currentScope :: Evaluator Scope
 currentScope = do
