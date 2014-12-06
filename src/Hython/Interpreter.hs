@@ -277,9 +277,9 @@ eval (Assert e _) = do
     unless (isTrue result) $
         raiseError "AssertionError" ""
 
-eval (Del {}) = do
-    unimplemented "del keyword"
-    return ()
+eval (Del (Name name)) = do
+    scope <- currentScope
+    updateScope $ unbindName name scope
 
 eval (Expression e) = do
     _ <- evalExpr e
