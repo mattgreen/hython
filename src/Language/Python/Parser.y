@@ -167,7 +167,7 @@ funcdef
 
 -- parameters: '(' [typedargslist] ')'
 parameters
-    : '(' sepBy0(identifier, ',') ')' { $2 }
+    : '(' sepBy0(identifier, ',') ')' { map PositionalArg $2 }
 
 -- typedargslist: (tfpdef ['=' test] (',' tfpdef ['=' test])* [','
 --        ['*' [tfpdef] (',' tfpdef ['=' test])* [',' '**' tfpdef] | '**' tfpdef]]

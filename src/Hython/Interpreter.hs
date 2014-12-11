@@ -548,8 +548,10 @@ evalCall (BuiltinFn name) args = do
 evalCall (Function name params body) args = do
     env <- get
 
-    -- TODO: check args vs arity
-    let symbols = Map.fromList $ zip params args
+    when (length params /= length args) $
+        raiseError "TypeError" arityErrorMsg
+
+    let symbols = Map.fromList $ zip (map unwrapArg params) args
 
     scope <- currentScope
     let functionScope = scope { enclosingScopes = [symbols] }
@@ -564,6 +566,13 @@ evalCall (Function name params body) args = do
         returnHandler None
 
         return None
+
+  where
+    argCount = length args
+    paramCount = length params
+    arityErrorMsg = printf "%s() takes exactly %d arguments (%d given)" name paramCount argCount
+
+    unwrapArg (PositionalArg n) = n
 
 evalCall v _ = do
     s <- liftIO $ str v

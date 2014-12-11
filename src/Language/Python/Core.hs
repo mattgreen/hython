@@ -10,7 +10,7 @@ data Statement
     = Assignment Expression Expression
     | Expression Expression
     | If [IfClause] [Statement]
-    | Def String [String] [Statement]
+    | Def String [Arg] [Statement]
     | Del Expression
     | For Expression Expression Statements Statements
     | Raise Expression Expression
@@ -30,6 +30,9 @@ data Statement
     | ImportFrom Expression [Expression]
     | ModuleDef Statements
     deriving(Eq, Show)
+
+data Arg = PositionalArg String
+         deriving (Eq, Show)
 
 data IfClause = IfClause Expression [Statement] deriving (Eq, Show)
 
@@ -73,7 +76,7 @@ data Object
     | Imaginary (Complex Double)
     | Bool Bool
     | BuiltinFn String
-    | Function String [String] [Statement]
+    | Function String [Arg] [Statement]
     | Module ModuleInfo
     | Class String Objects AttributeDict
     | Object Object AttributeDict
