@@ -77,7 +77,7 @@ data Object
     | Bool Bool
     | BuiltinFn String
     | Function String [Arg] [Statement]
-    | Module String AttributeDict
+    | Module String String AttributeDict
     | Class String Objects AttributeDict
     | Object Object AttributeDict
     | Slice Object Object Object

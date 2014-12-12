@@ -17,8 +17,8 @@ type EvaluatorExceptCont = Object -> Evaluator ()
 
 data Environment = Environment {
     currentException :: Object,
+    currentFilename :: String,
     exceptHandler :: EvaluatorExceptCont,
-    mainModule :: ModuleInfo,
     frames :: [Frame],
     fnReturn :: EvaluatorReturnCont,
     loopBreak :: EvaluatorCont,

@@ -17,13 +17,13 @@ import Data.Maybe
 import Debug.Trace
 import System.Environment
 import System.Exit
+import System.FilePath.Posix
 import Text.Printf
 
 import qualified Hython.AttributeDict as AttributeDict
 import Hython.Builtins
 import Hython.Classes
 import Hython.Environment
-import Hython.Modules
 import Hython.NameResolution
 import Language.Python.Core
 import Language.Python.Parser
@@ -37,10 +37,9 @@ defaultConfig = do
 
     return Config { tracingEnabled = isJust tracing }
 
-defaultEnv :: IO Environment
-defaultEnv = do
+defaultEnv :: String -> IO Environment
+defaultEnv path = do
     builtinsList <- Hython.Builtins.builtins
-    moduleInfo <- newModuleInfo "__main__"
     let scope = Scope {
         enclosingScopes = [],
         globalScope = Map.fromList [],
@@ -49,8 +48,8 @@ defaultEnv = do
 
     return Environment {
         currentException = None,
+        currentFilename = path,
         exceptHandler = defaultExceptionHandler,
-        mainModule = moduleInfo,
         frames = [Frame "<module>" scope],
         fnReturn = defaultReturnHandler,
         loopBreak = defaultBreakHandler,
@@ -619,20 +618,27 @@ updateScope scope = do
 
 loadModule :: String -> Evaluator Object
 loadModule path = do
+    filename <- gets currentFilename
+    let modulePath = takeDirectory filename `combine` moduleFilename
+
     code <- liftIO $ readFile modulePath
+
+    -- TODO: rebind if exception is thrown
+    modify $ \e -> e { currentFilename = path }
+
     dict <- withNewScope $
         evalBlock $ parse code
 
-    return $ Module "TODO" dict
+    return $ Module moduleName path dict
 
   where
-    modulePath = hackRoot ++ map (\c -> if c == '.' then '/' else c) path ++ ".py"
-    hackRoot = "test/"
+    moduleFilename = map (\c -> if c == '.' then '/' else c) path ++ ".py"
+    moduleName = takeBaseName path
 
 interpret :: String -> String -> IO ()
-interpret _source code = do
+interpret path code = do
     config  <- defaultConfig
-    env     <- defaultEnv
+    env     <- defaultEnv path
 
     _ <- runStateT (runReaderT (runContT parseEval return) config) env
     return ()
