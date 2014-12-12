@@ -137,9 +137,12 @@ eval (If clauses elseBlock) = evalClauses clauses
             then evalBlock block
             else evalClauses rest
 
-eval (Import _) = do
-    unimplemented "import keyword"
+eval i@(Import exprs) = do
+    _modules <- mapM load exprs
     return ()
+
+  where
+    load (Name path) = loadModule path
 
 eval (ImportFrom _ _) = do
     unimplemented "from...import keyword"
@@ -614,6 +617,18 @@ updateScope scope = do
 
     modify $ \e -> e { frames = Frame name scope : fs }
 
+loadModule :: String -> Evaluator Object
+loadModule path = do
+    code <- liftIO $ readFile modulePath
+    dict <- withNewScope $
+        evalBlock $ parse code
+
+    return $ Module "TODO" dict
+
+  where
+    modulePath = hackRoot ++ map (\c -> if c == '.' then '/' else c) path ++ ".py"
+    hackRoot = "test/"
+
 interpret :: String -> String -> IO ()
 interpret _source code = do
     config  <- defaultConfig
@@ -623,4 +638,4 @@ interpret _source code = do
     return ()
 
   where
-    parseEval = eval (parse code)
+    parseEval = evalBlock (parse code)

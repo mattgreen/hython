@@ -154,7 +154,7 @@ exprOrTupleTuple(p)
 -- single_input: NEWLINE | simple_stmt | compound_stmt NEWLINE
 -- file_input: (NEWLINE | stmt)* ENDMARKER
 file_input
-    : many0(either(NEWLINE, stmt))  { ModuleDef $ foldl' (++) [] (rights $1) }
+    : many0(either(NEWLINE, stmt))  { foldl' (++) [] (rights $1) }
 
 -- eval_input: testlist NEWLINE* ENDMARKER
 -- 
