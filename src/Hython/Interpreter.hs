@@ -24,6 +24,7 @@ import qualified Hython.AttributeDict as AttributeDict
 import Hython.Builtins
 import Hython.Classes
 import Hython.Environment
+import Hython.Module
 import Hython.NameResolution
 import Language.Python.Core
 import Language.Python.Parser
@@ -619,7 +620,8 @@ updateScope scope = do
 loadModule :: String -> Evaluator Object
 loadModule path = do
     filename <- gets currentFilename
-    let modulePath = takeDirectory filename `combine` moduleFilename
+    let moduleName = getModuleName path
+    let modulePath = getModulePath filename path
 
     code <- liftIO $ readFile modulePath
 
@@ -630,10 +632,6 @@ loadModule path = do
         evalBlock $ parse code
 
     return $ Module moduleName path dict
-
-  where
-    moduleFilename = map (\c -> if c == '.' then '/' else c) path ++ ".py"
-    moduleName = takeBaseName path
 
 interpret :: String -> String -> IO ()
 interpret path code = do
