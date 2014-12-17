@@ -1,4 +1,4 @@
-module Hython.Environment
+module Hython.InterpreterState
 where
 
 import Control.Monad.Reader
@@ -8,22 +8,22 @@ import Data.HashMap.Strict (HashMap)
 
 import Language.Python.Core
 
-data Frame = Frame String Scope
-
-type Interpreter = ContT () (ReaderT Config (StateT Environment IO))
+type Interpreter = ContT () (ReaderT Config (StateT InterpreterState IO))
 type InterpreterCont = () -> Interpreter ()
 type InterpreterReturnCont = Object -> Interpreter ()
 type InterpreterExceptCont = Object -> Interpreter ()
 
-data Environment = Environment {
-    currentException :: Object,
-    currentFilename :: String,
-    exceptHandler :: InterpreterExceptCont,
-    frames :: [Frame],
-    fnReturn :: InterpreterReturnCont,
-    loopBreak :: InterpreterCont,
-    loopContinue :: InterpreterCont
-}
+data InterpreterState = InterpreterState
+    { currentException :: Object
+    , currentFilename :: String
+    , exceptHandler :: InterpreterExceptCont
+    , frames :: [Frame]
+    , fnReturn :: InterpreterReturnCont
+    , loopBreak :: InterpreterCont
+    , loopContinue :: InterpreterCont
+    }
+
+data Frame = Frame String Scope
 
 type SymbolTable = HashMap String Object
 

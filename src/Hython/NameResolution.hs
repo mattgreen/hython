@@ -5,7 +5,7 @@ import Control.Monad
 import qualified Data.HashMap.Strict as Map
 
 import Language.Python.Core
-import Hython.Environment
+import Hython.InterpreterState
 
 pushEnclosingScope :: [(String, Object)] -> Scope -> Scope
 pushEnclosingScope symbols scope =

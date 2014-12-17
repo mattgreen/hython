@@ -23,7 +23,7 @@ import Text.Printf
 import qualified Hython.AttributeDict as AttributeDict
 import Hython.Builtins
 import Hython.Classes
-import Hython.Environment
+import Hython.InterpreterState
 import Hython.Module
 import Hython.NameResolution
 import Language.Python.Core
@@ -38,8 +38,8 @@ defaultConfig = do
 
     return Config { tracingEnabled = isJust tracing }
 
-defaultEnv :: String -> IO Environment
-defaultEnv path = do
+defaultState :: String -> IO InterpreterState
+defaultState path = do
     builtinsList <- Hython.Builtins.builtins
     let scope = Scope {
         enclosingScopes = [],
@@ -47,7 +47,7 @@ defaultEnv path = do
         builtinScope = Map.fromList builtinsList
     }
 
-    return Environment {
+    return InterpreterState {
         currentException = None,
         currentFilename = path,
         exceptHandler = defaultExceptionHandler,
@@ -636,9 +636,9 @@ loadModule path = do
 interpret :: String -> String -> IO ()
 interpret path code = do
     config  <- defaultConfig
-    env     <- defaultEnv path
+    state   <- defaultState path
 
-    _ <- runStateT (runReaderT (runContT parseEval return) config) env
+    _ <- runStateT (runReaderT (runContT parseEval return) config) state
     return ()
 
   where
