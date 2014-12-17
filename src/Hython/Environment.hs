@@ -10,19 +10,19 @@ import Language.Python.Core
 
 data Frame = Frame String Scope
 
-type Evaluator = ContT () (ReaderT Config (StateT Environment IO))
-type EvaluatorCont = () -> Evaluator ()
-type EvaluatorReturnCont = Object -> Evaluator ()
-type EvaluatorExceptCont = Object -> Evaluator ()
+type Interpreter = ContT () (ReaderT Config (StateT Environment IO))
+type InterpreterCont = () -> Interpreter ()
+type InterpreterReturnCont = Object -> Interpreter ()
+type InterpreterExceptCont = Object -> Interpreter ()
 
 data Environment = Environment {
     currentException :: Object,
     currentFilename :: String,
-    exceptHandler :: EvaluatorExceptCont,
+    exceptHandler :: InterpreterExceptCont,
     frames :: [Frame],
-    fnReturn :: EvaluatorReturnCont,
-    loopBreak :: EvaluatorCont,
-    loopContinue :: EvaluatorCont
+    fnReturn :: InterpreterReturnCont,
+    loopBreak :: InterpreterCont,
+    loopContinue :: InterpreterCont
 }
 
 type SymbolTable = HashMap String Object

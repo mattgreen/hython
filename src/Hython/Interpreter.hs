@@ -29,7 +29,7 @@ import Hython.NameResolution
 import Language.Python.Core
 import Language.Python.Parser
 
-unimplemented :: String -> Evaluator ()
+unimplemented :: String -> Interpreter ()
 unimplemented s = raiseError "NotImplementedError" (s ++ " not yet implemented")
 
 defaultConfig :: IO Config
@@ -57,21 +57,21 @@ defaultEnv path = do
         loopContinue = defaultContinueHandler
     }
 
-defaultExceptionHandler :: Object -> Evaluator ()
+defaultExceptionHandler :: Object -> Interpreter ()
 defaultExceptionHandler _exception = liftIO $ do
     putStrLn "Exception: <msg>"
     exitFailure
 
-defaultBreakHandler :: () -> Evaluator ()
+defaultBreakHandler :: () -> Interpreter ()
 defaultBreakHandler () = raiseError "SyntaxError" "'break' outside loop"
 
-defaultContinueHandler :: () -> Evaluator ()
+defaultContinueHandler :: () -> Interpreter ()
 defaultContinueHandler () = raiseError "SyntaxError" "'continue' not properly in loop"
 
-defaultReturnHandler :: Object -> Evaluator ()
+defaultReturnHandler :: Object -> Interpreter ()
 defaultReturnHandler _ = raiseError "SyntaxError" "'return' outside function"
 
-raiseError :: String -> String -> Evaluator ()
+raiseError :: String -> String -> Interpreter ()
 raiseError errorClassName message = do
     errorClass <- evalExpr (Name errorClassName)
     exception <- evalCall errorClass [String message]
@@ -80,7 +80,7 @@ raiseError errorClassName message = do
     handler <- gets exceptHandler
     handler exception
 
-eval :: Statement -> Evaluator ()
+eval :: Statement -> Interpreter ()
 eval (Def name params body) = do
     scope <- currentScope
     updateScope $ bindName name function scope
@@ -288,7 +288,7 @@ eval (Expression e) = do
     _ <- evalExpr e
     return ()
 
-evalExpr :: Expression -> Evaluator Object
+evalExpr :: Expression -> Interpreter Object
 evalExpr (As expr binding) = do
     value <- evalExpr expr
     scope <- currentScope
@@ -518,10 +518,10 @@ evalExpr (Name name) = do
 
 evalExpr (Constant c) = return c
 
-evalBlock :: [Statement] -> Evaluator ()
+evalBlock :: [Statement] -> Interpreter ()
 evalBlock = mapM_ traceEval
   where
-    traceEval :: Statement -> Evaluator ()
+    traceEval :: Statement -> Interpreter ()
     traceEval s = do
         tracing <- asks tracingEnabled
         if tracing
@@ -530,7 +530,7 @@ evalBlock = mapM_ traceEval
 
     traceStmt s = "*** Evaluating: " ++ show s
 
-evalCall :: Object -> [Object] -> Evaluator Object
+evalCall :: Object -> [Object] -> Interpreter Object
 evalCall cls@(Class {}) args = do
     object <- liftIO $ newObject cls
 
@@ -582,12 +582,12 @@ evalCall v _ = do
     raiseError "SystemError" ("don't know how to call " ++ s)
     return None
 
-currentFrame :: Evaluator Frame
+currentFrame :: Interpreter Frame
 currentFrame = do
     currentFrames <- gets frames
     return $ head currentFrames
 
-currentScope :: Evaluator Scope
+currentScope :: Interpreter Scope
 currentScope = do
     frame <- currentFrame
     return $ scopeOf frame
@@ -595,7 +595,7 @@ currentScope = do
   where
     scopeOf (Frame _ s) = s
 
-withNewScope :: Evaluator () -> Evaluator AttributeDict
+withNewScope :: Interpreter () -> Interpreter AttributeDict
 withNewScope action = do
     scope <- currentScope
     updateScope $ pushEnclosingScope [] scope
@@ -611,13 +611,13 @@ withNewScope action = do
   where
     topmostScope scope = head $ enclosingScopes scope
 
-updateScope :: Scope -> Evaluator ()
+updateScope :: Scope -> Interpreter ()
 updateScope scope = do
     Frame name _ : fs <- gets frames
 
     modify $ \e -> e { frames = Frame name scope : fs }
 
-loadModule :: String -> Evaluator Object
+loadModule :: String -> Interpreter Object
 loadModule path = do
     filename <- gets currentFilename
     let moduleName = getModuleName path
