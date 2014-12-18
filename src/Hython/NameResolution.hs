@@ -1,42 +1,43 @@
 module Hython.NameResolution
 where
 
-import Control.Monad
-import qualified Data.HashMap.Strict as Map
-
 import Language.Python.Core
+import qualified Hython.AttributeDict as AttributeDict
 import Hython.InterpreterState
 
-pushEnclosingScope :: [(String, Object)] -> Scope -> Scope
-pushEnclosingScope symbols scope =
-    scope { enclosingScopes = Map.fromList symbols : enclosingScopes scope }
+getActiveScope :: Scope -> AttributeDict
+getActiveScope scope = do
+    if activeScope scope == ModuleScope
+        then moduleScope scope
+        else localScope scope
 
-popEnclosingScope :: Scope -> Scope
-popEnclosingScope scope =
-    scope { enclosingScopes = remainingScopes (enclosingScopes scope) }
+bindName :: String -> Object -> Scope -> IO Scope
+bindName name object scope = do
+    AttributeDict.update name object dict
+    return $ scope
   where
-    remainingScopes [] = []
-    remainingScopes (_:ss) = ss
+    dict = getActiveScope scope
 
-bindName :: String -> Object -> Scope -> Scope
-bindName name object scope = case enclosingScopes scope of
-    []      -> scope { globalScope = bind $ globalScope scope }
-    (s:ss)  -> scope { enclosingScopes = bind s : ss }
-  where
-    bind = Map.insert name object
-
-lookupName :: String -> Scope -> Maybe Object
+lookupName :: String -> Scope -> IO (Maybe Object)
 lookupName name scope = do
-    let currentScopes = enclosingScopes scope
-
-    lookupIn $ currentScopes ++ [globalScope scope, builtinScope scope]
+    result <- lookup scopes
+    return result
   where
-    lookupIn scopes = foldr (mplus . Map.lookup name) Nothing scopes
+    lookup :: [AttributeDict] -> IO (Maybe Object)
+    lookup (d:ds) = do
+        obj <- AttributeDict.lookup name d
+        case obj of
+            Just _  -> return obj
+            Nothing -> lookup ds
+    lookup [] = return Nothing
 
-unbindName :: String -> Scope -> Scope
-unbindName name scope = case enclosingScopes scope of
-    []      -> scope { globalScope = unbind (globalScope scope) }
-    (s:ss)  -> scope { enclosingScopes = unbind s : ss }
+    scopes = case activeScope scope of
+        ModuleScope -> [moduleScope scope, builtinScope scope]
+        _           -> [localScope scope, moduleScope scope, builtinScope scope]
+
+unbindName :: String -> Scope -> IO Scope
+unbindName name scope = do
+    AttributeDict.delete name dict
+    return scope
   where
-    unbind = Map.delete name
-
+    dict = getActiveScope scope

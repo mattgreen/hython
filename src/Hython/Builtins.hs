@@ -128,7 +128,7 @@ str (Imaginary v)
     | otherwise                 = return $ show v
 str (Function name _ _)         = return $ printf "<%s>" name
 str (BuiltinFn name)            = return $ printf "<built-in function %s>" name
-str (Module name _ _)           = return $ printf "<module '%s'>" name
+str (ModuleObj name _ _)        = return $ printf "<module '%s'>" name
 str (Class name _ _)            = return $ printf "<class '__main__.%s'>" name
 str (Object (Class name _ _) _) = return $ printf "<%s object>" name
 str (Object _ _)                = return "<invalid object>"

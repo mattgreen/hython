@@ -12,12 +12,10 @@ import Control.Monad.Trans.Cont hiding (cont)
 import Data.Bits
 import Data.Fixed
 import Data.IORef
-import qualified Data.HashMap.Strict as Map
 import Data.Maybe
 import Debug.Trace
 import System.Environment
 import System.Exit
-import System.FilePath.Posix
 import Text.Printf
 
 import qualified Hython.AttributeDict as AttributeDict
@@ -36,16 +34,25 @@ defaultConfig :: IO Config
 defaultConfig = do
     tracing <- lookupEnv "TRACE"
 
-    return Config { tracingEnabled = isJust tracing }
+    return Config {
+        tracingEnabled = isJust tracing
+    }
 
 defaultState :: String -> IO InterpreterState
 defaultState path = do
-    builtinsList <- Hython.Builtins.builtins
+    builtinsList    <- Hython.Builtins.builtins
+    mainModuleScope <- AttributeDict.empty
+    newLocalScope   <- AttributeDict.empty
+    newBuiltinScope <- AttributeDict.fromList builtinsList
+
     let scope = Scope {
-        enclosingScopes = [],
-        globalScope = Map.fromList [],
-        builtinScope = Map.fromList builtinsList
+        localScope = newLocalScope,
+        moduleScope = mainModuleScope,
+        builtinScope = newBuiltinScope,
+        activeScope = ModuleScope
     }
+
+    let mainModule = Module "__main__" path mainModuleScope
 
     return InterpreterState {
         currentException = None,
@@ -53,6 +60,8 @@ defaultState path = do
         exceptHandler = defaultExceptionHandler,
         frames = [Frame "<module>" scope],
         fnReturn = defaultReturnHandler,
+        modules = [mainModule],
+        currentModule = mainModule,
         loopBreak = defaultBreakHandler,
         loopContinue = defaultContinueHandler
     }
@@ -83,7 +92,8 @@ raiseError errorClassName message = do
 eval :: Statement -> Interpreter ()
 eval (Def name params body) = do
     scope <- currentScope
-    updateScope $ bindName name function scope
+    liftIO $ bindName name function scope
+    return ()
 
   where
     function = Function name params body
@@ -97,12 +107,14 @@ eval (ClassDef name bases statements) = do
         evalBlock statements
 
     scope <- currentScope
-    updateScope $ bindName name (Class name baseClasses attributeDict) scope
+    liftIO $ bindName name (Class name baseClasses attributeDict) scope
+    return ()
 
 eval (Assignment (Name name) expr) = do
     value <- evalExpr expr
     scope <- currentScope
-    updateScope $ bindName name value scope
+    liftIO $ bindName name value scope
+    return ()
 
 eval (Assignment (Attribute var attr) expr) = do
     value <- evalExpr expr
@@ -137,7 +149,7 @@ eval (If clauses elseBlock) = evalClauses clauses
             then evalBlock block
             else evalClauses rest
 
-eval i@(Import exprs) = do
+eval (Import exprs) = do
     _modules <- mapM load exprs
     return ()
 
@@ -208,7 +220,8 @@ eval (Try exceptClauses block elseBlock finallyBlock) = do
 
                     when exceptionBound $ do
                         scope <- currentScope
-                        updateScope $ bindName name exception scope
+                        liftIO $ bindName name exception scope
+                        return ()
                     evalBlock handlerBlock
 
                     modify $ \e -> e { exceptHandler = previousHandler }
@@ -282,7 +295,8 @@ eval (Assert e _) = do
 
 eval (Del (Name name)) = do
     scope <- currentScope
-    updateScope $ unbindName name scope
+    liftIO $ unbindName name scope
+    return ()
 
 eval (Expression e) = do
     _ <- evalExpr e
@@ -294,7 +308,9 @@ evalExpr (As expr binding) = do
     scope <- currentScope
 
     case binding of
-        Name n  -> updateScope $ bindName n value scope
+        Name n  -> do
+            liftIO $ bindName n value scope
+            return ()
         _       -> raiseError "SystemError" "unhandled binding type"
 
     return value
@@ -503,9 +519,11 @@ evalExpr (RelativeImport _ _) = do
     return None
 
 evalExpr (Name name) = do
-    scope <- getScope
-    case lookupName name scope of
-        Just obj    -> return obj
+    scope   <- getScope
+    obj     <- liftIO $ lookupName name scope
+
+    case obj of
+        Just o      -> return o
         Nothing     -> do
             raiseError "NameError" (printf "name '%s' is not defined" name)
             return None
@@ -554,10 +572,10 @@ evalCall (Function name params body) args = do
     when (length params /= length args) $
         raiseError "TypeError" arityErrorMsg
 
-    let symbols = Map.fromList $ zip (map unwrapArg params) args
+    symbols <- liftIO $ AttributeDict.fromList $ zip (map unwrapArg params) args
 
     scope <- currentScope
-    let functionScope = scope { enclosingScopes = [symbols] }
+    let functionScope = scope { localScope = symbols, activeScope = LocalScope }
 
     callCC $ \returnCont -> do
         let returnHandler returnValue = do
@@ -597,19 +615,14 @@ currentScope = do
 
 withNewScope :: Interpreter () -> Interpreter AttributeDict
 withNewScope action = do
-    scope <- currentScope
-    updateScope $ pushEnclosingScope [] scope
+    scope   <- currentScope
+    dict    <- liftIO $ AttributeDict.empty
+    updateScope $ scope { localScope = dict, activeScope = LocalScope }
 
     _ <- action
 
-    updatedScope <- currentScope
-    let namespace = topmostScope updatedScope
-    updateScope $ popEnclosingScope scope
-
-    liftIO $ AttributeDict.fromList (Map.toList namespace)
-
-  where
-    topmostScope scope = head $ enclosingScopes scope
+    updateScope scope
+    return dict
 
 updateScope :: Scope -> Interpreter ()
 updateScope scope = do
@@ -631,7 +644,7 @@ loadModule path = do
     dict <- withNewScope $
         evalBlock $ parse code
 
-    return $ Module moduleName path dict
+    return $ ModuleObj moduleName path dict
 
 interpret :: String -> String -> IO ()
 interpret path code = do

@@ -4,7 +4,6 @@ where
 import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Trans.Cont hiding (cont)
-import Data.HashMap.Strict (HashMap)
 
 import Language.Python.Core
 
@@ -14,24 +13,36 @@ type InterpreterReturnCont = Object -> Interpreter ()
 type InterpreterExceptCont = Object -> Interpreter ()
 
 data InterpreterState = InterpreterState
-    { currentException :: Object
-    , currentFilename :: String
-    , exceptHandler :: InterpreterExceptCont
-    , frames :: [Frame]
-    , fnReturn :: InterpreterReturnCont
-    , loopBreak :: InterpreterCont
-    , loopContinue :: InterpreterCont
+    { currentException  :: Object
+    , currentFilename   :: String
+    , exceptHandler     :: InterpreterExceptCont
+    , frames            :: [Frame]
+    , modules           :: [Module]
+    , currentModule     :: Module
+    , fnReturn          :: InterpreterReturnCont
+    , loopBreak         :: InterpreterCont
+    , loopContinue      :: InterpreterCont
+    }
+
+data Scope = Scope
+    { localScope        :: AttributeDict
+    , moduleScope       :: AttributeDict
+    , builtinScope      :: AttributeDict
+    , activeScope       :: ActiveScope
+    } deriving (Show)
+
+data ActiveScope
+    = ModuleScope
+    | LocalScope
+    deriving (Eq, Show)
+
+data Module = Module
+    { moduleName        :: String
+    , modulePath        :: String
+    , moduleDict        :: AttributeDict
     }
 
 data Frame = Frame String Scope
-
-type SymbolTable = HashMap String Object
-
-data Scope = Scope {
-    enclosingScopes :: [SymbolTable],
-    globalScope     :: SymbolTable,
-    builtinScope    :: SymbolTable
-} deriving (Show)
 
 data Config = Config {
     tracingEnabled :: Bool
