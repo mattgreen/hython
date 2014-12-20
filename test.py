@@ -9,8 +9,19 @@ def output_of(args):
 
 exit_status = 0
 
-for testcase in glob.glob("test/*.py"):
-    print("Testing %s..." % os.path.basename(testcase))
+testcases = []
+for root, dirs, files in os.walk("test"):
+    for file in files:
+        if not file.endswith(".py"):
+            continue
+
+        testcase = os.path.join(root, file)
+        testcases.append(testcase)
+
+testcases.sort()
+
+for testcase in testcases:
+    print("Testing %s..." % testcase.replace("test/", ""))
 
     python_cmdline = ["python3", testcase]
     python_output = output_of(python_cmdline)
