@@ -161,6 +161,14 @@ eval (Import exprs) = do
         let moduleObj = ModuleObj newModule
         liftIO $ bindName (moduleName newModule) moduleObj scope
 
+    load (As (Name path) (Name name)) = do
+        newModule <- loadModule path $ \code dict ->
+            evalBlockWithNewScope (parse code) dict
+
+        scope <- currentScope
+        let moduleObj = ModuleObj newModule
+        liftIO $ bindName name moduleObj scope
+
 eval (ImportFrom _ _) = do
     unimplemented "from...import keyword"
     return ()
