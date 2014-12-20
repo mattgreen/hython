@@ -438,14 +438,24 @@ evalExpr (BinOp op l r) = do
     right <- evalExpr r
     evalExpr $ BinOp op (Constant left) (Constant right)
 
-evalExpr (Call (Attribute obj name) args) = do
-    receiver <- evalExpr obj
+evalExpr (Call (Attribute expr name) args) = do
+    obj <- evalExpr expr
     evalArgs <- mapM evalExpr args
-    method <- liftIO $ getAttr name receiver
+    fn <- liftIO $ getAttr name obj
 
-    case method of
-        Just f  -> evalCall f (receiver: evalArgs)
-        Nothing -> fail $ "Unknown method: " ++ name
+    case fn of
+        Just f -> case obj of
+            (ModuleObj m)   -> evalCall f evalArgs
+            (Object {})     -> evalCall f (obj : evalArgs)
+            _               -> do
+                raiseError "SystemError" "trying to call a non-callable object"
+                return None
+
+        Nothing -> do
+            raiseError "AttributeError" (errorMsgFor obj)
+            return None
+  where
+      errorMsgFor obj = printf "object has no attribute '%s'" name
 
 evalExpr (Call e args) = do
     f <- evalExpr e

@@ -153,9 +153,9 @@ str' v = do
     return $ String s
 
 getAttr :: String -> Object -> IO (Maybe Object)
-getAttr attr (Object _ ref) = AttributeDict.lookup attr ref
-getAttr attr (Class _ _ ref) = AttributeDict.lookup attr ref
-getAttr attr (ModuleObj m) = AttributeDict.lookup attr (moduleDict m)
+getAttr attr (Object _ ref)     = AttributeDict.lookup attr ref
+getAttr attr (Class _ _ ref)    = AttributeDict.lookup attr ref
+getAttr attr (ModuleObj m)      = AttributeDict.lookup attr (moduleDict m)
 getAttr _ _ = fail "Only classes and objects have attrs!"
 
 setAttr :: String -> Object -> Object -> IO ()
