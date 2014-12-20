@@ -8,6 +8,7 @@ import System.FilePath.Posix
 import Language.Python.Core
 
 import qualified Hython.AttributeDict as AttributeDict
+import Hython.Environment
 import Hython.InterpreterState
 
 loadModule :: String -> (String -> AttributeDict -> Interpreter ()) -> Interpreter Module
@@ -29,8 +30,14 @@ loadModule importPath action = do
                 moduleDict = dict
             }
 
+            scope <- currentScope
+
             modify $ \s -> s { currentModule = newModule }
+            updateScope $ scope { moduleScope = dict }
+
             action code dict
+
+            updateScope $ scope { moduleScope = moduleScope scope }
             modify $ \s -> s { currentModule = current }
 
             return newModule

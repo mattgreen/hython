@@ -21,6 +21,7 @@ import Text.Printf
 import qualified Hython.AttributeDict as AttributeDict
 import Hython.Builtins
 import Hython.Classes
+import Hython.Environment
 import Hython.InterpreterState
 import Hython.Module
 import Hython.NameResolution
@@ -616,31 +617,12 @@ evalCall v _ = do
     raiseError "SystemError" ("don't know how to call " ++ s)
     return None
 
-currentFrame :: Interpreter Frame
-currentFrame = do
-    currentFrames <- gets frames
-    return $ head currentFrames
-
-currentScope :: Interpreter Scope
-currentScope = do
-    frame <- currentFrame
-    return $ scopeOf frame
-
-  where
-    scopeOf (Frame _ s) = s
-
 evalBlockWithNewScope :: [Statement] -> AttributeDict -> Interpreter ()
 evalBlockWithNewScope statements dict = do
     scope <- currentScope
     updateScope $ scope { localScope = dict, activeScope = LocalScope }
     evalBlock statements
     updateScope scope
-
-updateScope :: Scope -> Interpreter ()
-updateScope scope = do
-    Frame name _ : fs <- gets frames
-
-    modify $ \e -> e { frames = Frame name scope : fs }
 
 interpret :: String -> String -> IO ()
 interpret path code = do

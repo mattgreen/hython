@@ -1,5 +1,6 @@
 import imported
 import imported
+import fib
 
 print("OK")
 print(imported.value)
