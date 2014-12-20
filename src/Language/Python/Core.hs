@@ -139,11 +139,6 @@ data ComparisonOperator
     | IsNot
     deriving(Eq, Show)
 
-data ModuleInfo = ModuleInfo {
-    moduleName :: String,
-    moduleDict :: AttributeDict
-} deriving(Eq, Show)
-
 instance Show (IORef a) where
     show _ = "<ioref>"
 

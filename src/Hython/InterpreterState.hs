@@ -14,7 +14,6 @@ type InterpreterExceptCont = Object -> Interpreter ()
 
 data InterpreterState = InterpreterState
     { currentException  :: Object
-    , currentFilename   :: String
     , exceptHandler     :: InterpreterExceptCont
     , frames            :: [Frame]
     , modules           :: [Module]

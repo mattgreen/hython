@@ -7,7 +7,7 @@ import Prelude hiding (break)
 
 import Control.Monad
 import Control.Monad.Reader
-import Control.Monad.State
+import Control.Monad.State hiding (state)
 import Control.Monad.Trans.Cont hiding (cont)
 import Data.Bits
 import Data.Fixed
@@ -56,7 +56,6 @@ defaultState path = do
 
     return InterpreterState {
         currentException = None,
-        currentFilename = path,
         exceptHandler = defaultExceptionHandler,
         frames = [Frame "<module>" scope],
         fnReturn = defaultReturnHandler,
@@ -102,12 +101,11 @@ eval (ModuleDef statements) = evalBlock statements
 
 eval (ClassDef name bases statements) = do
     baseClasses <- mapM evalExpr bases
-
-    attributeDict <- withNewScope $
-        evalBlock statements
+    dict <- liftIO AttributeDict.empty
+    evalBlockWithNewScope statements dict
 
     scope <- currentScope
-    liftIO $ bindName name (Class name baseClasses attributeDict) scope
+    liftIO $ bindName name (Class name baseClasses dict) scope
     return ()
 
 eval (Assignment (Name name) expr) = do
@@ -150,11 +148,12 @@ eval (If clauses elseBlock) = evalClauses clauses
             else evalClauses rest
 
 eval (Import exprs) = do
-    _modules <- mapM load exprs
-    return ()
+    loadedModules <- mapM load exprs
+    modify $ \s -> s { modules = modules s ++ loadedModules }
 
   where
-    load (Name path) = loadModule path
+    load (Name path) = loadModule path $ \code dict ->
+        evalBlockWithNewScope (parse code) dict
 
 eval (ImportFrom _ _) = do
     unimplemented "from...import keyword"
@@ -613,38 +612,18 @@ currentScope = do
   where
     scopeOf (Frame _ s) = s
 
-withNewScope :: Interpreter () -> Interpreter AttributeDict
-withNewScope action = do
-    scope   <- currentScope
-    dict    <- liftIO $ AttributeDict.empty
+evalBlockWithNewScope :: [Statement] -> AttributeDict -> Interpreter ()
+evalBlockWithNewScope statements dict = do
+    scope <- currentScope
     updateScope $ scope { localScope = dict, activeScope = LocalScope }
-
-    _ <- action
-
+    evalBlock statements
     updateScope scope
-    return dict
 
 updateScope :: Scope -> Interpreter ()
 updateScope scope = do
     Frame name _ : fs <- gets frames
 
     modify $ \e -> e { frames = Frame name scope : fs }
-
-loadModule :: String -> Interpreter Object
-loadModule path = do
-    filename <- gets currentFilename
-    let moduleName = getModuleName path
-    let modulePath = getModulePath filename path
-
-    code <- liftIO $ readFile modulePath
-
-    -- TODO: rebind if exception is thrown
-    modify $ \e -> e { currentFilename = path }
-
-    dict <- withNewScope $
-        evalBlock $ parse code
-
-    return $ ModuleObj moduleName path dict
 
 interpret :: String -> String -> IO ()
 interpret path code = do
