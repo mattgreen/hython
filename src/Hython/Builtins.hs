@@ -161,6 +161,7 @@ getAttr _ _ = fail "Only classes and objects have attrs!"
 setAttr :: String -> Object -> Object -> IO ()
 setAttr attr value (Object _ ref)   = AttributeDict.update attr value ref
 setAttr attr value (Class _ _ ref)  = AttributeDict.update attr value ref
+setAttr attr value (ModuleObj m)    = AttributeDict.update attr value (moduleDict m)
 setAttr _ _ _                       = fail "Only objects have attrs!"
 
 
