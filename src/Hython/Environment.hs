@@ -22,5 +22,5 @@ updateScope :: Scope -> Interpreter ()
 updateScope scope = do
     Frame name _ : fs <- gets frames
 
-    modify $ \e -> e { frames = Frame name scope : fs }
+    modify $ \s -> s { frames = Frame name scope : fs }
 

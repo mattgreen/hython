@@ -175,7 +175,7 @@ eval (Raise expr _from) = do
 
     if isSubClass (classOf exception) baseException
         then do
-            modify $ \e -> e{ currentException = exception }
+            modify $ \s -> s { currentException = exception }
 
             handler <- gets exceptHandler
             handler exception
@@ -198,16 +198,16 @@ eval (Return expression) = do
     returnCont value
 
 eval (Try exceptClauses block elseBlock finallyBlock) = do
-    env <- get
+    state <- get
     previousHandler <- gets exceptHandler
 
     exception <- callCC $ \handler -> do
-        modify $ \e -> e { exceptHandler = handler, fnReturn = chain e fnReturn, loopBreak = chain e loopBreak, loopContinue = chain e loopContinue }
+        modify $ \s -> s { exceptHandler = handler, fnReturn = chain s fnReturn, loopBreak = chain s loopBreak, loopContinue = chain s loopContinue }
         evalBlock block
         return None
 
     -- Unwind stack
-    modify $ \e -> e { exceptHandler = previousHandler, frames = unwindTo (frames e) (length $ frames env) }
+    modify $ \s -> s { exceptHandler = previousHandler, frames = unwindTo (frames s) (length $ frames state) }
 
     -- Search for matching handler
     handled <- case exception of
@@ -221,7 +221,7 @@ eval (Try exceptClauses block elseBlock finallyBlock) = do
                 Just (ExceptClause _ name handlerBlock) -> do
                     let exceptionBound = name /= ""
 
-                    modify $ \e -> e { exceptHandler = chainExceptHandler previousHandler (exceptHandler e) }
+                    modify $ \s -> s { exceptHandler = chainExceptHandler previousHandler (exceptHandler s) }
 
                     when exceptionBound $ do
                         scope <- currentScope
@@ -229,26 +229,26 @@ eval (Try exceptClauses block elseBlock finallyBlock) = do
                         return ()
                     evalBlock handlerBlock
 
-                    modify $ \e -> e { exceptHandler = previousHandler }
+                    modify $ \s -> s { exceptHandler = previousHandler }
 
                     return True
 
                 Nothing -> return False
 
-    modify $ \e -> e { exceptHandler = previousHandler }
+    modify $ \s -> s { exceptHandler = previousHandler }
     evalBlock finallyBlock
 
     unless handled $
         previousHandler exception
 
   where
-    chain env fn arg = do
-        let handler = fn env
+    chain state fn arg = do
+        let handler = fn state
         evalBlock finallyBlock
         handler arg
 
     chainExceptHandler previous handler arg = do
-        modify $ \e -> e{ exceptHandler = previous }
+        modify $ \s -> s { exceptHandler = previous }
         evalBlock finallyBlock
         handler arg
 
@@ -264,15 +264,15 @@ eval (Try exceptClauses block elseBlock finallyBlock) = do
       | otherwise                   = stackFrames
 
 eval (While condition block elseBlock) = do
-    env <- get
+    state <- get
 
     callCC $ \breakCont ->
         fix $ \loop -> do
             callCC $ \continueCont -> do
-                let breakHandler = restoreHandler env breakCont
-                let continueHandler = restoreHandler env continueCont
+                let breakHandler = restoreHandler state breakCont
+                let continueHandler = restoreHandler state continueCont
 
-                modify $ \e -> e{ loopBreak = breakHandler, loopContinue = continueHandler }
+                modify $ \s -> s { loopBreak = breakHandler, loopContinue = continueHandler }
 
                 result <- evalExpr condition
                 unless (isTrue result) $ do
@@ -282,8 +282,8 @@ eval (While condition block elseBlock) = do
             loop
   where
     -- TODO: shouldn't we be putting the previous break/continue back?
-    restoreHandler env cont value = do
-        modify $ \e -> e{ exceptHandler = exceptHandler env }
+    restoreHandler state cont value = do
+        modify $ \s -> s { exceptHandler = exceptHandler state }
         cont value
 
 eval (With {}) = do
@@ -582,7 +582,7 @@ evalCall (BuiltinFn name) args = do
     liftIO $ fromJust fn args
 
 evalCall (Function name params body) args = do
-    env <- get
+    state <- get
 
     when (length params /= length args) $
         raiseError "TypeError" arityErrorMsg
@@ -594,10 +594,10 @@ evalCall (Function name params body) args = do
 
     callCC $ \returnCont -> do
         let returnHandler returnValue = do
-            put env
+            put state
             returnCont returnValue
 
-        modify $ \e -> e{ frames = Frame name functionScope : frames e, fnReturn = returnHandler }
+        modify $ \s -> s { frames = Frame name functionScope : frames s, fnReturn = returnHandler }
         evalBlock body
         returnHandler None
 
