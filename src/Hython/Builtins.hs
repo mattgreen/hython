@@ -32,6 +32,7 @@ builtins = do
     referenceError <- newClass "ReferenceError" [exception]
     runtimeError <- newClass "RuntimeError" [exception]
     syntaxError <- newClass "SyntaxError" [exception]
+    systemError <- newClass "SystemError" [exception]
     typeError <- newClass "TypeError" [exception]
     valueError <- newClass "ValueError" [exception]
     warning <- newClass "Warning" [exception]
@@ -52,6 +53,7 @@ builtins = do
                           ("OSError", osError),
                           ("ReferenceError", referenceError),
                           ("RuntimeError", runtimeError),
+                          ("SystemError", systemError),
                           ("SyntaxError", syntaxError),
                           ("TypeError", typeError),
                           ("ValueError", valueError),
