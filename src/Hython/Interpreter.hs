@@ -149,19 +149,17 @@ eval (If clauses elseBlock) = evalClauses clauses
             else evalClauses rest
 
 eval (Import exprs) = do
-    _modules <- mapM load exprs
+    mapM_ load exprs
     return ()
 
   where
     load (Name path) = do
         newModule <- loadModule path $ \code dict ->
             evalBlockWithNewScope (parse code) dict
-        scope <- currentScope
 
+        scope <- currentScope
         let moduleObj = ModuleObj newModule
         liftIO $ bindName (moduleName newModule) moduleObj scope
-
-        return newModule
 
 eval (ImportFrom _ _) = do
     unimplemented "from...import keyword"
