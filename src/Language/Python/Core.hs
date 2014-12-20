@@ -77,7 +77,7 @@ data Object
     | Bool Bool
     | BuiltinFn String
     | Function String [Arg] [Statement]
-    | ModuleObj String String AttributeDict
+    | ModuleObj Module
     | Class String Objects AttributeDict
     | Object Object AttributeDict
     | Slice Object Object Object
@@ -87,6 +87,12 @@ data Object
     deriving(Eq, Show)
 
 type AttributeDict = IORef (HashMap String (IORef Object))
+
+data Module = Module
+    { moduleName        :: String
+    , modulePath        :: String
+    , moduleDict        :: AttributeDict
+    } deriving (Eq, Show)
 
 data UnaryOperator
     = Not

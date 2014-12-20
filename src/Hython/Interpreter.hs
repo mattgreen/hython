@@ -152,8 +152,15 @@ eval (Import exprs) = do
     modify $ \s -> s { modules = modules s ++ loadedModules }
 
   where
-    load (Name path) = loadModule path $ \code dict ->
-        evalBlockWithNewScope (parse code) dict
+    load (Name path) = do
+        newModule <- loadModule path $ \code dict ->
+            evalBlockWithNewScope (parse code) dict
+        scope <- currentScope
+
+        let moduleObj = ModuleObj newModule
+        liftIO $ bindName (moduleName newModule) moduleObj scope
+
+        return newModule
 
 eval (ImportFrom _ _) = do
     unimplemented "from...import keyword"

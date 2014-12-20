@@ -35,12 +35,6 @@ data ActiveScope
     | LocalScope
     deriving (Eq, Show)
 
-data Module = Module
-    { moduleName        :: String
-    , modulePath        :: String
-    , moduleDict        :: AttributeDict
-    }
-
 data Frame = Frame String Scope
 
 data Config = Config {
