@@ -3,12 +3,8 @@ where
 
 import Control.Monad.State
 
+import Hython.Frame
 import Hython.InterpreterState
-
-currentFrame :: Interpreter Frame
-currentFrame = do
-    currentFrames <- gets frames
-    return $ head currentFrames
 
 currentScope :: Interpreter Scope
 currentScope = do
@@ -23,4 +19,3 @@ updateScope scope = do
     Frame name _ : fs <- gets frames
 
     modify $ \s -> s { frames = Frame name scope : fs }
-

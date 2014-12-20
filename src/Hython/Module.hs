@@ -9,6 +9,7 @@ import Language.Python.Core
 
 import qualified Hython.AttributeDict as AttributeDict
 import Hython.Environment
+import Hython.Frame
 import Hython.InterpreterState
 
 loadModule :: String -> (String -> AttributeDict -> Interpreter ()) -> Interpreter Module
@@ -31,13 +32,19 @@ loadModule importPath action = do
             }
 
             scope <- currentScope
+            emptyDict <- liftIO AttributeDict.empty
 
             modify $ \s -> s { currentModule = newModule }
-            updateScope $ scope { moduleScope = dict }
+            pushFrame ("File " ++ resolvedPath) Scope {
+                localScope = emptyDict,
+                moduleScope = dict,
+                builtinScope = builtinScope scope,
+                activeScope = ModuleScope
+            }
 
             action code dict
 
-            updateScope $ scope { moduleScope = moduleScope scope }
+            popFrame
             modify $ \s -> s { currentModule = current, modules = newModule : modules s }
 
             return newModule

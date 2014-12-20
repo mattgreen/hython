@@ -22,6 +22,7 @@ import qualified Hython.AttributeDict as AttributeDict
 import Hython.Builtins
 import Hython.Classes
 import Hython.Environment
+import Hython.Frame
 import Hython.InterpreterState
 import Hython.Module
 import Hython.NameResolution
@@ -542,20 +543,13 @@ evalExpr (RelativeImport _ _) = do
     return None
 
 evalExpr (Name name) = do
-    scope   <- getScope
+    scope   <- currentScope
     obj     <- liftIO $ lookupName name scope
 
-    case obj of
-        Just o      -> return o
-        Nothing     -> do
-            raiseError "NameError" (printf "name '%s' is not defined" name)
-            return None
-  where
-    getScope = do
-        currentFrames <- gets frames
-        return $ scopeOf (head currentFrames)
+    when (isNothing obj) $
+        raiseError "NameError" (printf "name '%s' is not defined" name)
 
-    scopeOf (Frame _ s) = s
+    return $ fromJust obj
 
 evalExpr (Constant c) = return c
 
@@ -605,7 +599,8 @@ evalCall (Function name params body) args = do
             put state
             returnCont returnValue
 
-        modify $ \s -> s { frames = Frame name functionScope : frames s, fnReturn = returnHandler }
+        pushFrame name scope { localScope = symbols, activeScope = LocalScope }
+        modify $ \s -> s { fnReturn = returnHandler }
         evalBlock body
         returnHandler None
 
