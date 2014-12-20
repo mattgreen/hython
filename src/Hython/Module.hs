@@ -38,7 +38,7 @@ loadModule importPath action = do
             action code dict
 
             updateScope $ scope { moduleScope = moduleScope scope }
-            modify $ \s -> s { currentModule = current }
+            modify $ \s -> s { currentModule = current, modules = newModule : modules s }
 
             return newModule
   where

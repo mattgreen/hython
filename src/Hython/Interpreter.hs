@@ -149,8 +149,8 @@ eval (If clauses elseBlock) = evalClauses clauses
             else evalClauses rest
 
 eval (Import exprs) = do
-    loadedModules <- mapM load exprs
-    modify $ \s -> s { modules = modules s ++ loadedModules }
+    _modules <- mapM load exprs
+    return ()
 
   where
     load (Name path) = do
