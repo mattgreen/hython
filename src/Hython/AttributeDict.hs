@@ -43,6 +43,17 @@ lookup key dictRef = do
             return $ Just value
         Nothing -> return Nothing
 
+union :: AttributeDict -> AttributeDict -> IO AttributeDict
+union l r = do
+    left    <- readIORef l
+    let items = Map.toList left
+    mapM_ merge (Map.toList left)
+    return r
+  where
+    merge (k,ref) = do
+        v <- readIORef ref
+        update k v r
+
 update :: String -> Object -> AttributeDict -> IO ()
 update key value dictRef = do
     dict <- readIORef dictRef

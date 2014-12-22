@@ -17,6 +17,13 @@ bindName name object scope = do
   where
     dict = getActiveScope scope
 
+bindNames :: AttributeDict -> Scope -> IO Scope
+bindNames names scope = do
+    AttributeDict.union names dict
+    return scope
+  where
+    dict = getActiveScope scope
+
 lookupName :: String -> Scope -> IO (Maybe Object)
 lookupName name scope = lookupIn scopes
   where

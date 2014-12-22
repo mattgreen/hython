@@ -163,8 +163,12 @@ eval (Import exprs) = mapM_ load exprs
         scope <- currentScope
         liftIO $ bindName name (ModuleObj newModule) scope
 
-eval (ImportFrom _ _) = do
-    unimplemented "from...import keyword"
+eval (ImportFrom (RelativeImport _level (Name path)) [Glob]) = do
+    newModule <- loadModule path $ \code dict ->
+        evalBlockWithNewScope (parse code) dict
+
+    scope <- currentScope
+    liftIO $ bindNames (moduleDict newModule) scope
     return ()
 
 eval (Nonlocal {}) = do
