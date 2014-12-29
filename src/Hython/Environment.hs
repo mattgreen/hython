@@ -5,6 +5,7 @@ import Control.Monad.State
 
 import Hython.Frame
 import Hython.InterpreterState
+import Hython.Object
 
 currentEnv :: Interpreter Env
 currentEnv = do

@@ -23,18 +23,6 @@ data InterpreterState = InterpreterState
     , loopContinue      :: InterpreterCont
     }
 
-data Env = Env
-    { localEnv          :: AttributeDict
-    , moduleEnv         :: AttributeDict
-    , builtinEnv        :: AttributeDict
-    , activeEnv         :: ActiveEnv
-    } deriving (Show)
-
-data ActiveEnv
-    = ModuleEnv
-    | LocalEnv
-    deriving (Eq, Show)
-
 data Frame = Frame String Env
 
 data Config = Config {

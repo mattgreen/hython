@@ -95,10 +95,7 @@ raiseError errorClassName message = do
 eval :: Statement -> Interpreter ()
 eval (Def name params body) = do
     env <- currentEnv
-    liftIO $ bindName name function env
-
-  where
-    function = Function name params body
+    liftIO $ bindName name (Function name params body env) env
 
 eval (ModuleDef statements) = evalBlock statements
 
@@ -599,7 +596,7 @@ evalCall (BuiltinFn name) args = do
 
     liftIO $ fromJust fn args
 
-evalCall (Function name params body) args = do
+evalCall (Function name params body env) args = do
     state <- get
 
     when (length params /= length args) $
@@ -607,7 +604,6 @@ evalCall (Function name params body) args = do
 
     symbols <- liftIO $ AttributeDict.fromList $ zip (map unwrapArg params) args
 
-    env <- currentEnv
     callCC $ \returnCont -> do
         let returnHandler returnValue = do
             put state

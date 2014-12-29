@@ -4,6 +4,7 @@ where
 import Control.Monad.State
 
 import Hython.InterpreterState
+import Hython.Object
 
 currentFrame :: Interpreter Frame
 currentFrame = do

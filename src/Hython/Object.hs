@@ -16,7 +16,7 @@ data Object
     | Imaginary (Complex Double)
     | Bool Bool
     | BuiltinFn String
-    | Function String [Arg] [Statement]
+    | Function String [Arg] [Statement] Env
     | ModuleObj Module
     | Class String Objects AttributeDict
     | Object Object AttributeDict
@@ -35,6 +35,18 @@ data Module = Module
     } deriving (Eq, Show)
 
 type Objects = [Object]
+
+data Env = Env
+    { localEnv          :: AttributeDict
+    , moduleEnv         :: AttributeDict
+    , builtinEnv        :: AttributeDict
+    , activeEnv         :: ActiveEnv
+    } deriving (Eq, Show)
+
+data ActiveEnv
+    = ModuleEnv
+    | LocalEnv
+    deriving (Eq, Show)
 
 instance Show (IORef a) where
     show _ = "<ioref>"

@@ -129,7 +129,7 @@ str (Float v)                   = return $ show v
 str (Imaginary v)
     | realPart v == 0           = return $ show (imagPart v) ++ "j"
     | otherwise                 = return $ show v
-str (Function name _ _)         = return $ printf "<%s>" name
+str (Function name _ _ _)       = return $ printf "<%s>" name
 str (BuiltinFn name)            = return $ printf "<built-in function %s>" name
 str (ModuleObj info)            = return $ printf "<module '%s'>" (moduleName info)
 str (Class name _ _)            = return $ printf "<class '__main__.%s'>" name
