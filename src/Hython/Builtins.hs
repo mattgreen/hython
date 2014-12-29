@@ -70,7 +70,7 @@ builtinFunctions :: [(String, Objects -> IO Object)]
 builtinFunctions = [("bool", bool),
                     ("len", len),
                     ("print", print),
-                    ("pow", pow),
+                    ("pow", pow'),
                     ("slice", slice),
                     ("str", str')]
 
@@ -89,24 +89,25 @@ len([x])    = case x of
                 _               -> fail "object has no len()"
 len _       = fail "len() takes exactly one argument"
 
-pow :: Objects -> IO Object
+pow' :: Objects -> IO Object
+pow' args = return $ pow args
+
+pow :: Objects -> Object
 pow [Int l, Int r]
-    | r < 0     = return $ Float (fromIntegral l ^^ r)
-    | otherwise = return $ Int $ l ^ r
+    | r < 0     = Float (fromIntegral l ^^ r)
+    | otherwise = Int $ l ^ r
 
-pow [Int l, Int r, Int m] = do
-    result <- pow [Int l, Int r]
-    case result of
-        Float v     -> return $ Float (v `mod'` fromIntegral m)
-        Int v       -> return $ Int (v `mod` m)
-        _           -> fail "pow() should produce an Int or Float!"
+pow [Int l, Int r, Int m] = case pow [Int l, Int r] of
+    Float v     -> Float (v `mod'` fromIntegral m)
+    Int v       -> Int (v `mod` m)
+    _           -> error "pow() should produce an Int or Float!"
 
-pow [Float l, Float r] = return $ Float (l ** r)
+pow [Float l, Float r] = Float (l ** r)
 pow [Float l, Float r, Float m] = do
-    (Float result) <- pow [Float l, Float r]
-    return $ Float (result `mod'` m)
+    let (Float result) = pow [Float l, Float r]
+    Float (result `mod'` m)
 
-pow _ = fail "pow() takes at least two arguments"
+pow _ = error "pow() takes at least two arguments"
 
 print :: Objects -> IO Object
 print args = do

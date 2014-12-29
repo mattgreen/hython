@@ -320,128 +320,112 @@ evalExpr (As expr binding) = do
 
     case binding of
         Name n  -> do
-            liftIO $ bindName n value scope
+            _ <- liftIO $ bindName n value scope
             return ()
         _       -> raiseError "SystemError" "unhandled binding type"
 
     return value
 
-evalExpr (UnaryOp Not (Constant (Bool v))) =
-    return $ Bool (not v)
-
-evalExpr (UnaryOp Pos (Constant v@(Int {}))) =
-    return v
-
-evalExpr (UnaryOp Pos (Constant v@(Float {}))) =
-    return v
-
-evalExpr (UnaryOp Neg (Constant (Int v))) =
-    return $ Int (- v)
-
-evalExpr (UnaryOp Neg (Constant (Float v))) =
-    return $ Float (- v)
-
-evalExpr (UnaryOp Complement (Constant (Int v))) =
-    return $ Int (complement v)
-
-evalExpr (UnaryOp op (Constant r)) = do
-    strExpr <- liftIO $ str r
-    fail $ printf "Unsupported operand type for %s: %s" (show op) strExpr
-
-evalExpr (UnaryOp op expr) = do
-    r <- evalExpr expr
-    evalExpr $ UnaryOp op (Constant r)
-
-evalExpr (BinOp (ArithOp op) (Constant (Int l)) (Constant (Int r)))
-    | op == Add = return $ Int (l + r)
-    | op == Sub = return $ Int (l - r)
-    | op == Mul = return $ Int (l * r)
-    | op == Div = return $ Float (fromInteger l / fromInteger r)
-    | op == Mod = return $ Int (l `mod` r)
-    | op == FDiv = return $ Int (floorInt (fromIntegral l / fromIntegral r))
-    | op == Pow = liftIO $ pow [Int l, Int r]
+evalExpr (UnaryOp op rightExpr) = do
+    rhs <- evalExpr rightExpr
+    case eval' op rhs of
+        Just v  -> return v
+        Nothing -> unhandledUnaryOp op rhs
   where
+    eval' Not (Bool v)          = Just $ Bool (not v)
+    eval' Pos (Int v)           = Just $ Int v
+    eval' Pos (Float v)         = Just $ Float v
+    eval' Neg (Int v)           = Just $ Int (- v)
+    eval' Neg (Float v)         = Just $ Float (- v)
+    eval' Complement (Int v)    = Just $ Int (complement v)
+    eval' _ _                   = Nothing
+
+evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
+    [lhs, rhs] <- mapM evalExpr [leftExpr, rightExpr]
+    case eval' op lhs rhs of
+        Just v  -> return v
+        Nothing -> unhandledBinOpExpr op lhs rhs
+  where
+    eval' Add (Int l) (Int r)           = Just $ Int (l + r)
+    eval' Add (Float l) (Float r)       = Just $ Float (l + r)
+    eval' Add (String l) (String r)     = Just $ String (l ++ r)
+    eval' Sub (Int l) (Int r)           = Just $ Int (l - r)
+    eval' Sub (Float l) (Float r)       = Just $ Float (l - r)
+    eval' Mul (Int l) (Int r)           = Just $ Int (l * r)
+    eval' Mul (Float l) (Float r)       = Just $ Float (l * r)
+    eval' Mul (Int l) (String r)        = Just $ String (concat $ replicate (fromInteger l) r)
+    eval' Mul l@(String {}) r@(Int {})  = eval' Mul r l
+    eval' Div (Int l) (Int r)           = Just $ Float (fromInteger l / fromInteger r)
+    eval' Div (Float l) (Float r)       = Just $ Float (l / r)
+    eval' Mod (Int l) (Int r)           = Just $ Int (l `mod` r)
+    eval' Mod (Float l) (Float r)       = Just $ Float (l `mod'` r)
+    eval' FDiv (Int l) (Int r)          = Just $ Int (floorInt (fromIntegral l / fromIntegral r))
+    eval' FDiv (Float l) (Float r)      = Just $ Float (fromInteger (floor (l / r)))
+    eval' Pow l@(Int {}) r@(Int {})     = Just $ pow [l, r]
+    eval' Pow l@(Float {}) r@(Float {}) = Just $ pow [l, r]
+    eval' _ l@(Float {}) (Int r)        = eval' op l (Float (fromIntegral r))
+    eval' _ (Int l) r@(Float {})        = eval' op (Float (fromIntegral l)) r
+    eval' _ _ _                         = Nothing
+
     floorInt = floor :: Double -> Integer
 
-evalExpr (BinOp (BitOp BitAnd) (Constant (Int l)) (Constant (Int r))) =
-    return $ Int (l .&. r)
-
-evalExpr (BinOp (BitOp BitOr) (Constant (Int l)) (Constant (Int r))) =
-    return $ Int (l .|. r)
-
-evalExpr (BinOp (BitOp BitXor) (Constant (Int l)) (Constant (Int r))) =
-    return $ Int (xor l r)
-
-evalExpr (BinOp (BitOp LShift) (Constant (Int l)) (Constant (Int r))) =
-    return $ Int (shiftL l (fromIntegral r))
-
-evalExpr (BinOp (BitOp RShift) (Constant (Int l)) (Constant (Int r))) =
-    return $ Int (shiftR l (fromIntegral r))
-
-evalExpr (BinOp (ArithOp op) (Constant (Float l)) (Constant (Float r)))
-    | op == Add = return $ Float (l + r)
-    | op == Sub = return $ Float (l - r)
-    | op == Mul = return $ Float (l * r)
-    | op == Div = return $ Float (l / r)
-    | op == Mod = return $ Float (l `mod'` r)
-    | op == FDiv = return $ Float (fromInteger (floor (l / r)))
-    | op == Pow = liftIO $ pow [Float l, Float r]
-
--- Promote ints to floats in binary operators
-evalExpr (BinOp op (Constant (Int l)) (Constant (Float r))) =
-    evalExpr $ BinOp op (Constant (Float (fromIntegral l))) (Constant (Float r))
-
-evalExpr (BinOp op (Constant (Float l)) (Constant (Int r))) =
-    evalExpr $ BinOp op (Constant (Float l)) (Constant (Float (fromIntegral r)))
-
--- String + String
-evalExpr (BinOp (ArithOp Add) (Constant (String l)) (Constant (String r))) =
-    return $ String (l ++ r)
-
--- Int * String
-evalExpr (BinOp (ArithOp Mul) (Constant (Int l)) (Constant (String r))) =
-    return $ String (concat $ replicate (fromInteger l) r)
-
--- String * Int
-evalExpr (BinOp (ArithOp Mul) (Constant (String l)) (Constant (Int r))) =
-    return $ String (concat $ replicate (fromInteger r) l)
-
--- Int [=|!=|<|<=|>|>=] Int
-evalExpr (BinOp (CompOp op) (Constant (Int l)) (Constant (Int r))) =
-    return $ Bool (fn op l r)
+evalExpr (BinOp (BitOp op) leftExpr rightExpr) = do
+    [lhs, rhs] <- mapM evalExpr [leftExpr, rightExpr]
+    case eval' op lhs rhs of
+        Just v  -> return $ Int v
+        Nothing -> unhandledBinOpExpr op lhs rhs
   where
-    fn Eq               = (==)
-    fn NotEq            = (/=)
-    fn LessThan         = (<)
-    fn LessThanEq       = (<=)
-    fn GreaterThan      = (>)
-    fn GreaterThanEq    = (>=)
+    eval' BitAnd (Int l) (Int r)    = Just $ l .&. r
+    eval' BitOr  (Int l) (Int r)    = Just $ l .|. r
+    eval' BitXor (Int l) (Int r)    = Just $ xor l r
+    eval' LShift (Int l) (Int r)    = Just $ shiftL l (fromIntegral r)
+    eval' RShift (Int l) (Int r)    = Just $ shiftR l (fromIntegral r)
+    eval' _ _ _                     = Nothing
 
-evalExpr (BinOp (CompOp op) (Constant (Float l)) (Constant (Float r))) =
-    return $ Bool (fn op l r)
+evalExpr (BinOp (BoolOp op) leftExpr rightExpr) = do
+    [lhs, rhs] <- mapM evalExpr [leftExpr, rightExpr]
+    case eval' op lhs rhs of
+        Just v  -> return v
+        Nothing -> unhandledBinOpExpr op lhs rhs
   where
-    fn Eq               = (==)
-    fn NotEq            = (/=)
-    fn LessThan         = (<)
-    fn LessThanEq       = (<=)
-    fn GreaterThan      = (>)
-    fn GreaterThanEq    = (>=)
+    eval' And (Bool l) (Bool r)     = Just $ Bool (l && r)
+    eval' Or (Bool l) (Bool r)      = Just $ Bool (l || r)
+    eval' And l r                   = Just $ if isTrue l && isTrue r
+                                        then r
+                                        else l
+    eval' Or l r                    = Just $ if isTrue l
+                                        then l
+                                        else r
 
-evalExpr (BinOp (CompOp Eq) (Constant l) (Constant r)) =
-    return $ Bool (l == r)
-
-evalExpr (BinOp (CompOp NotEq) (Constant l) (Constant r)) =
-    return $ Bool (l /= r)
-
-evalExpr (BinOp op (Constant l) (Constant r)) = do
-    left <- liftIO $ str l
-    right <- liftIO $ str r
-    fail $ printf "Unsupported operand type(s) for %s: %s %s" (show op) left right
-
-evalExpr (BinOp op l r) = do
-    left <- evalExpr l
-    right <- evalExpr r
-    evalExpr $ BinOp op (Constant left) (Constant right)
+evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
+    [lhs, rhs] <- mapM evalExpr [leftExpr, rightExpr]
+    case eval' op lhs rhs of
+        Just v  -> return $ Bool v
+        Nothing -> unhandledBinOpExpr op lhs rhs
+  where
+    eval' Eq (Int l) (Int r)                = Just $ l == r
+    eval' Eq (Float l) (Float r)            = Just $ l == r
+    eval' Eq (String l) (String r)          = Just $ l == r
+    eval' Eq (Bool l) (Bool r)              = Just $ l == r
+    eval' Eq (None) (None)                  = Just True
+    eval' Eq _ (None)                       = Just False
+    eval' NotEq (Int l) (Int r)             = Just $ l /= r
+    eval' NotEq (Float l) (Float r)         = Just $ l /= r
+    eval' NotEq (String l) (String r)       = Just $ l /= r
+    eval' NotEq (Bool l) (Bool r)           = Just $ l /= r
+    eval' NotEq (None) (None)               = Just False
+    eval' NotEq _ (None)                    = Just True
+    eval' LessThan (Int l) (Int r)          = Just $ l < r
+    eval' LessThan (Float l) (Float r)      = Just $ l < r
+    eval' LessThanEq (Int l) (Int r)        = Just $ l <= r
+    eval' LessThanEq (Float l) (Float r)    = Just $ l <= r
+    eval' GreaterThan (Int l) (Int r)       = Just $ l > r
+    eval' GreaterThan (Float l) (Float r)   = Just $ l > r
+    eval' GreaterThanEq (Int l) (Int r)     = Just $ l >= r
+    eval' GreaterThanEq (Float l) (Float r) = Just $ l >= r
+    eval' _ l@(Float {}) (Int r)            = eval' op l (Float (fromIntegral r))
+    eval' _ (Int l) r@(Float {})            = eval' op (Float (fromIntegral l)) r
+    eval' _ _ _                             = Nothing
 
 evalExpr (Call (Attribute expr name) args) = do
     obj <- evalExpr expr
@@ -549,6 +533,22 @@ evalExpr (Name name) = do
     return $ fromJust obj
 
 evalExpr (Constant c) = return c
+
+unhandledUnaryOp op r = do
+    rhs <- liftIO $ str r
+    raiseError "SystemError" $ printf msg (show op) rhs
+    return None
+  where
+    msg = "Unsupported operand type for %s: %s"
+
+{-unhandledBinOpExpr :: Operator -> Object -> Object -> Interpreter Object-}
+unhandledBinOpExpr op l r = do
+    lhs <- liftIO $ str l
+    rhs <- liftIO $ str r
+    raiseError "SystemError" $ printf msg (show op) lhs rhs
+    return None
+  where
+    msg = "Unsupported operand type(s) for %s: %s %s"
 
 evalBlock :: [Statement] -> Interpreter ()
 evalBlock = mapM_ traceEval
