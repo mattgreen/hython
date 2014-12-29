@@ -391,18 +391,24 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
         Just v  -> return $ Bool v
         Nothing -> unhandledBinOpExpr op lhs rhs
   where
+    eval' _ l@(Float {}) (Int r)            = eval' op l (Float (fromIntegral r))
+    eval' _ (Int l) r@(Float {})            = eval' op (Float (fromIntegral l)) r
     eval' Eq (Int l) (Int r)                = Just $ l == r
     eval' Eq (Float l) (Float r)            = Just $ l == r
     eval' Eq (String l) (String r)          = Just $ l == r
     eval' Eq (Bool l) (Bool r)              = Just $ l == r
     eval' Eq (None) (None)                  = Just True
+    eval' Eq (None) _                       = Just False
     eval' Eq _ (None)                       = Just False
+    eval' Eq _ _                            = Just False
     eval' NotEq (Int l) (Int r)             = Just $ l /= r
     eval' NotEq (Float l) (Float r)         = Just $ l /= r
     eval' NotEq (String l) (String r)       = Just $ l /= r
     eval' NotEq (Bool l) (Bool r)           = Just $ l /= r
     eval' NotEq (None) (None)               = Just False
+    eval' NotEq (None) _                    = Just True
     eval' NotEq _ (None)                    = Just True
+    eval' NotEq _ _                         = Just True
     eval' LessThan (Int l) (Int r)          = Just $ l < r
     eval' LessThan (Float l) (Float r)      = Just $ l < r
     eval' LessThanEq (Int l) (Int r)        = Just $ l <= r
@@ -411,8 +417,6 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
     eval' GreaterThan (Float l) (Float r)   = Just $ l > r
     eval' GreaterThanEq (Int l) (Int r)     = Just $ l >= r
     eval' GreaterThanEq (Float l) (Float r) = Just $ l >= r
-    eval' _ l@(Float {}) (Int r)            = eval' op l (Float (fromIntegral r))
-    eval' _ (Int l) r@(Float {})            = eval' op (Float (fromIntegral l)) r
     eval' _ _ _                             = Nothing
 
 evalExpr (Call (Attribute expr name) args) = do
