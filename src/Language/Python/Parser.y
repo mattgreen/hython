@@ -5,7 +5,7 @@ import Data.Either
 import Data.List
 import Data.Maybe
 
-import Language.Python.Core
+import Language.Python
 import qualified Language.Python.Lexer as L
 }
 

@@ -1,4 +1,4 @@
-module Language.Python.Core where
+module Language.Python where
 
 import Data.Complex
 

@@ -28,7 +28,7 @@ import Hython.Module
 import Hython.NameResolution
 import Hython.Object
 
-import Language.Python.Core
+import Language.Python
 import Language.Python.Parser
 
 unimplemented :: String -> Interpreter ()

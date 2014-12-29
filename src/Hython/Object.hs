@@ -7,7 +7,7 @@ import Data.Complex
 import Data.HashMap.Strict (HashMap)
 import Data.IORef
 
-import Language.Python.Core
+import Language.Python
 
 data Object
     = String String

@@ -10,7 +10,7 @@ import Data.List
 import Data.Word
 import Text.Regex
 
-import Language.Python.Core
+import Language.Python
 }
 
 $digit = 0-9
