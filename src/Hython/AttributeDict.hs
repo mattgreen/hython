@@ -4,7 +4,7 @@ where
 import qualified Data.HashMap.Strict as Map
 import Data.IORef
 
-import Language.Python.Core
+import Hython.Object
 
 clone :: AttributeDict -> IO AttributeDict
 clone dictRef = do

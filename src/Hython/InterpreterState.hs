@@ -5,7 +5,7 @@ import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Trans.Cont hiding (cont)
 
-import Language.Python.Core
+import Hython.Object
 
 type Interpreter = ContT () (ReaderT Config (StateT InterpreterState IO))
 type InterpreterCont = () -> Interpreter ()

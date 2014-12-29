@@ -1,10 +1,6 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
-
 module Language.Python.Core where
 
 import Data.Complex
-import Data.IORef
-import Data.HashMap.Strict (HashMap)
 
 data Statement
     = Assignment Expression Expression
@@ -31,8 +27,9 @@ data Statement
     | ModuleDef Statements
     deriving(Eq, Show)
 
-data Arg = PositionalArg String
-         deriving (Eq, Show)
+data Arg
+    = PositionalArg String
+    deriving (Eq, Show)
 
 data IfClause = IfClause Expression [Statement] deriving (Eq, Show)
 
@@ -45,13 +42,12 @@ type IfClauses      = [IfClause]
 type ExceptClauses  = [ExceptClause]
 
 type Expressions = [Expression]
-type Objects = [Object]
 
 data Expression
     = Call Expression [Expression]
     | Attribute Expression String
     | Name String
-    | Constant Object
+    | Constant Constant
     | Subscript Expression Expression
     | As Expression Expression
     | Yield Expression
@@ -69,30 +65,14 @@ data Expression
     | DictDef [(Expression, Expression)]
     deriving(Eq, Show)
 
-data Object
-    = String String
-    | Int Integer
-    | Float Double
-    | Imaginary (Complex Double)
-    | Bool Bool
-    | BuiltinFn String
-    | Function String [Arg] [Statement]
-    | ModuleObj Module
-    | Class String Objects AttributeDict
-    | Object Object AttributeDict
-    | Slice Object Object Object
-    | Tuple Objects
-    | List (IORef Objects)
-    | None
+data Constant
+    = ConstantInt Integer
+    | ConstantString String
+    | ConstantFloat Double
+    | ConstantImag (Complex Double)
+    | ConstantBool Bool
+    | ConstantNone
     deriving(Eq, Show)
-
-type AttributeDict = IORef (HashMap String (IORef Object))
-
-data Module = Module
-    { moduleName        :: String
-    , modulePath        :: String
-    , moduleDict        :: AttributeDict
-    } deriving (Eq, Show)
 
 data UnaryOperator
     = Not
@@ -144,15 +124,3 @@ data ComparisonOperator
     | Is
     | IsNot
     deriving(Eq, Show)
-
-instance Show (IORef a) where
-    show _ = "<ioref>"
-
-class Truthy a where
-    isTrue :: a -> Bool
-
-instance Truthy Object where
-    isTrue (Int 0)      = False
-    isTrue (Bool False) = False
-    isTrue (None)       = False
-    isTrue _            = True

@@ -1,9 +1,9 @@
 module Hython.NameResolution
 where
 
-import Language.Python.Core
 import qualified Hython.AttributeDict as AttributeDict
 import Hython.InterpreterState
+import Hython.Object
 
 getActiveScope :: Scope -> AttributeDict
 getActiveScope scope = if activeScope scope == ModuleScope

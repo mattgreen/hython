@@ -26,6 +26,8 @@ import Hython.Frame
 import Hython.InterpreterState
 import Hython.Module
 import Hython.NameResolution
+import Hython.Object
+
 import Language.Python.Core
 import Language.Python.Parser
 
@@ -542,7 +544,14 @@ evalExpr (Name name) = do
 
     return $ fromJust obj
 
-evalExpr (Constant c) = return c
+evalExpr (Constant c) = return $ asObject c
+  where
+    asObject (ConstantInt v)     = Int v
+    asObject (ConstantFloat v)   = Float v
+    asObject (ConstantImag v)    = Imaginary v
+    asObject (ConstantString v)  = String v
+    asObject (ConstantBool v)    = Bool v
+    asObject (ConstantNone)      = None
 
 unhandledUnaryOp :: Show a => a -> Object -> Interpreter Object
 unhandledUnaryOp op r = do

@@ -11,7 +11,7 @@ import Text.Printf
 
 import qualified Hython.AttributeDict as AttributeDict
 import Hython.Classes
-import Language.Python.Core
+import Hython.Object
 
 builtins :: IO [(String, Object)]
 builtins = do

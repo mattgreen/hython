@@ -63,17 +63,17 @@ tokens :-
     "#".*                       ;
 
     -- Integers
-    0+                          { \_ s -> return $ Literal (Int 0) }
-    [1-9][0-9]*                 { \_ s -> return $ Literal (Int $ read s) }
-    0[bB][01]+                  { \_ s -> return $ Literal (Int $ binaryToDecimal s) }
-    0[oO][0-9]+                 { \_ s -> return $ Literal (Int $ read s) }
-    0[xX][0-9a-fA-F]+           { \_ s -> return $ Literal (Int $ read s) }
+    0+                          { \_ s -> return $ Literal (ConstantInt 0) }
+    [1-9][0-9]*                 { \_ s -> return $ Literal (ConstantInt $ read s) }
+    0[bB][01]+                  { \_ s -> return $ Literal (ConstantInt $ binaryToDecimal s) }
+    0[oO][0-9]+                 { \_ s -> return $ Literal (ConstantInt $ read s) }
+    0[xX][0-9a-fA-F]+           { \_ s -> return $ Literal (ConstantInt $ read s) }
 
     -- Floats
-    @floatnumber                { \_ s -> return $ Literal (Float $ read (legalizeFloat s)) }
+    @floatnumber                { \_ s -> return $ Literal (ConstantFloat $ read (legalizeFloat s)) }
 
     -- Imaginary numbers
-    @imagnumber                 { \_ s -> return $ Literal (Imaginary (0.0 :+ (read (legalizeImag s)))) }
+    @imagnumber                 { \_ s -> return $ Literal (ConstantImag (0.0 :+ (read (legalizeImag s)))) }
 
     -- Strings
     @stringliteral              { \_ s -> return $ StringLiteral (stringContent s) }
@@ -89,7 +89,7 @@ data Token
      | Dedent
      | Identifier String
      | Keyword String
-     | Literal Object
+     | Literal Constant
      | StringLiteral String
      | Operator String
      | Delimiter String

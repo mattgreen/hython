@@ -5,12 +5,11 @@ import Control.Monad.State
 import Data.List
 import System.FilePath.Posix
 
-import Language.Python.Core
-
 import qualified Hython.AttributeDict as AttributeDict
 import Hython.Environment
 import Hython.Frame
 import Hython.InterpreterState
+import Hython.Object
 
 loadModule :: String -> (String -> AttributeDict -> Interpreter ()) -> Interpreter Module
 loadModule importPath action = do

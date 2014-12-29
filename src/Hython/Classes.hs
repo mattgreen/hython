@@ -5,7 +5,7 @@ import Data.IORef
 import qualified Data.HashMap.Strict as Map
 
 import qualified Hython.AttributeDict as AttributeDict
-import Language.Python.Core
+import Hython.Object
 
 classOf :: Object -> Object
 classOf (Object c@(Class {}) _) = c

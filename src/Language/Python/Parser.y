@@ -248,7 +248,7 @@ continue_stmt
 
 -- return_stmt: 'return' [testlist]
 return_stmt
-    : RETURN opt(testlist)   { Return $ maybe (Constant None) id $2 }
+    : RETURN opt(testlist)   { Return $ maybe (Constant ConstantNone) id $2 }
 
 -- yield_stmt: yield_expr
 yield_stmt
@@ -257,7 +257,7 @@ yield_stmt
 -- raise_stmt: 'raise' [test ['from' test]]
 raise_stmt
     : RAISE                 { Reraise }
-    | RAISE test            { Raise $2 (Constant None) }
+    | RAISE test            { Raise $2 (Constant ConstantNone) }
     | RAISE test FROM test  { Raise $2 $4 }
 
 -- import_stmt: import_name | import_from
@@ -510,10 +510,10 @@ atom
     | '{' opt(dictorsetmaker) '}'   { maybe (DictDef []) (\e -> e) $2 }
     | identifier                    { Name $1 }
     | literal                       { Constant $1 }
-    | many1(string)                 { Constant (String $ foldl' (++) "" $1) }
-    | NONE                          { Constant None }
-    | TRUE                          { Constant $ Bool True }
-    | FALSE                         { Constant $ Bool False }
+    | many1(string)                 { Constant $ ConstantString (foldl' (++) "" $1) }
+    | NONE                          { Constant ConstantNone }
+    | TRUE                          { Constant $ ConstantBool True }
+    | FALSE                         { Constant $ ConstantBool False }
 
 -- testlist_comp: (test|star_expr) ( comp_for | (',' (test|star_expr))* [','] )
 testlist_comp
@@ -536,7 +536,7 @@ subscript
 
 -- sliceop: ':' [test]
 sliceop
-    : ':' opt(test)         { maybe (Constant None) id $2 }
+    : ':' opt(test)         { maybe (Constant ConstantNone) id $2 }
 
 -- exprlist: (expr|star_expr) (',' (expr|star_expr))* [',']
 exprlist
@@ -603,7 +603,7 @@ expressionsOf expr              = [expr]
 
 handleSlice start stop stride = SliceDef (unwrap start) (unwrap stop) (unwrap stride)
   where
-    unwrap arg = maybe (Constant None) id arg
+    unwrap arg = maybe (Constant ConstantNone) id arg
 
 handleTrailers expr trailers = foldl' handleTrailer expr trailers
   where
