@@ -2,7 +2,6 @@ module Hython.NameResolution
 where
 
 import qualified Hython.AttributeDict as AttributeDict
-import Hython.InterpreterState
 import Hython.Object
 
 getActiveEnv :: Env -> AttributeDict

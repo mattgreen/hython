@@ -128,13 +128,9 @@ eval (Continue) = do
     continue ()
 
 -- Needs EH to implement iterator protocol
-eval (For {}) = do
-    unimplemented "for keyword"
-    return ()
+eval (For {}) = unimplemented "for keyword"
 
-eval (Global {}) = do
-    unimplemented "global keyword"
-    return ()
+eval (Global {}) = unimplemented "global keyword"
 
 eval (If clauses elseBlock) = evalClauses clauses
   where
@@ -166,13 +162,10 @@ eval (ImportFrom (RelativeImport _level (Name path)) [Glob]) = do
 
     env <- currentEnv
     liftIO $ bindNames (moduleDict newModule) env
-    return ()
 
 eval (ImportFrom {}) = raiseError "SystemError" "invalid import from statement"
 
-eval (Nonlocal {}) = do
-    unimplemented "nonlocal keyword"
-    return ()
+eval (Nonlocal {}) = unimplemented "nonlocal keyword"
 
 eval (Raise expr _from) = do
     exception <- evalExpr expr
@@ -231,7 +224,6 @@ eval (Try exceptClauses block elseBlock finallyBlock) = do
                     when exceptionBound $ do
                         env <- currentEnv
                         liftIO $ bindName name exception env
-                        return ()
                     evalBlock handlerBlock
 
                     modify $ \s -> s { exceptHandler = previousHandler }
@@ -291,9 +283,7 @@ eval (While condition block elseBlock) = do
         modify $ \s -> s { exceptHandler = exceptHandler state }
         cont value
 
-eval (With {}) = do
-    unimplemented "with keyword"
-    return ()
+eval (With {}) = unimplemented "with keyword"
 
 eval (Pass) = return ()
 
@@ -319,9 +309,7 @@ evalExpr (As expr binding) = do
     env <- currentEnv
 
     case binding of
-        Name n  -> do
-            liftIO $ bindName n value env
-            return ()
+        Name n  -> liftIO $ bindName n value env
         _       -> raiseError "SystemError" "unhandled binding type"
 
     return value
