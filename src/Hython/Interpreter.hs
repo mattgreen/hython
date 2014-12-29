@@ -94,7 +94,6 @@ eval :: Statement -> Interpreter ()
 eval (Def name params body) = do
     scope <- currentScope
     liftIO $ bindName name function scope
-    return ()
 
   where
     function = Function name params body
@@ -108,13 +107,11 @@ eval (ClassDef name bases statements) = do
 
     scope <- currentScope
     liftIO $ bindName name (Class name baseClasses dict) scope
-    return ()
 
 eval (Assignment (Name name) expr) = do
     value <- evalExpr expr
     scope <- currentScope
     liftIO $ bindName name value scope
-    return ()
 
 eval (Assignment (Attribute var attr) expr) = do
     value <- evalExpr expr
@@ -153,6 +150,7 @@ eval (Import exprs) = mapM_ load exprs
   where
     load (Name path) = loadAndBind path Nothing
     load (As (Name path) (Name name)) = loadAndBind path (Just name)
+    load _ = raiseError "SystemError" "invalid import statement"
 
     loadAndBind path binding = do
         newModule <- loadModule path $ \code dict ->
@@ -170,6 +168,8 @@ eval (ImportFrom (RelativeImport _level (Name path)) [Glob]) = do
     scope <- currentScope
     liftIO $ bindNames (moduleDict newModule) scope
     return ()
+
+eval (ImportFrom {}) = raiseError "SystemError" "invalid import from statement"
 
 eval (Nonlocal {}) = do
     unimplemented "nonlocal keyword"
@@ -309,6 +309,8 @@ eval (Del (Name name)) = do
     liftIO $ unbindName name scope
     return ()
 
+eval (Del {}) = raiseError "SystemError" "invalid del statement"
+
 eval (Expression e) = do
     _ <- evalExpr e
     return ()
@@ -320,7 +322,7 @@ evalExpr (As expr binding) = do
 
     case binding of
         Name n  -> do
-            _ <- liftIO $ bindName n value scope
+            liftIO $ bindName n value scope
             return ()
         _       -> raiseError "SystemError" "unhandled binding type"
 
@@ -434,7 +436,7 @@ evalExpr (Call (Attribute expr name) args) = do
 
     case fn of
         Just f -> case obj of
-            (ModuleObj m)   -> evalCall f evalArgs
+            (ModuleObj _)   -> evalCall f evalArgs
             (Object {})     -> evalCall f (obj : evalArgs)
             _               -> do
                 raiseError "SystemError" "trying to call a non-callable object"
@@ -444,7 +446,7 @@ evalExpr (Call (Attribute expr name) args) = do
             raiseError "AttributeError" (errorMsgFor obj)
             return None
   where
-      errorMsgFor obj = printf "object has no attribute '%s'" name
+      errorMsgFor _ = printf "object has no attribute '%s'" name
 
 evalExpr (Call e args) = do
     f <- evalExpr e
@@ -507,6 +509,14 @@ evalExpr (TupleDef exprs) = do
     values <- mapM evalExpr exprs
     return $ Tuple values
 
+evalExpr (SetDef {}) = do
+    unimplemented "setdef expr"
+    return None
+
+evalExpr (DictDef {}) = do
+    unimplemented "dictdef expr"
+    return None
+
 evalExpr (From {}) = do
     unimplemented "from expr"
     return None
@@ -534,6 +544,7 @@ evalExpr (Name name) = do
 
 evalExpr (Constant c) = return c
 
+unhandledUnaryOp :: Show a => a -> Object -> Interpreter Object
 unhandledUnaryOp op r = do
     rhs <- liftIO $ str r
     raiseError "SystemError" $ printf msg (show op) rhs
@@ -541,7 +552,7 @@ unhandledUnaryOp op r = do
   where
     msg = "Unsupported operand type for %s: %s"
 
-{-unhandledBinOpExpr :: Operator -> Object -> Object -> Interpreter Object-}
+unhandledBinOpExpr :: Show a => a -> Object -> Object -> Interpreter Object
 unhandledBinOpExpr op l r = do
     lhs <- liftIO $ str l
     rhs <- liftIO $ str r
@@ -589,8 +600,6 @@ evalCall (Function name params body) args = do
     symbols <- liftIO $ AttributeDict.fromList $ zip (map unwrapArg params) args
 
     scope <- currentScope
-    let functionScope = scope { localScope = symbols, activeScope = LocalScope }
-
     callCC $ \returnCont -> do
         let returnHandler returnValue = do
             put state

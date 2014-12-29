@@ -10,17 +10,16 @@ getActiveScope scope = if activeScope scope == ModuleScope
     then moduleScope scope
     else localScope scope
 
-bindName :: String -> Object -> Scope -> IO Scope
-bindName name object scope = do
-    AttributeDict.update name object dict
-    return scope
+bindName :: String -> Object -> Scope -> IO ()
+bindName name object scope = AttributeDict.update name object dict
   where
     dict = getActiveScope scope
 
-bindNames :: AttributeDict -> Scope -> IO Scope
+bindNames :: AttributeDict -> Scope -> IO ()
 bindNames names scope = do
-    AttributeDict.union names dict
-    return scope
+    -- TODO: fix AttributeDict to not be so weird
+    _ <- AttributeDict.union names dict
+    return ()
   where
     dict = getActiveScope scope
 
@@ -38,9 +37,7 @@ lookupName name scope = lookupIn scopes
         ModuleScope -> [moduleScope scope, builtinScope scope]
         _           -> [localScope scope, moduleScope scope, builtinScope scope]
 
-unbindName :: String -> Scope -> IO Scope
-unbindName name scope = do
-    AttributeDict.delete name dict
-    return scope
+unbindName :: String -> Scope -> IO ()
+unbindName name scope = AttributeDict.delete name dict
   where
     dict = getActiveScope scope
