@@ -30,15 +30,15 @@ loadModule importPath action = do
                 moduleDict = dict
             }
 
-            scope <- currentScope
+            env <- currentEnv
             emptyDict <- liftIO AttributeDict.empty
 
             modify $ \s -> s { currentModule = newModule }
-            pushFrame ("File " ++ resolvedPath) Scope {
-                localScope = emptyDict,
-                moduleScope = dict,
-                builtinScope = builtinScope scope,
-                activeScope = ModuleScope
+            pushFrame ("File " ++ resolvedPath) Env {
+                localEnv = emptyDict,
+                moduleEnv = dict,
+                builtinEnv = builtinEnv env,
+                activeEnv = ModuleEnv
             }
 
             action code dict

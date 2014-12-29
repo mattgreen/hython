@@ -23,19 +23,19 @@ data InterpreterState = InterpreterState
     , loopContinue      :: InterpreterCont
     }
 
-data Scope = Scope
-    { localScope        :: AttributeDict
-    , moduleScope       :: AttributeDict
-    , builtinScope      :: AttributeDict
-    , activeScope       :: ActiveScope
+data Env = Env
+    { localEnv          :: AttributeDict
+    , moduleEnv         :: AttributeDict
+    , builtinEnv        :: AttributeDict
+    , activeEnv         :: ActiveEnv
     } deriving (Show)
 
-data ActiveScope
-    = ModuleScope
-    | LocalScope
+data ActiveEnv
+    = ModuleEnv
+    | LocalEnv
     deriving (Eq, Show)
 
-data Frame = Frame String Scope
+data Frame = Frame String Env
 
 data Config = Config {
     tracingEnabled :: Bool

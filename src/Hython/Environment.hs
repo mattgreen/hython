@@ -6,16 +6,16 @@ import Control.Monad.State
 import Hython.Frame
 import Hython.InterpreterState
 
-currentScope :: Interpreter Scope
-currentScope = do
+currentEnv :: Interpreter Env
+currentEnv = do
     frame <- currentFrame
-    return $ scopeOf frame
+    return $ envOf frame
 
   where
-    scopeOf (Frame _ s) = s
+    envOf (Frame _ e) = e
 
-updateScope :: Scope -> Interpreter ()
-updateScope scope = do
+updateEnv :: Env -> Interpreter ()
+updateEnv env = do
     Frame name _ : fs <- gets frames
 
-    modify $ \s -> s { frames = Frame name scope : fs }
+    modify $ \s -> s { frames = Frame name env : fs }

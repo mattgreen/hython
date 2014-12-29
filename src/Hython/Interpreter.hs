@@ -45,23 +45,23 @@ defaultConfig = do
 defaultState :: String -> IO InterpreterState
 defaultState path = do
     builtinsList    <- Hython.Builtins.builtins
-    mainModuleScope <- AttributeDict.empty
-    newLocalScope   <- AttributeDict.empty
-    newBuiltinScope <- AttributeDict.fromList builtinsList
+    mainModuleEnv   <- AttributeDict.empty
+    newLocalEnv     <- AttributeDict.empty
+    newBuiltinEnv   <- AttributeDict.fromList builtinsList
 
-    let scope = Scope {
-        localScope = newLocalScope,
-        moduleScope = mainModuleScope,
-        builtinScope = newBuiltinScope,
-        activeScope = ModuleScope
+    let env = Env {
+        localEnv = newLocalEnv,
+        moduleEnv = mainModuleEnv,
+        builtinEnv = newBuiltinEnv,
+        activeEnv = ModuleEnv
     }
 
-    let mainModule = Module "__main__" path mainModuleScope
+    let mainModule = Module "__main__" path mainModuleEnv
 
     return InterpreterState {
         currentException = None,
         exceptHandler = defaultExceptionHandler,
-        frames = [Frame "<module>" scope],
+        frames = [Frame "<module>" env],
         fnReturn = defaultReturnHandler,
         modules = [mainModule],
         currentModule = mainModule,
@@ -94,8 +94,8 @@ raiseError errorClassName message = do
 
 eval :: Statement -> Interpreter ()
 eval (Def name params body) = do
-    scope <- currentScope
-    liftIO $ bindName name function scope
+    env <- currentEnv
+    liftIO $ bindName name function env
 
   where
     function = Function name params body
@@ -105,15 +105,15 @@ eval (ModuleDef statements) = evalBlock statements
 eval (ClassDef name bases statements) = do
     baseClasses <- mapM evalExpr bases
     dict <- liftIO AttributeDict.empty
-    evalBlockWithNewScope statements dict
+    evalBlockWithNewEnv statements dict
 
-    scope <- currentScope
-    liftIO $ bindName name (Class name baseClasses dict) scope
+    env <- currentEnv
+    liftIO $ bindName name (Class name baseClasses dict) env
 
 eval (Assignment (Name name) expr) = do
     value <- evalExpr expr
-    scope <- currentScope
-    liftIO $ bindName name value scope
+    env <- currentEnv
+    liftIO $ bindName name value env
 
 eval (Assignment (Attribute var attr) expr) = do
     value <- evalExpr expr
@@ -156,19 +156,19 @@ eval (Import exprs) = mapM_ load exprs
 
     loadAndBind path binding = do
         newModule <- loadModule path $ \code dict ->
-            evalBlockWithNewScope (parse code) dict
+            evalBlockWithNewEnv (parse code) dict
 
         let name = fromMaybe (moduleName newModule) binding
 
-        scope <- currentScope
-        liftIO $ bindName name (ModuleObj newModule) scope
+        env <- currentEnv
+        liftIO $ bindName name (ModuleObj newModule) env
 
 eval (ImportFrom (RelativeImport _level (Name path)) [Glob]) = do
     newModule <- loadModule path $ \code dict ->
-        evalBlockWithNewScope (parse code) dict
+        evalBlockWithNewEnv (parse code) dict
 
-    scope <- currentScope
-    liftIO $ bindNames (moduleDict newModule) scope
+    env <- currentEnv
+    liftIO $ bindNames (moduleDict newModule) env
     return ()
 
 eval (ImportFrom {}) = raiseError "SystemError" "invalid import from statement"
@@ -232,8 +232,8 @@ eval (Try exceptClauses block elseBlock finallyBlock) = do
                     modify $ \s -> s { exceptHandler = chainExceptHandler previousHandler (exceptHandler s) }
 
                     when exceptionBound $ do
-                        scope <- currentScope
-                        liftIO $ bindName name exception scope
+                        env <- currentEnv
+                        liftIO $ bindName name exception env
                         return ()
                     evalBlock handlerBlock
 
@@ -307,9 +307,8 @@ eval (Assert e _) = do
         raiseError "AssertionError" ""
 
 eval (Del (Name name)) = do
-    scope <- currentScope
-    liftIO $ unbindName name scope
-    return ()
+    env <- currentEnv
+    liftIO $ unbindName name env
 
 eval (Del {}) = raiseError "SystemError" "invalid del statement"
 
@@ -320,11 +319,11 @@ eval (Expression e) = do
 evalExpr :: Expression -> Interpreter Object
 evalExpr (As expr binding) = do
     value <- evalExpr expr
-    scope <- currentScope
+    env <- currentEnv
 
     case binding of
         Name n  -> do
-            liftIO $ bindName n value scope
+            liftIO $ bindName n value env
             return ()
         _       -> raiseError "SystemError" "unhandled binding type"
 
@@ -536,8 +535,8 @@ evalExpr (RelativeImport _ _) = do
     return None
 
 evalExpr (Name name) = do
-    scope   <- currentScope
-    obj     <- liftIO $ lookupName name scope
+    env     <- currentEnv
+    obj     <- liftIO $ lookupName name env
 
     when (isNothing obj) $
         raiseError "NameError" (printf "name '%s' is not defined" name)
@@ -608,13 +607,13 @@ evalCall (Function name params body) args = do
 
     symbols <- liftIO $ AttributeDict.fromList $ zip (map unwrapArg params) args
 
-    scope <- currentScope
+    env <- currentEnv
     callCC $ \returnCont -> do
         let returnHandler returnValue = do
             put state
             returnCont returnValue
 
-        pushFrame name scope { localScope = symbols, activeScope = LocalScope }
+        pushFrame name env { localEnv = symbols, activeEnv = LocalEnv }
         modify $ \s -> s { fnReturn = returnHandler }
         evalBlock body
         returnHandler None
@@ -633,12 +632,12 @@ evalCall v _ = do
     raiseError "SystemError" ("don't know how to call " ++ s)
     return None
 
-evalBlockWithNewScope :: [Statement] -> AttributeDict -> Interpreter ()
-evalBlockWithNewScope statements dict = do
-    scope <- currentScope
-    updateScope $ scope { localScope = dict, activeScope = LocalScope }
+evalBlockWithNewEnv :: [Statement] -> AttributeDict -> Interpreter ()
+evalBlockWithNewEnv statements dict = do
+    env <- currentEnv
+    updateEnv $ env { localEnv = dict, activeEnv = LocalEnv }
     evalBlock statements
-    updateScope scope
+    updateEnv env
 
 interpret :: String -> String -> IO ()
 interpret path code = do

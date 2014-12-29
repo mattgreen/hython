@@ -5,26 +5,26 @@ import qualified Hython.AttributeDict as AttributeDict
 import Hython.InterpreterState
 import Hython.Object
 
-getActiveScope :: Scope -> AttributeDict
-getActiveScope scope = if activeScope scope == ModuleScope
-    then moduleScope scope
-    else localScope scope
+getActiveEnv :: Env -> AttributeDict
+getActiveEnv env = if activeEnv env == ModuleEnv
+    then moduleEnv env
+    else localEnv env
 
-bindName :: String -> Object -> Scope -> IO ()
-bindName name object scope = AttributeDict.update name object dict
+bindName :: String -> Object -> Env -> IO ()
+bindName name object env = AttributeDict.update name object dict
   where
-    dict = getActiveScope scope
+    dict = getActiveEnv env
 
-bindNames :: AttributeDict -> Scope -> IO ()
-bindNames names scope = do
+bindNames :: AttributeDict -> Env -> IO ()
+bindNames names env = do
     -- TODO: fix AttributeDict to not be so weird
     _ <- AttributeDict.union names dict
     return ()
   where
-    dict = getActiveScope scope
+    dict = getActiveEnv env
 
-lookupName :: String -> Scope -> IO (Maybe Object)
-lookupName name scope = lookupIn scopes
+lookupName :: String -> Env -> IO (Maybe Object)
+lookupName name env = lookupIn envs
   where
     lookupIn (d:ds) = do
         obj <- AttributeDict.lookup name d
@@ -33,11 +33,11 @@ lookupName name scope = lookupIn scopes
             Nothing -> lookupIn ds
     lookupIn [] = return Nothing
 
-    scopes = case activeScope scope of
-        ModuleScope -> [moduleScope scope, builtinScope scope]
-        _           -> [localScope scope, moduleScope scope, builtinScope scope]
+    envs = case activeEnv env of
+        ModuleEnv   -> [moduleEnv env, builtinEnv env]
+        _           -> [localEnv env, moduleEnv env, builtinEnv env]
 
-unbindName :: String -> Scope -> IO ()
-unbindName name scope = AttributeDict.delete name dict
+unbindName :: String -> Env -> IO ()
+unbindName name env = AttributeDict.delete name dict
   where
-    dict = getActiveScope scope
+    dict = getActiveEnv env

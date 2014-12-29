@@ -10,10 +10,10 @@ currentFrame = do
     currentFrames <- gets frames
     return $ head currentFrames
 
-pushFrame :: String -> Scope -> Interpreter ()
-pushFrame context scope = modify $ \s -> s { frames = newFrame : frames s }
+pushFrame :: String -> Env -> Interpreter ()
+pushFrame context env = modify $ \s -> s { frames = newFrame : frames s }
   where
-    newFrame = Frame context scope
+    newFrame = Frame context env
 
 popFrame :: Interpreter ()
 popFrame = do
