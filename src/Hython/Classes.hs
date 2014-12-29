@@ -15,6 +15,7 @@ isSubClass :: Object -> Object -> Bool
 isSubClass (Class derivedName bases _) (Class baseName _ _) = derivedName == baseName || any isBase bases
   where
     isBase (Class base _ _) = baseName == base
+    isBase _ = error "isSubClass: expected class in bases list"
 isSubClass _ _ = error "isSubClass() arg 1 must be a class"
 
 newClass :: String -> Objects -> IO Object
@@ -29,3 +30,4 @@ newObject cls@(Class _ _ classAttributes) = do
 
     return $ Object cls instanceDict
 
+newObject _ = error "newObject: arg 1 must be a class"

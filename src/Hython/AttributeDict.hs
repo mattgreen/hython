@@ -46,7 +46,6 @@ lookup key dictRef = do
 union :: AttributeDict -> AttributeDict -> IO AttributeDict
 union l r = do
     left    <- readIORef l
-    let items = Map.toList left
     mapM_ merge (Map.toList left)
     return r
   where
