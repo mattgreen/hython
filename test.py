@@ -21,7 +21,7 @@ for root, dirs, files in os.walk("test"):
 testcases.sort()
 
 for testcase in testcases:
-    print("Testing %s..." % testcase.replace("test/", ""))
+    #print("Testing %s..." % testcase.replace("test/", ""))
 
     python_cmdline = ["python3", testcase]
     python_output = output_of(python_cmdline)
@@ -29,12 +29,18 @@ for testcase in testcases:
     hython_cmdline = ["./hython", testcase]
     hython_output = output_of(hython_cmdline)
 
-    if python_output != hython_output:
+    if python_output == hython_output:
+        sys.stdout.write(".")
+        sys.stdout.flush()
+    else:
+        print()
         diff = difflib.unified_diff(python_output, hython_output, lineterm='', 
                 fromfile=" ".join(python_cmdline), tofile=" ".join(hython_cmdline))
         print("\n".join(diff))
 
         exit_status = 1
+
+print()
 
 if exit_status == 0:
     print("All test cases passed!")
