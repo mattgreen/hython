@@ -148,20 +148,26 @@ eval (Import exprs) = mapM_ load exprs
     load _ = raiseError "SystemError" "invalid import statement"
 
     loadAndBind path binding = do
-        newModule <- loadModule path $ \code dict ->
+        moduleOrErr <- loadModule path $ \code dict ->
             evalBlockWithNewEnv (parse code) dict
 
-        let name = fromMaybe (moduleName newModule) binding
+        case moduleOrErr of
+            Right newModule -> do
+                let name = fromMaybe (moduleName newModule) binding
 
-        env <- currentEnv
-        liftIO $ bindName name (ModuleObj newModule) env
+                env <- currentEnv
+                liftIO $ bindName name (ModuleObj newModule) env
+            Left err -> raiseError "ImportError" err
 
 eval (ImportFrom (RelativeImport _level (Name path)) [Glob]) = do
-    newModule <- loadModule path $ \code dict ->
+    moduleOrErr <- loadModule path $ \code dict ->
         evalBlockWithNewEnv (parse code) dict
 
-    env <- currentEnv
-    liftIO $ bindNames (moduleDict newModule) env
+    case moduleOrErr of
+        Right newModule -> do
+            env <- currentEnv
+            liftIO $ bindNames (moduleDict newModule) env
+        Left err -> raiseError "ImportError" err
 
 eval (ImportFrom {}) = raiseError "SystemError" "invalid import from statement"
 
