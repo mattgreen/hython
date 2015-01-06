@@ -7,8 +7,6 @@ import sys
 def output_of(args):
     return subprocess.check_output(args).decode('ascii', 'ignore').split("\n")
 
-exit_status = 0
-
 testcases = []
 for root, dirs, files in os.walk("test"):
     for file in files:
@@ -19,6 +17,7 @@ for root, dirs, files in os.walk("test"):
         testcases.append(testcase)
 
 testcases.sort()
+failures = []
 
 for testcase in testcases:
     #print("Testing %s..." % testcase.replace("test/", ""))
@@ -33,16 +32,17 @@ for testcase in testcases:
         sys.stdout.write(".")
         sys.stdout.flush()
     else:
-        print()
+        sys.stdout.write("F")
+        sys.stdout.flush()
+
         diff = difflib.unified_diff(python_output, hython_output, lineterm='', 
                 fromfile=" ".join(python_cmdline), tofile=" ".join(hython_cmdline))
-        print("\n".join(diff))
-
-        exit_status = 1
+        failures.append(diff)
 
 print()
 
-if exit_status == 0:
-    print("All test cases passed!")
-
-sys.exit(exit_status)
+if failures:
+    for failure in failures:
+        print()
+        print("\n".join(failure))
+    sys.exit(1)
