@@ -19,7 +19,7 @@ data Object
     | Lambda [Arg] Expression Env
     | Function String [Arg] [Statement] Env
     | ModuleObj Module
-    | Class String Objects AttributeDict
+    | ClassObj String Objects AttributeDict
     | Object Object AttributeDict
     | Slice Object Object Object
     | Tuple Objects

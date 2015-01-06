@@ -20,7 +20,7 @@ import Text.Printf
 
 import qualified Hython.AttributeDict as AttributeDict
 import Hython.Builtins
-import Hython.Classes
+import Hython.Class
 import Hython.Environment
 import Hython.Frame
 import Hython.InterpreterState
@@ -112,7 +112,7 @@ eval (ClassDef name bases statements) = do
     evalBlockWithNewEnv statements dict
 
     env <- currentEnv
-    liftIO $ bindName name (Class name baseClasses dict) env
+    liftIO $ bindName name (ClassObj name baseClasses dict) env
 
 eval (Assignment (Name name) expr) = do
     value <- evalExpr expr
@@ -592,7 +592,7 @@ evalBlock statements = forM_ statements $ \s -> do
     traceStmt s = "*** Evaluating: " ++ show s
 
 evalCall :: Object -> [Object] -> Interpreter Object
-evalCall cls@(Class {}) args = do
+evalCall cls@(ClassObj {}) args = do
     object <- liftIO $ newObject cls
 
     ctor <- liftIO $ getAttr "__init__" cls

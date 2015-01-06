@@ -10,7 +10,7 @@ import Data.List
 import Text.Printf
 
 import qualified Hython.AttributeDict as AttributeDict
-import Hython.Classes
+import Hython.Class
 import Hython.Object
 
 builtins :: IO [(String, Object)]
@@ -133,8 +133,8 @@ str (Lambda {})                 = return $ printf "<function <lambda>"
 str (Function name _ _ _)       = return $ printf "<%s>" name
 str (BuiltinFn name)            = return $ printf "<built-in function %s>" name
 str (ModuleObj info)            = return $ printf "<module '%s'>" (moduleName info)
-str (Class name _ _)            = return $ printf "<class '__main__.%s'>" name
-str (Object (Class name _ _) _) = return $ printf "<%s object>" name
+str (ClassObj name _ _)         = return $ printf "<class '__main__.%s'>" name
+str (Object (ClassObj name _ _) _) = return $ printf "<%s object>" name
 str (Object _ _)                = return "<invalid object>"
 str (Slice start end stride) =
     return $ printf "slice(%s, %s, %s)" (show start) (show end) (show stride)
@@ -158,13 +158,13 @@ str' v = do
 
 getAttr :: String -> Object -> IO (Maybe Object)
 getAttr attr (Object _ ref)     = AttributeDict.lookup attr ref
-getAttr attr (Class _ _ ref)    = AttributeDict.lookup attr ref
+getAttr attr (ClassObj _ _ ref) = AttributeDict.lookup attr ref
 getAttr attr (ModuleObj m)      = AttributeDict.lookup attr (moduleDict m)
 getAttr _ _ = fail "Only classes and objects have attrs!"
 
 setAttr :: String -> Object -> Object -> IO ()
-setAttr attr value (Object _ ref)   = AttributeDict.update attr value ref
-setAttr attr value (Class _ _ ref)  = AttributeDict.update attr value ref
+setAttr attr value (Object _ ref)       = AttributeDict.update attr value ref
+setAttr attr value (ClassObj _ _ ref)   = AttributeDict.update attr value ref
 setAttr attr value (ModuleObj m)    = AttributeDict.update attr value (moduleDict m)
 setAttr _ _ _                       = fail "Only objects have attrs!"
 
