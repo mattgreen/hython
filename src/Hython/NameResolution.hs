@@ -57,7 +57,7 @@ lookupName name env = lookupIn envs
 
     envs = case activeEnv env of
         ModuleEnv   -> [moduleEnv env, builtinEnv env]
-        _           -> [localEnv env, moduleEnv env, builtinEnv env]
+        _           -> [localEnv env] ++ enclosingEnvs env ++ [moduleEnv env, builtinEnv env]
 
 unbindName :: String -> Env -> IO ()
 unbindName name env = AttributeDict.delete name dict
