@@ -29,6 +29,7 @@ data Statement
 
 data Arg
     = PositionalArg String
+    | DefaultArg String Expression
     deriving (Eq, Show)
 
 data IfClause = IfClause Expression [Statement] deriving (Eq, Show)
