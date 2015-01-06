@@ -9,6 +9,13 @@ getActiveEnv env = if activeEnv env == ModuleEnv
     then moduleEnv env
     else localEnv env
 
+bindGlobalName :: String -> Env -> IO ()
+bindGlobalName name env = do
+    ref <- AttributeDict.lookupRef name (moduleEnv env)
+    case ref of
+        Just r  -> AttributeDict.updateRef name r (localEnv env)
+        Nothing -> return ()
+
 bindName :: String -> Object -> Env -> IO ()
 bindName name object env = AttributeDict.update name object dict
   where

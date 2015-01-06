@@ -308,7 +308,7 @@ dotted_name
 
 -- global_stmt: 'global' NAME (',' NAME)*
 global_stmt
-    : GLOBAL sepBy(identifier, ',') { Global $ names $2 }
+    : GLOBAL sepBy(identifier, ',') { Global $2 }
 
 -- nonlocal_stmt: 'nonlocal' NAME (',' NAME)*
 nonlocal_stmt

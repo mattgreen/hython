@@ -43,6 +43,11 @@ lookup key dictRef = do
             return $ Just value
         Nothing -> return Nothing
 
+lookupRef :: String -> AttributeDict -> IO (Maybe (IORef Object))
+lookupRef key dictRef = do
+    dict <- readIORef dictRef
+    return $ Map.lookup key dict
+
 union :: AttributeDict -> AttributeDict -> IO AttributeDict
 union l r = do
     left    <- readIORef l
@@ -61,4 +66,7 @@ update key value dictRef = do
         Nothing         -> do
             valueRef <- newIORef value
             modifyIORef' dictRef (Map.insert key valueRef)
+
+updateRef :: String -> IORef Object -> AttributeDict -> IO ()
+updateRef key ref dictRef = modifyIORef' dictRef (Map.insert key ref)
 

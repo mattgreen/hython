@@ -130,7 +130,14 @@ eval (Continue) = do
 -- Needs EH to implement iterator protocol
 eval (For {}) = unimplemented "for keyword"
 
-eval (Global {}) = unimplemented "global keyword"
+eval (Global names) = do
+    env <- currentEnv
+    bindGlobals env names
+  where
+    bindGlobals env (n:ns) = do
+        liftIO $ bindGlobalName n env
+        bindGlobals env ns
+    bindGlobals _ [] = return ()
 
 eval (If clauses elseBlock) = evalClauses clauses
   where
