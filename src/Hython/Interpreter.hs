@@ -144,13 +144,12 @@ eval (If clauses elseBlock) = evalClauses clauses
             then evalBlock block
             else evalClauses rest
 
-eval (Import exprs) = mapM_ load exprs
+eval (Import exprs) = forM_ exprs $ \expr -> case expr of
+    Name path                   -> load path Nothing
+    As (Name path) (Name name)  -> load path (Just name)
+    _                           -> raiseError "SystemError" "bad import statement"
   where
-    load (Name path) = loadAndBind path Nothing
-    load (As (Name path) (Name name)) = loadAndBind path (Just name)
-    load _ = raiseError "SystemError" "invalid import statement"
-
-    loadAndBind path binding = do
+    load path binding = do
         moduleOrErr <- loadModule path $ \code dict ->
             evalBlockWithNewEnv (parse code) dict
 
