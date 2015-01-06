@@ -465,9 +465,11 @@ evalExpr (Call e args) = do
     evalArgs <- mapM evalExpr args
     evalCall f evalArgs
 
-evalExpr (Lambda {}) = do
-    unimplemented "lambda exprs"
-    return None
+evalExpr (LambdaExpr args expr) = do
+    env <- currentEnv
+    return $ Lambda posArgs expr env
+  where
+    posArgs = map PositionalArg args
 
 evalExpr (Attribute target name) = do
     receiver <- evalExpr target
@@ -632,6 +634,24 @@ evalCall (Function name params body env) args = do
     paramCount = length params
     arityErrorMsg = printf "%s() takes exactly %d arguments (%d given)" name paramCount argCount
 
+    unwrapArg (PositionalArg n) = n
+
+evalCall (Lambda params expr env) args = do
+    when (length params /= length args) $
+        raiseError "TypeError" "bad arity"
+
+    lambdaParams <- liftIO $ AttributeDict.fromList $ zip (map unwrapArg params) args
+
+    pushFrame "<lambda>" env {
+        localEnv = lambdaParams,
+        enclosingEnvs = localEnv env : enclosingEnvs env,
+        activeEnv = LocalEnv }
+    result <- evalExpr expr
+    popFrame
+
+    return result
+
+  where
     unwrapArg (PositionalArg n) = n
 
 evalCall v _ = do

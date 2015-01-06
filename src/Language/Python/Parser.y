@@ -404,11 +404,11 @@ test_nocond
 
 -- lambdef: 'lambda' [varargslist] ':' test
 lambdef
-    : LAMBDA varargslist ':' test   { Lambda $2 $4 }
+    : LAMBDA varargslist ':' test   { LambdaExpr $2 $4 }
 
 -- lambdef_nocond: 'lambda' [varargslist] ':' test_nocond
 lambdef_nocond
-    : LAMBDA varargslist ':' test_nocond    { Lambda $2 $4 }
+    : LAMBDA varargslist ':' test_nocond    { LambdaExpr $2 $4 }
 
 -- or_test: and_test ('or' and_test)*
 -- TODO: implement 0-n clauses

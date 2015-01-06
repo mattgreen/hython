@@ -55,7 +55,7 @@ data Expression
     | From Expression
     | Glob
     | RelativeImport Int Expression
-    | Lambda [String] Expression
+    | LambdaExpr [String] Expression
     | UnaryOp UnaryOperator Expression
     | BinOp Operator Expression Expression
     | TernOp Expression Expression Expression

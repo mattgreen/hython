@@ -16,6 +16,7 @@ data Object
     | Imaginary (Complex Double)
     | Bool Bool
     | BuiltinFn String
+    | Lambda [Arg] Expression Env
     | Function String [Arg] [Statement] Env
     | ModuleObj Module
     | Class String Objects AttributeDict

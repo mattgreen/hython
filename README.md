@@ -70,6 +70,7 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] Classes
  * [x] `global` statement
  * [x] `nonlocal` statement
+ * [x] `lambda` expressions
  * [ ] Inheritance
  * [ ] Modules
  * [x] Exception handling
