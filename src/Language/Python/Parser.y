@@ -163,7 +163,7 @@ file_input
 -- decorated: decorators (classdef | funcdef)
 -- funcdef: 'def' NAME parameters ['->' test] ':' suite
 funcdef
-    : DEF identifier parameters ':' suite { Def $2 $3 $5 }
+    : DEF identifier parameters ':' suite { FuncDef $2 $3 $5 }
 
 -- parameters: '(' [typedargslist] ')'
 parameters

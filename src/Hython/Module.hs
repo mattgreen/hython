@@ -43,6 +43,7 @@ loadModule importPath action = do
                     modify $ \s -> s { currentModule = newModule }
                     pushFrame ("File " ++ resolvedPath) Env {
                         localEnv = emptyDict,
+                        enclosingEnvs = [],
                         moduleEnv = dict,
                         builtinEnv = builtinEnv env,
                         activeEnv = ModuleEnv

@@ -6,7 +6,7 @@ data Statement
     = Assignment Expression Expression
     | Expression Expression
     | If [IfClause] [Statement]
-    | Def String [Arg] [Statement]
+    | FuncDef String [Arg] [Statement]
     | Del Expression
     | For Expression Expression Statements Statements
     | Raise Expression Expression

@@ -51,6 +51,7 @@ defaultState path = do
 
     let env = Env {
         localEnv = newLocalEnv,
+        enclosingEnvs = [],
         moduleEnv = mainModuleEnv,
         builtinEnv = newBuiltinEnv,
         activeEnv = ModuleEnv
@@ -93,9 +94,15 @@ raiseError errorClassName message = do
     handler exception
 
 eval :: Statement -> Interpreter ()
-eval (Def name params body) = do
+eval (FuncDef name params body) = do
     env <- currentEnv
-    liftIO $ bindName name (Function name params body env) env
+    liftIO $ bindName name (Function name params body (funcEnv env)) env
+  where
+    funcEnv env = if nestedDef env
+        then env { enclosingEnvs = localEnv env : enclosingEnvs env }
+        else env
+
+    nestedDef env = activeEnv env == LocalEnv
 
 eval (ModuleDef statements) = evalBlock statements
 
@@ -173,7 +180,14 @@ eval (ImportFrom (RelativeImport _level (Name path)) [Glob]) = do
 
 eval (ImportFrom {}) = raiseError "SystemError" "invalid import from statement"
 
-eval (Nonlocal {}) = unimplemented "nonlocal keyword"
+eval (Nonlocal exprs) = forM_ exprs $ \expr -> do
+    env <- currentEnv
+    case expr of
+        Name name  -> do
+            found <- liftIO $ bindNonlocalName name env
+            unless found $
+                raiseError "SyntaxError" (printf "no binding for nonlocal '%s' found" name)
+        _           -> raiseError "SystemError" "bad nonlocal statement"
 
 eval (Raise expr _from) = do
     exception <- evalExpr expr
@@ -567,15 +581,12 @@ unhandledBinOpExpr op l r = do
     msg = "Unsupported operand type(s) for %s: %s %s"
 
 evalBlock :: [Statement] -> Interpreter ()
-evalBlock = mapM_ traceEval
+evalBlock statements = forM_ statements $ \s -> do
+    tracing <- asks tracingEnabled
+    if tracing
+        then (trace $ traceStmt s) eval s
+        else eval s
   where
-    traceEval :: Statement -> Interpreter ()
-    traceEval s = do
-        tracing <- asks tracingEnabled
-        if tracing
-            then (trace $ traceStmt s) eval s
-            else eval s
-
     traceStmt s = "*** Evaluating: " ++ show s
 
 evalCall :: Object -> [Object] -> Interpreter Object

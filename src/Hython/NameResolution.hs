@@ -29,6 +29,22 @@ bindNames names env = do
   where
     dict = getActiveEnv env
 
+bindNonlocalName :: String -> Env -> IO Bool
+bindNonlocalName name env = do
+    maybeRef <- lookupIn (enclosingEnvs env)
+    case maybeRef of
+        Just ref -> do
+            AttributeDict.updateRef name ref (localEnv env)
+            return True
+        Nothing -> return False
+  where
+    lookupIn (d:ds) = do
+        ref <- AttributeDict.lookupRef name d
+        case ref of
+            Just r  -> return $ Just r
+            Nothing -> lookupIn ds
+    lookupIn [] = return Nothing
+
 lookupName :: String -> Env -> IO (Maybe Object)
 lookupName name env = lookupIn envs
   where

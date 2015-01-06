@@ -38,6 +38,7 @@ type Objects = [Object]
 
 data Env = Env
     { localEnv          :: AttributeDict
+    , enclosingEnvs     :: [AttributeDict]
     , moduleEnv         :: AttributeDict
     , builtinEnv        :: AttributeDict
     , activeEnv         :: ActiveEnv
