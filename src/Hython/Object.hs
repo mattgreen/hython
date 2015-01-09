@@ -19,8 +19,8 @@ data Object
     | Lambda [Arg] Expression Env
     | Function String [Arg] [Statement] Env
     | ModuleObj Module
-    | ClassObj String Objects AttributeDict
-    | Object Object AttributeDict
+    | ClassObj Class
+    | Object Class AttributeDict
     | Slice Object Object Object
     | Tuple Objects
     | List (IORef Objects)
@@ -28,6 +28,13 @@ data Object
     deriving(Eq, Show)
 
 type AttributeDict = IORef (HashMap String (IORef Object))
+
+data Class = Class
+    { className         :: String
+    , classBases        :: [Class]
+    , classModule       :: Module
+    , classDict         :: AttributeDict
+    } deriving (Eq, Show)
 
 data Module = Module
     { moduleName        :: String

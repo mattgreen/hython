@@ -108,11 +108,19 @@ eval (ModuleDef statements) = evalBlock statements
 
 eval (ClassDef name bases statements) = do
     baseClasses <- mapM evalExpr bases
+    activeModule <- gets currentModule
     dict <- liftIO AttributeDict.empty
     evalBlockWithNewEnv statements dict
 
+    let cls = Class {
+        className = name,
+        classBases = map classOf baseClasses,
+        classDict = dict,
+        classModule = activeModule
+    }
+
     env <- currentEnv
-    liftIO $ bindName name (ClassObj name baseClasses dict) env
+    liftIO $ bindName name (ClassObj cls) env
 
 eval (Assignment (Name name) expr) = do
     value <- evalExpr expr
@@ -191,7 +199,7 @@ eval (Nonlocal exprs) = forM_ exprs $ \expr -> do
 
 eval (Raise expr _from) = do
     exception <- evalExpr expr
-    baseException <- evalExpr (Name "BaseException")
+    (ClassObj baseException) <- evalExpr (Name "BaseException")
 
     if isSubClass (classOf exception) baseException
         then do
@@ -273,7 +281,7 @@ eval (Try exceptClauses block elseBlock finallyBlock) = do
 
     getClause [] _ = return Nothing
     getClause (c@(ExceptClause classExpr _ _):clauses) exception = do
-        cls <- evalExpr classExpr
+        (ClassObj cls) <- evalExpr classExpr
         if isSubClass (classOf exception) cls
             then return $ Just c
             else getClause clauses exception
@@ -592,10 +600,10 @@ evalBlock statements = forM_ statements $ \s -> do
     traceStmt s = "*** Evaluating: " ++ show s
 
 evalCall :: Object -> [Object] -> Interpreter Object
-evalCall cls@(ClassObj {}) args = do
+evalCall c@(ClassObj cls) args = do
     object <- liftIO $ newObject cls
 
-    ctor <- liftIO $ getAttr "__init__" cls
+    ctor <- liftIO $ getAttr "__init__" c
     _ <- case ctor of
         Just f  -> evalCall f (object : args)
         Nothing -> return None
