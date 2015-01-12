@@ -11,6 +11,7 @@ import Data.List
 import Text.Printf
 
 import qualified Hython.AttributeDict as AttributeDict
+import Hython.Class
 import Hython.Object
 
 builtins :: IO [(String, Object)]
@@ -23,49 +24,7 @@ builtins = do
     }
 
     object <- newClass "object" [] builtinsModule
-    baseException <- newClass "BaseException" [object] builtinsModule
-    exception <- newClass "Exception" [baseException] builtinsModule
-    stopIteration <- newClass "StopIteration" [exception] builtinsModule
-    arithmeticError <- newClass "ArithmeticError" [exception] builtinsModule
-    assertionError <- newClass "AssertionError" [exception] builtinsModule
-    attributeError <- newClass "AttributeError" [exception] builtinsModule
-    bufferError <- newClass "BufferError" [exception] builtinsModule
-    eofError <- newClass "EOFError" [exception] builtinsModule
-    importError <- newClass "ImportError" [exception] builtinsModule
-    lookupError <- newClass "LookupError" [exception] builtinsModule
-    memoryError <- newClass "MemoryError" [exception] builtinsModule
-    nameError <- newClass "NameError" [exception] builtinsModule
-    osError <- newClass "OSError" [exception] builtinsModule
-    referenceError <- newClass "ReferenceError" [exception] builtinsModule
-    runtimeError <- newClass "RuntimeError" [exception] builtinsModule
-    syntaxError <- newClass "SyntaxError" [exception] builtinsModule
-    systemError <- newClass "SystemError" [exception] builtinsModule
-    typeError <- newClass "TypeError" [exception] builtinsModule
-    valueError <- newClass "ValueError" [exception] builtinsModule
-    warning <- newClass "Warning" [exception] builtinsModule
-
-    let builtinClasses = [("object", object),
-                          ("BaseException", baseException),
-                          ("Exception", exception),
-                          ("StopIteration", stopIteration),
-                          ("ArithmeticError", arithmeticError),
-                          ("AssertionError", assertionError),
-                          ("AttributeError", attributeError),
-                          ("BufferError", bufferError),
-                          ("EOFError", eofError),
-                          ("ImportError", importError),
-                          ("LookupError", lookupError),
-                          ("MemoryError", memoryError),
-                          ("NameError", nameError),
-                          ("OSError", osError),
-                          ("ReferenceError", referenceError),
-                          ("RuntimeError", runtimeError),
-                          ("SystemError", systemError),
-                          ("SyntaxError", syntaxError),
-                          ("TypeError", typeError),
-                          ("ValueError", valueError),
-                          ("Warning", warning)]
-
+    let builtinClasses = [("object", object)]
     let builtinFns = map defBuiltin builtinFunctions
 
     return $ map (Control.Arrow.second ClassObj) builtinClasses ++ builtinFns
@@ -173,8 +132,13 @@ str' v = do
     return $ String s
 
 getAttr :: String -> Object -> IO (Maybe Object)
-getAttr attr (Object _ ref)     = AttributeDict.lookup attr ref
-getAttr attr (ClassObj cls)     = AttributeDict.lookup attr (classDict cls)
+getAttr attr (Object cls dict) = do
+    obj <- AttributeDict.lookup attr dict
+    case obj of
+        Just o  -> return $ Just o
+        Nothing -> lookupAttr attr cls
+
+getAttr attr (ClassObj cls)     = lookupAttr attr cls
 getAttr attr (ModuleObj m)      = AttributeDict.lookup attr (moduleDict m)
 getAttr _ _ = fail "Only classes and objects have attrs!"
 
