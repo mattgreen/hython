@@ -70,5 +70,3 @@ class ValueError(Exception):
 
 class Warning(Exception):
     pass
-
-print(GeneratorExit("message here")._message)

@@ -104,8 +104,6 @@ eval (FuncDef name params body) = do
 
     nestedDef env = activeEnv env == LocalEnv
 
-eval (ModuleDef statements) = evalBlock statements
-
 eval (ClassDef name bases statements) = do
     baseClasses <- mapM evalExpr bases
     activeModule <- gets currentModule
@@ -683,4 +681,16 @@ interpret path code = do
     return ()
 
   where
-    parseEval = evalBlock (parse code)
+    parseEval = do
+        modOrErr <- loadModule "builtins" $ \builtinsCode _ ->
+            evalBlock (parse builtinsCode)
+
+        case modOrErr of
+            Right m -> do
+                env <- currentEnv
+                liftIO $ bindNames (moduleDict m) env
+            Left err -> liftIO $ do
+                putStrLn ("Error loading builtins module: " ++ err)
+                exitFailure
+
+        evalBlock (parse code)

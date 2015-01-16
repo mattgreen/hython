@@ -24,7 +24,6 @@ data Statement
     | ClassDef String [Expression] Statements
     | Import [Expression]
     | ImportFrom Expression [Expression]
-    | ModuleDef Statements
     deriving(Eq, Show)
 
 data Arg
