@@ -14,11 +14,29 @@ class C:
 class D(C):
     pass
 
+# Test simple instantiation
 c = C(42)
+
+# Test adding an arbitrary attr
 c.other_attribute = "hello"
 print(c.other_attribute + " there")
+
+# Test special __class__ var
 print(c.__class__)
+
+# Test simple zero arg method
 print(c.m())
+
+# One arg method
 print(c.n(42))
+
+# Defined attributes
 print(c.num)
 print(c.get_num())
+
+class Derived(C):
+    def m(self):
+        return 84
+
+# Test 'inheritance'
+print(Derived(99).m())
