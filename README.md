@@ -57,7 +57,7 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] `with` statement
  * [x] `yield` statement
  * [ ] Keyword arguments to functions
- * [ ] Default arguments to functions
+ * [x] Default arguments to functions
 
 ### Interpreter
 

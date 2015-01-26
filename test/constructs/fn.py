@@ -37,3 +37,9 @@ print(h())
 print(i())
 print(j())
 print(k())
+
+def fn_with_def_args(a, b, c=18):
+    return a + b + c
+
+print(fn_with_def_args(1, 1, 1))
+print(fn_with_def_args(1, 1))

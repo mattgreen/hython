@@ -14,6 +14,7 @@ import Data.Fixed
 import Data.IORef
 import Data.Maybe
 import Debug.Trace
+import Safe
 import System.Environment
 import System.Exit
 import Text.Printf
@@ -616,19 +617,19 @@ evalCall (BuiltinFn name) args = do
     liftIO $ fromJust fn args
 
 evalCall (Function name params body env) args = do
-    state <- get
-
-    when (length params /= length args) $
+    when badArity $
         raiseError "TypeError" arityErrorMsg
 
-    symbols <- liftIO $ AttributeDict.fromList $ zip (map unwrapArg params) args
+    calleeArgs <- zipWithM getArg [0..] params
+    calleeDict <- liftIO $ AttributeDict.fromList calleeArgs
 
+    state <- get
     callCC $ \returnCont -> do
         let returnHandler returnValue = do
             put state
             returnCont returnValue
 
-        pushFrame name env { localEnv = symbols, activeEnv = LocalEnv }
+        pushFrame name env { localEnv = calleeDict, activeEnv = LocalEnv }
         modify $ \s -> s { fnReturn = returnHandler }
         evalBlock body
         returnHandler None
@@ -636,11 +637,20 @@ evalCall (Function name params body env) args = do
         return None
 
   where
+    badArity = (argCount < requiredArgCount) || (argCount > length params)
+
+    requiredArgCount = length (filter isPositionalArg params)
+    isPositionalArg (PositionalArg {}) = True
+    isPositionalArg _ = False
+
+    getArg i (PositionalArg argName)   = return (argName, at args i)
+    getArg i (DefaultArg argName expr) = do
+        obj <- evalExpr expr
+        return (argName, atDef obj args i)
+
     argCount = length args
     paramCount = length params
     arityErrorMsg = printf "%s() takes exactly %d arguments (%d given)" name paramCount argCount
-
-    unwrapArg (PositionalArg n) = n
 
 evalCall (Lambda params expr env) args = do
     when (length params /= length args) $
