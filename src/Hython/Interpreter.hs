@@ -639,7 +639,7 @@ evalCall (Function name params body env) args = do
   where
     badArity = (argCount < requiredArgCount) || (argCount > length params)
 
-    requiredArgCount = length (filter isPositionalArg params)
+    requiredArgCount = length (takeWhile isPositionalArg params)
     isPositionalArg (PositionalArg {}) = True
     isPositionalArg _ = False
 
