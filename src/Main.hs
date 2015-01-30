@@ -14,11 +14,13 @@ main :: IO ()
 main = do
     args <- getArgs
     case args of
+        []          -> repl
         [filename]  -> do
             code <- readFile filename `catch` errorHandler filename
             interpret filename code
-
-        _           -> repl
+        _           -> do
+            putStrLn "Usage: hython <filename>"
+            exitFailure
 
 errorHandler :: String -> IOError -> IO String
 errorHandler filename e = do
