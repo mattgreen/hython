@@ -18,9 +18,7 @@ main = do
             code <- readFile filename `catch` errorHandler filename
             interpret filename code
 
-        _           -> do
-            putStrLn "Usage: hython <filename>"
-            exitFailure
+        _           -> repl
 
 errorHandler :: String -> IOError -> IO String
 errorHandler filename e = do

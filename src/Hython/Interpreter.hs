@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-module Hython.Interpreter (interpret, parse)
+module Hython.Interpreter (interpret, parse, repl)
 where
 
 import Prelude hiding (break)
@@ -18,6 +18,7 @@ import Debug.Trace
 import Safe
 import System.Environment
 import System.Exit
+import System.IO
 import Text.Printf
 
 import qualified Hython.AttributeDict as AttributeDict
@@ -724,3 +725,30 @@ interpret path code = do
                 exitFailure
 
         evalBlock (parse code)
+
+repl :: IO ()
+repl = do
+    config  <- defaultConfig
+    state   <- defaultState "<repl>"
+
+    _ <- runStateT (runReaderT (runContT readEvalApply return) config) state
+    return ()
+
+  where
+    readEvalApply = do
+        modOrErr <- loadModule "builtins" $ \builtinsCode _ ->
+            evalBlock (parse builtinsCode)
+
+        case modOrErr of
+            Right m -> do
+                env <- currentEnv
+                liftIO $ bindBuiltinNames (moduleDict m) env
+            Left err -> liftIO $ do
+                putStrLn ("Error loading builtins module: " ++ err)
+                exitFailure
+
+        forever $ do
+            liftIO $ putStr ">>> "
+            liftIO $ hFlush stdout
+            line <- liftIO getLine
+            evalBlock (parse line)
