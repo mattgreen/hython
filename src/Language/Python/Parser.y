@@ -170,8 +170,10 @@ parameters
     : '(' sepBy0(parameter, ',') ')' { $2 }
 
 parameter
-    : identifier                { PositionalArg $1 }
-    | identifier '=' test       { DefaultArg $1 $3 }
+    : identifier                { FormalParam $1 }
+    | identifier '=' test       { DefaultParam $1 $3 }
+    | '*' identifier            { SplatParam $2 }
+    | '**' identifier           { DoubleSplatParam $2 }
 
 -- typedargslist: (tfpdef ['=' test] (',' tfpdef ['=' test])* [','
 --        ['*' [tfpdef] (',' tfpdef ['=' test])* [',' '**' tfpdef] | '**' tfpdef]]
@@ -180,9 +182,8 @@ parameter
 -- varargslist: (vfpdef ['=' test] (',' vfpdef ['=' test])* [','
 --        ['*' [vfpdef] (',' vfpdef ['=' test])* [',' '**' vfpdef] | '**' vfpdef]]
 --      |  '*' [vfpdef] (',' vfpdef ['=' test])* [',' '**' vfpdef] | '**' vfpdef)
--- TODO: obviously wrong
 varargslist
-    : sepBy0(identifier, ',')   { $1 }
+    : sepBy0(parameter, ',')    { $1 }
 
 -- vfpdef: NAME
 vfpdef

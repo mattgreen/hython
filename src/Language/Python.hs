@@ -6,7 +6,7 @@ data Statement
     = Assignment Expression Expression
     | Expression Expression
     | If [IfClause] [Statement]
-    | FuncDef String [Arg] [Statement]
+    | FuncDef String [Param] [Statement]
     | Del Expression
     | For Expression Expression Statements Statements
     | Raise Expression Expression
@@ -26,9 +26,11 @@ data Statement
     | ImportFrom Expression [Expression]
     deriving(Eq, Show)
 
-data Arg
-    = PositionalArg String
-    | DefaultArg String Expression
+data Param
+    = FormalParam String
+    | DefaultParam String Expression
+    | SplatParam String
+    | DoubleSplatParam String
     deriving (Eq, Show)
 
 data IfClause = IfClause Expression [Statement] deriving (Eq, Show)
@@ -54,7 +56,7 @@ data Expression
     | From Expression
     | Glob
     | RelativeImport Int Expression
-    | LambdaExpr [String] Expression
+    | LambdaExpr [Param] Expression
     | UnaryOp UnaryOperator Expression
     | BinOp Operator Expression Expression
     | TernOp Expression Expression Expression

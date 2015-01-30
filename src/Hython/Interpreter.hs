@@ -472,11 +472,9 @@ evalExpr (Call e args) = do
     evalArgs <- mapM evalExpr args
     evalCall f evalArgs
 
-evalExpr (LambdaExpr args expr) = do
+evalExpr (LambdaExpr params expr) = do
     env <- currentEnv
-    return $ Lambda posArgs expr env
-  where
-    posArgs = map PositionalArg args
+    return $ Lambda params expr env
 
 evalExpr (Attribute target name) = do
     receiver <- evalExpr target
@@ -639,12 +637,12 @@ evalCall (Function name params body env) args = do
   where
     badArity = (argCount < requiredArgCount) || (argCount > length params)
 
-    requiredArgCount = length (takeWhile isPositionalArg params)
-    isPositionalArg (PositionalArg {}) = True
-    isPositionalArg _ = False
+    requiredArgCount = length (takeWhile isPositionalParam params)
+    isPositionalParam (FormalParam {}) = True
+    isPositionalParam _ = False
 
-    getArg i (PositionalArg argName)   = return (argName, at args i)
-    getArg i (DefaultArg argName expr) = do
+    getArg i (FormalParam argName)   = return (argName, at args i)
+    getArg i (DefaultParam argName expr) = do
         obj <- evalExpr expr
         return (argName, atDef obj args i)
 
@@ -668,7 +666,7 @@ evalCall (Lambda params expr env) args = do
     return result
 
   where
-    unwrapArg (PositionalArg n) = n
+    unwrapArg (FormalParam n) = n
 
 evalCall v _ = do
     s <- liftIO $ str v
