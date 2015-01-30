@@ -70,3 +70,6 @@ class ValueError(Exception):
 
 class Warning(Exception):
     pass
+
+def print(s):
+    __hython_primitive__("print", s)

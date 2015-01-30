@@ -4,6 +4,7 @@ where
 import Prelude hiding (print)
 
 import Control.Arrow
+import Control.Monad.State (liftIO)
 import Data.Complex
 import Data.Fixed
 import Data.IORef
@@ -12,6 +13,7 @@ import Text.Printf
 
 import qualified Hython.AttributeDict as AttributeDict
 import Hython.Class
+import Hython.InterpreterState
 import Hython.Object
 
 builtins :: IO [(String, Object)]
@@ -42,30 +44,30 @@ builtins = do
             classModule = owner
         }
 
-builtinFunctions :: [(String, Objects -> IO Object)]
+builtinFunctions :: [(String, Objects -> Interpreter Object)]
 builtinFunctions = [("bool", bool),
                     ("len", len),
-                    ("print", print),
                     ("pow", pow'),
                     ("slice", slice),
-                    ("str", str')]
+                    ("str", str'),
+                    ("__hython_primitive__", primitive)]
 
-bool :: Objects -> IO Object
+bool :: Objects -> Interpreter Object
 bool([])    = return $ Bool False
 bool([x])   = return $ Bool (isTrue x)
 bool _      = fail "bool() takes at most 1 argument"
 
-len :: Objects -> IO Object
+len :: Objects -> Interpreter Object
 len([x])    = case x of
                 (String value)  -> return $ Int (fromIntegral (length value))
                 (List ref)    -> do
-                    values <- readIORef ref
+                    values <- liftIO $ readIORef ref
                     return $ Int (fromIntegral (length values))
                 (Tuple values)  -> return $ Int (fromIntegral (length values))
                 _               -> fail "object has no len()"
 len _       = fail "len() takes exactly one argument"
 
-pow' :: Objects -> IO Object
+pow' :: Objects -> Interpreter Object
 pow' args = return $ pow args
 
 pow :: Objects -> Object
@@ -85,13 +87,23 @@ pow [Float l, Float r, Float m] = do
 
 pow _ = error "pow() takes at least two arguments"
 
-print :: Objects -> IO Object
-print args = do
-    stringArgs <- mapM str args
-    putStrLn $ unwords stringArgs
-    return None
+type PrimitiveFn = (Objects -> Interpreter Object)
 
-slice :: Objects -> IO Object
+primitive :: Objects -> Interpreter Object
+primitive (String name : extraArgs) = case lookup name primitiveFunctions of
+    Just f  -> f extraArgs
+    Nothing -> fail "bad primitive"
+  where
+    primitiveFunctions :: [(String, PrimitiveFn)]
+    primitiveFunctions = [("print", print')]
+
+    print' args = do
+        liftIO $ do
+            strArgs <- mapM str args
+            putStrLn $ unwords strArgs
+        return None
+
+slice :: Objects -> Interpreter Object
 slice [end]                 = return $ Slice None end None
 slice [start, end, stride]  = return $ Slice start end stride
 slice _                     = fail "blah"
@@ -126,9 +138,9 @@ str (List ref) = do
     stringValues <- mapM str values
     return $ printf "[%s]" (intercalate ", " stringValues)
 
-str' :: Objects -> IO Object
+str' :: Objects -> Interpreter Object
 str' v = do
-    s <- str (head v)
+    s <- liftIO $ str (head v)
     return $ String s
 
 getAttr :: String -> Object -> IO (Maybe Object)

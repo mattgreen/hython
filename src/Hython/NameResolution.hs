@@ -29,6 +29,11 @@ bindNames names env = do
   where
     dict = getActiveEnv env
 
+bindBuiltinNames :: AttributeDict -> Env -> IO ()
+bindBuiltinNames names env = do
+    _ <- AttributeDict.union names (builtinEnv env)
+    return ()
+
 bindNonlocalName :: String -> Env -> IO Bool
 bindNonlocalName name env = do
     maybeRef <- lookupIn (enclosingEnvs env)

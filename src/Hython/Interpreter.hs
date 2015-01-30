@@ -614,7 +614,7 @@ evalCall (BuiltinFn name) args = do
     when (isNothing fn) $
         raiseError "NameError" ("no built-in with name " ++ name)
 
-    liftIO $ fromJust fn args
+    fromJust fn args
 
 evalCall (Function name params body env) args = do
     when badArity $
@@ -698,7 +698,7 @@ interpret path code = do
         case modOrErr of
             Right m -> do
                 env <- currentEnv
-                liftIO $ bindNames (moduleDict m) env
+                liftIO $ bindBuiltinNames (moduleDict m) env
             Left err -> liftIO $ do
                 putStrLn ("Error loading builtins module: " ++ err)
                 exitFailure
