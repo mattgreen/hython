@@ -12,6 +12,7 @@ import Control.Monad.Trans.Cont hiding (cont)
 import Data.Bits
 import Data.Fixed
 import Data.IORef
+import Data.List
 import Data.Maybe
 import Debug.Trace
 import Safe
@@ -73,14 +74,19 @@ defaultState path = do
 
 defaultExceptionHandler :: Object -> Interpreter ()
 defaultExceptionHandler exception = do
+    currentFrames <- gets frames
     details <- callMethod exception "__str__"
 
     liftIO $ do
         strDetails <- str details
+        putStrLn "Traceback (most recent call last):"
+        putStrLn $ intercalate "\n" (reverse $ traceback currentFrames)
         putStrLn $ printf "%s: %s" exceptionClass strDetails
         exitFailure
   where
     exceptionClass = className (classOf exception)
+    formatFrame (Frame name _) = "  File <unknown>, line <unknown> in " ++ name
+    traceback currentFrames = map formatFrame currentFrames
 
 defaultBreakHandler :: () -> Interpreter ()
 defaultBreakHandler () = raiseError "SyntaxError" "'break' outside loop"
