@@ -72,9 +72,15 @@ defaultState path = do
     }
 
 defaultExceptionHandler :: Object -> Interpreter ()
-defaultExceptionHandler _exception = liftIO $ do
-    putStrLn "Exception: <msg>"
-    exitFailure
+defaultExceptionHandler exception = do
+    details <- callMethod exception "__str__"
+
+    liftIO $ do
+        strDetails <- str details
+        putStrLn $ printf "%s: %s" exceptionClass strDetails
+        exitFailure
+  where
+    exceptionClass = className (classOf exception)
 
 defaultBreakHandler :: () -> Interpreter ()
 defaultBreakHandler () = raiseError "SyntaxError" "'break' outside loop"
@@ -89,7 +95,6 @@ raiseError :: String -> String -> Interpreter ()
 raiseError errorClassName message = do
     errorClass <- evalExpr (Name errorClassName)
     exception <- evalCall errorClass [String message]
-    liftIO $ putStrLn message
 
     handler <- gets exceptHandler
     handler exception
@@ -679,6 +684,17 @@ evalBlockWithNewEnv statements dict = do
     updateEnv $ env { localEnv = dict, activeEnv = LocalEnv }
     evalBlock statements
     updateEnv env
+
+callMethod :: Object -> String -> Interpreter Object
+callMethod obj methodName = do
+    method <- liftIO $ getAttr methodName obj
+    case method of
+        Just m  -> evalCall m [obj]
+        Nothing -> do
+            raiseError "AttributeError" attributeErrorMsg
+            return None
+  where
+    attributeErrorMsg = printf "object has no attribute '%s'" methodName
 
 interpret :: String -> String -> IO ()
 interpret path code = do
