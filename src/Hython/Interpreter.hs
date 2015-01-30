@@ -5,6 +5,8 @@ where
 
 import Prelude hiding (break)
 
+
+import Control.Exception
 import Control.Monad
 import Control.Monad.Reader
 import Control.Monad.State hiding (state)
@@ -735,6 +737,12 @@ repl = do
     return ()
 
   where
+    errorHandler :: IOError -> IO String
+    errorHandler _ = do
+        putStr "\n"
+        _ <- exitSuccess
+        return ""
+
     readEvalApply = do
         modOrErr <- loadModule "builtins" $ \builtinsCode _ ->
             evalBlock (parse builtinsCode)
@@ -748,7 +756,9 @@ repl = do
                 exitFailure
 
         forever $ do
-            liftIO $ putStr ">>> "
-            liftIO $ hFlush stdout
-            line <- liftIO getLine
+            liftIO $ do
+                putStr ">>> "
+                hFlush stdout
+            line <- liftIO $ getLine `catch` errorHandler
+
             evalBlock (parse line)
