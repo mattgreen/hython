@@ -436,6 +436,10 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
   where
     eval' _ l@(Float {}) (Int r)            = eval' op l (Float (fromIntegral r))
     eval' _ (Int l) r@(Float {})            = eval' op (Float (fromIntegral l)) r
+    eval' Is l r@None                       = Just $ l == r
+    eval' Is l@None r                       = Just $ l == r
+    eval' IsNot l r@None                    = Just $ l /= r
+    eval' IsNot l@None r                    = Just $ l /= r
     eval' Eq (Int l) (Int r)                = Just $ l == r
     eval' Eq (Float l) (Float r)            = Just $ l == r
     eval' Eq (String l) (String r)          = Just $ l == r
