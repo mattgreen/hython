@@ -95,7 +95,12 @@ primitive (String name : extraArgs) = case lookup name primitiveFunctions of
     Nothing -> fail "bad primitive"
   where
     primitiveFunctions :: [(String, PrimitiveFn)]
-    primitiveFunctions = [("print", print')]
+    primitiveFunctions = [("issubclass", issubclass), ("print", print')]
+
+    issubclass [cls1, cls2] = return $ Bool (isSubClass l r)
+      where
+        l = classOf cls1
+        r = classOf cls2
 
     print' args = do
         liftIO $ do

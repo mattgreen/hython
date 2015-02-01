@@ -40,3 +40,7 @@ class Derived(C):
 
 # Test 'inheritance'
 print(Derived(99).m())
+
+d = D(10)
+print(isinstance(d, D))
+print(isinstance(d, C))
