@@ -29,3 +29,4 @@ data Config = Config {
     tracingEnabled :: Bool
 }
 
+type PrimitiveFn = (Objects -> Interpreter Object)

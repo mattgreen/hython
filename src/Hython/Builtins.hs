@@ -16,6 +16,8 @@ import Hython.Class
 import Hython.InterpreterState
 import Hython.Object
 
+import Hython.BuiltinTypes.List
+
 builtins :: IO [(String, Object)]
 builtins = do
     emptyDict <- AttributeDict.empty
@@ -87,15 +89,19 @@ pow [Float l, Float r, Float m] = do
 
 pow _ = error "pow() takes at least two arguments"
 
-type PrimitiveFn = (Objects -> Interpreter Object)
-
 primitive :: Objects -> Interpreter Object
 primitive (String name : extraArgs) = case lookup name primitiveFunctions of
     Just f  -> f extraArgs
     Nothing -> fail "bad primitive"
   where
     primitiveFunctions :: [(String, PrimitiveFn)]
-    primitiveFunctions = [("issubclass", issubclass), ("print", print')]
+    primitiveFunctions = [("issubclass", issubclass),
+                          ("list-new", listNew),
+                          ("list-append", listAppend),
+                          ("list-clear", listClear),
+                          ("list-concat", listConcat),
+                          ("list-length", listLength),
+                          ("print", print')]
 
     issubclass [cls1, cls2] = return $ Bool (isSubClass l r)
       where
