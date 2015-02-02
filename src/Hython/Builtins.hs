@@ -47,17 +47,10 @@ builtins = do
         }
 
 builtinFunctions :: [(String, Objects -> Interpreter Object)]
-builtinFunctions = [("bool", bool),
-                    ("len", len),
+builtinFunctions = [("len", len),
                     ("pow", pow'),
-                    ("slice", slice),
                     ("str", str'),
                     ("__hython_primitive__", primitive)]
-
-bool :: Objects -> Interpreter Object
-bool([])    = return $ Bool False
-bool([x])   = return $ Bool (isTrue x)
-bool _      = fail "bool() takes at most 1 argument"
 
 len :: Objects -> Interpreter Object
 len([x])    = case x of
@@ -113,11 +106,6 @@ primitive (String name : extraArgs) = case lookup name primitiveFunctions of
             strArgs <- mapM str args
             putStrLn $ unwords strArgs
         return None
-
-slice :: Objects -> Interpreter Object
-slice [end]                 = return $ Slice None end None
-slice [start, end, stride]  = return $ Slice start end stride
-slice _                     = fail "blah"
 
 str :: Object -> IO String
 str None                        = return "None"
