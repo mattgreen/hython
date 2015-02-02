@@ -1,7 +1,26 @@
 from exceptions import *
 
+class NoneType(object):
+    def __bool__(self):
+        return False
+
+    def __str__(self):
+        return "None"
+
+class ellipsis(object):
+    def __bool__(self):
+        return True
+    def __str__(self):
+        return "Ellipsis"
+
+Ellipsis = ellipsis()
+
 class NotImplementedType(object):
-    pass
+    def __bool__(self):
+        return True
+
+    def __str__(self):
+        return "NotImplemented"
 
 NotImplemented = NotImplementedType()
 
