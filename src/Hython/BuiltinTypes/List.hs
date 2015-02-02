@@ -1,4 +1,4 @@
-module Hython.BuiltinTypes.List
+module Hython.BuiltinTypes.List (listPrimitives)
 where
 
 import Control.Monad.State
@@ -6,6 +6,14 @@ import Data.IORef
 
 import Hython.InterpreterState
 import Hython.Object
+
+listPrimitives :: [(String, PrimitiveFn)]
+listPrimitives = [("list-new", listNew)
+                 ,("list-append", listAppend)
+                 ,("list-clear", listClear)
+                 ,("list-concat", listConcat)
+                 ,("list-length", listLength)
+                 ]
 
 listNew :: PrimitiveFn
 listNew _ = do

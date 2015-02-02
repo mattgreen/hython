@@ -88,13 +88,7 @@ primitive (String name : extraArgs) = case lookup name primitiveFunctions of
     Nothing -> fail "bad primitive"
   where
     primitiveFunctions :: [(String, PrimitiveFn)]
-    primitiveFunctions = [("issubclass", issubclass),
-                          ("list-new", listNew),
-                          ("list-append", listAppend),
-                          ("list-clear", listClear),
-                          ("list-concat", listConcat),
-                          ("list-length", listLength),
-                          ("print", print')]
+    primitiveFunctions = listPrimitives ++ [("issubclass", issubclass), ("print", print')]
 
     issubclass [cls1, cls2] = return $ Bool (isSubClass l r)
       where
