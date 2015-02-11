@@ -14,7 +14,7 @@ import Control.Monad.Trans.Cont hiding (cont)
 import Data.Bits
 import Data.Fixed
 import Data.IORef
-import Data.List
+import Data.List hiding (break)
 import Data.Maybe
 import Debug.Trace
 import Safe
@@ -663,6 +663,7 @@ evalCall (Function name params body env) args = do
     getArg i (DefaultParam argName expr) = do
         obj <- evalExpr expr
         return (argName, atDef obj args i)
+    getArg i (SplatParam paramName) = return (paramName, Tuple (drop i args))
 
     argCount = length args
     paramCount = length params
