@@ -493,8 +493,10 @@ evalExpr (Call e args) = do
         obj <- evalExpr starExpr
         case obj of
             (Tuple objs)    -> return objs
+            (String s)      -> return (map (\c -> String [c]) s)
+            (List ref)      -> liftIO $ readIORef ref
             _               -> do
-                raiseError "TypeError" "splat may only be used on tuple"
+                raiseError "TypeError" "splat may only be used on sequence"
                 return []
 
     handleArg (DoubleStar _) = do
