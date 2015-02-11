@@ -30,8 +30,8 @@ def isinstance(o, cls):
 def issubclass(cls, clsInfo):
     return __hython_primitive__("issubclass", cls, clsInfo)
 
-def print(s):
-    __hython_primitive__("print", s)
+def print(*args):
+    __hython_primitive__("print", *args)
 
 class list(object):
     def __init__(self):

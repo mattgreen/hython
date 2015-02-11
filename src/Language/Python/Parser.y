@@ -32,7 +32,6 @@ NEWLINE     {L.Newline}
 '<='        {L.Operator "<="}
 '>'         {L.Operator ">"}
 '>='        {L.Operator ">="}
-'<>'        {L.Operator "<>"}
 '%'         {L.Operator "%"}
 '**'        {L.Operator "**"}
 '//'        {L.Operator "//"}
@@ -101,6 +100,7 @@ YIELD       {L.Keyword "yield"}
 %left '+' '-'
 %left '*' '/' '//' '%'
 %left POS NEG COMP
+%left SPLAT
 %right '**'
 
 %%
@@ -447,7 +447,6 @@ comp_op
     | NOT IN    { NotIn }
     | IS        { Is }
     | IS NOT    { IsNot }
-    --| '<>'
 
 -- star_expr: '*' expr
 -- TODO: implement
@@ -573,7 +572,13 @@ base_classes
 --                          |'*' test (',' argument)* [',' '**' test] 
 --                          |'**' test)
 arglist
-    : sepBy0(argument, ',')         { $1 }
+    : sepBy0(argitem, ',')                 { $1 }
+
+argitem
+    : argument      { $1 }
+    | '*' test      { Star $2 }
+    | '**' test     { DoubleStar $2 }
+
 -- # The reason that keywords are test nodes instead of NAME is that using NAME
 -- # results in an ambiguity. ast.c makes sure it's a NAME.
 -- argument: test [comp_for] | test '=' test  # Really [keyword '='] test

@@ -53,6 +53,8 @@ data Expression
     | Subscript Expression Expression
     | As Expression Expression
     | Yield Expression
+    | Star Expression
+    | DoubleStar Expression
     | From Expression
     | Glob
     | RelativeImport Int Expression
@@ -78,7 +80,6 @@ data Constant
 
 data UnaryOperator
     = Not
-    | Splat
     | Pos
     | Neg
     | Complement

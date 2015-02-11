@@ -3,8 +3,7 @@
 module Hython.Interpreter (interpret, parse, repl)
 where
 
-import Prelude hiding (break)
-
+import Prelude hiding (exp, break)
 
 import Control.Exception
 import Control.Monad
@@ -487,8 +486,24 @@ evalExpr (Call (Attribute expr name) args) = do
 
 evalExpr (Call e args) = do
     f <- evalExpr e
-    evalArgs <- mapM evalExpr args
-    evalCall f evalArgs
+    evalArgs <- mapM handleArg args
+    evalCall f (concat evalArgs)
+  where
+    handleArg (Star starExpr) = do
+        obj <- evalExpr starExpr
+        case obj of
+            (Tuple objs)    -> return objs
+            _               -> do
+                raiseError "TypeError" "splat may only be used on tuple"
+                return []
+
+    handleArg (DoubleStar _) = do
+        raiseError "SystemError" "double splat not implemented"
+        return []
+
+    handleArg exp = do
+        obj <- evalExpr exp
+        return [obj]
 
 evalExpr (LambdaExpr params expr) = do
     env <- currentEnv
@@ -552,6 +567,14 @@ evalExpr (SetDef {}) = do
 
 evalExpr (DictDef {}) = do
     unimplemented "dictdef expr"
+    return None
+
+evalExpr (Star {}) = do
+    raiseError "SyntaxError" "can use starred expression only as assignment target"
+    return None
+
+evalExpr (DoubleStar {}) = do
+    raiseError "SyntaxError" "invalid syntax"
     return None
 
 evalExpr (From {}) = do
@@ -653,11 +676,18 @@ evalCall (Function name params body env) args = do
         return None
 
   where
-    badArity = (argCount < requiredArgCount) || (argCount > length params)
+    badArity = (argCount < requiredArgCount) || tooManyArgs
 
     requiredArgCount = length (takeWhile isPositionalParam params)
     isPositionalParam (FormalParam {}) = True
     isPositionalParam _ = False
+
+    tooManyArgs = case find isSplatParam params of
+                      Just _    -> False
+                      Nothing   -> argCount > length params
+
+    isSplatParam (SplatParam {}) = True
+    isSplatParam _ = False
 
     getArg i (FormalParam argName)   = return (argName, at args i)
     getArg i (DefaultParam argName expr) = do
