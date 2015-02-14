@@ -32,6 +32,18 @@ NEWLINE     {L.Newline}
 '<='        {L.Operator "<="}
 '>'         {L.Operator ">"}
 '>='        {L.Operator ">="}
+'+='        {L.Delimiter "+="}
+'-='        {L.Delimiter "-="}
+'*='        {L.Delimiter "*="}
+'/='        {L.Delimiter "/="}
+'%='        {L.Delimiter "%="}
+'&='        {L.Delimiter "&="}
+'|='        {L.Delimiter "|="}
+'^='        {L.Delimiter "^="}
+'<<='       {L.Delimiter "<<="}
+'>>='       {L.Delimiter ">>="}
+'**='       {L.Delimiter "**="}
+'//='       {L.Delimiter "//="}
 '%'         {L.Operator "%"}
 '**'        {L.Operator "**"}
 '//'        {L.Operator "//"}
@@ -217,7 +229,8 @@ small_stmt
 -- expr_stmt: testlist_star_expr (augassign (yield_expr|testlist) |
 --                      ('=' (yield_expr|testlist_star_expr))*)
 expr_stmt
-    : testlist_star_expr          { Expression $1 }
+    : testlist_star_expr                                        { Expression $1 }
+    | testlist_star_expr augassign or(yield_expr, testlist)     { handleAugAssignment $1 $2 $3 }
     | testlist_star_expr '=' or(yield_expr, testlist_star_expr) { Assignment $1 $3 }
 
 -- testlist_star_expr: (test|star_expr) (',' (test|star_expr))* [',']
@@ -227,6 +240,20 @@ testlist_star_expr
 -- augassign: ('+=' | '-=' | '*=' | '/=' | '%=' | '&=' | '|=' | '^=' |
 --             '<<=' | '>>=' | '**=' | '//=')
 -- # For normal assignments, additional restrictions enforced by the interpreter
+augassign
+    : '+='      { ArithOp Add }
+    | '-='      { ArithOp Sub }
+    | '*='      { ArithOp Mul }
+    | '/='      { ArithOp Div }
+    | '%='      { ArithOp Mod }
+    | '&='      { BitOp BitAnd }
+    | '|='      { BitOp BitOr }
+    | '^='      { BitOp BitXor }
+    | '<<='     { BitOp LShift }
+    | '>>='     { BitOp RShift }
+    | '**='     { ArithOp Pow }
+    | '//='     { ArithOp FDiv }
+
 -- del_stmt: 'del' exprlist
 del_stmt
     : DEL exprlist      { Del $2 }
@@ -610,6 +637,8 @@ data Trailer
 
 expressionsOf (TupleDef exprs)  = exprs
 expressionsOf expr              = [expr]
+
+handleAugAssignment target op expr = Assignment target (BinOp op target expr)
 
 handleSlice start stop stride = SliceDef (unwrap start) (unwrap stop) (unwrap stride)
   where
