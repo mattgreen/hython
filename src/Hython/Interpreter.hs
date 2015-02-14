@@ -154,7 +154,22 @@ eval (Continue) = do
     continue <- gets loopContinue
     continue ()
 
--- Needs EH to implement iterator protocol
+eval (For (Name target) iterableExpr block _) = do
+    env <- currentEnv
+    iterable <- evalExpr iterableExpr
+
+    items <- itemsOf iterable
+    forM_ items $ \item -> do
+        liftIO $ bindName target item env
+        evalBlock block
+  where
+    itemsOf (String s) = return $ map (\c -> String [c]) s
+    itemsOf (Tuple t) = return t
+    itemsOf (List ref) = liftIO $ readIORef ref
+    itemsOf obj = do
+        unimplemented ("for keyword with " ++ show obj)
+        return []
+
 eval (For {}) = unimplemented "for keyword"
 
 eval (Global names) = do
