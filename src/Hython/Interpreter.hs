@@ -154,14 +154,17 @@ eval (Continue) = do
     continue <- gets loopContinue
     continue ()
 
-eval (For (Name target) iterableExpr block _) = do
+eval (For (Name target) iterableExpr block elseBlock) = do
     env <- currentEnv
     iterable <- evalExpr iterableExpr
-
     items <- itemsOf iterable
+
     forM_ items $ \item -> do
         liftIO $ bindName target item env
         evalBlock block
+
+    evalBlock elseBlock
+
   where
     itemsOf (String s) = return $ map (\c -> String [c]) s
     itemsOf (Tuple t) = return t

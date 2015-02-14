@@ -8,3 +8,13 @@ for i in t:
 
 for c in "hello":
     print(c)
+
+for c in "stuff":
+    print("for")
+else:
+    print("for-else")
+
+for c in "":
+    print("for")
+else:
+    print("for-else")
