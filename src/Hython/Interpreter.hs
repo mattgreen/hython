@@ -332,7 +332,7 @@ eval (While condition block elseBlock) = do
         modify $ \s -> s { exceptHandler = exceptHandler state }
         cont value
 
-eval (With {}) = unimplemented "with keyword"
+eval (With {}) = unimplemented "with statement"
 
 eval (Pass) = return ()
 
@@ -805,4 +805,4 @@ repl = do
                 hFlush stdout
             line <- liftIO $ getLine `catch` errorHandler
 
-            evalBlock (parse line)
+            evalBlock (parseRepl line)

@@ -1,5 +1,5 @@
 {
-module Language.Python.Parser (parse) where
+module Language.Python.Parser (parse, parseRepl) where
 import Control.Monad.Error
 import Data.Either
 import Data.List
@@ -14,7 +14,8 @@ import qualified Language.Python.Lexer as L
 %tokentype  {L.Token}
 %error      { parseError }
 
-%name parseTokens
+%name parseTokens file_input
+%name parseLine single_input
 
 %token
 identifier  {L.Identifier $$}
@@ -164,6 +165,11 @@ exprOrTupleTuple(p)
     | exprOrTupleTuple(p) ',' p { $1 ++ [$3] }
 
 -- single_input: NEWLINE | simple_stmt | compound_stmt NEWLINE
+single_input
+    : NEWLINE                       { [Pass] }
+    | simple_stmt                   { $1 }
+    | compound_stmt NEWLINE         { [$1] }
+
 -- file_input: (NEWLINE | stmt)* ENDMARKER
 file_input
     : many0(either(NEWLINE, stmt))  { foldl' (++) [] (rights $1) }
@@ -653,8 +659,8 @@ handleTrailers expr trailers = foldl' handleTrailer expr trailers
 names :: [String] -> [Expression]
 names xs = map Name xs
 
-tokenize code = L.tokenize code
 parse code = L.evalP parseTokens code
+parseRepl code = L.evalP parseLine code
 
 parseError :: L.Token -> a
 parseError t = error $ "Parse error: " ++ show t
