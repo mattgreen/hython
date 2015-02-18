@@ -30,6 +30,23 @@ def isinstance(o, cls):
 def issubclass(cls, clsInfo):
     return __hython_primitive__("issubclass", cls, clsInfo)
 
+def iter(x):
+    return basic_iterator(x)
+
+class basic_iterator(object):
+    def __init__(self, obj):
+        self._obj = obj
+        self._index = 0
+        self._length = len(obj)
+
+    def __next__(self):
+        if self._index >= self._length:
+            raise StopIteration()
+
+        o = self._obj[self._index]
+        self._index += 1
+        return o
+
 def print(*args):
     __hython_primitive__("print", *args)
 

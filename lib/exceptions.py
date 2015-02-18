@@ -1,5 +1,5 @@
 class BaseException(object):
-    def __init__(self, message):
+    def __init__(self, message=""):
         self._message = message
 
     def __str__(self):

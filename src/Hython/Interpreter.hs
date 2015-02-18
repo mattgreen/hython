@@ -12,6 +12,7 @@ import Control.Monad.State hiding (state)
 import Control.Monad.Trans.Cont hiding (cont)
 import Data.Bits
 import Data.Fixed
+import Data.Hashable
 import Data.IORef
 import Data.List hiding (break)
 import Data.Maybe
@@ -154,26 +155,14 @@ eval (Continue) = do
     continue <- gets loopContinue
     continue ()
 
-eval (For (Name target) iterableExpr block elseBlock) = do
-    env <- currentEnv
-    iterable <- evalExpr iterableExpr
-    items <- itemsOf iterable
-
-    forM_ items $ \item -> do
-        liftIO $ bindName target item env
-        evalBlock block
-
-    evalBlock elseBlock
-
+eval s@(For target iterableExpr block elseBlock) = eval (Try clauses tryBody [] [])
   where
-    itemsOf (String s) = return $ map (\c -> String [c]) s
-    itemsOf (Tuple t) = return t
-    itemsOf (List ref) = liftIO $ readIORef ref
-    itemsOf obj = do
-        unimplemented ("for keyword with " ++ show obj)
-        return []
-
-eval (For {}) = unimplemented "for keyword"
+    tryBody = [iteratorCreate, whileStmt]
+    iteratorCreate = Assignment iteratorName (Call (Name "iter") [iterableExpr])
+    whileStmt = While (Constant $ ConstantBool True) (Assignment target iteratorNextCall : block) []
+    iteratorNextCall = Call (Attribute iteratorName "__next__") []
+    iteratorName = Name $ "__iterator_" ++ show (abs $ hash (show s))
+    clauses = [ExceptClause (Name "StopIteration") "" elseBlock]
 
 eval (Global names) = do
     env <- currentEnv
