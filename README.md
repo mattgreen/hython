@@ -15,12 +15,12 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] Imaginary literals
  * [x] Single quoted string literals
  * [x] Double quoted string literals
- * [ ] Triple quoted string literals
- * [ ] String escape sequences
+ * [x] Triple quoted string literals
+ * [x] String escape sequences
  * [ ] Byte literals
  * [x] All operators, delimiters, and keywords
  * [ ] Implicit line joining in collections
- * [ ] Explicit line joining via `\\`
+ * [x] Explicit line joining via `\\`
 
 ### Parsing
 

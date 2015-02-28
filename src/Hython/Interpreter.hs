@@ -185,7 +185,7 @@ eval (Import exprs) = forM_ exprs $ \expr -> case expr of
   where
     load path binding = do
         moduleOrErr <- loadModule path $ \code dict ->
-            evalBlockWithNewEnv (parse code) dict
+            evalBlockWithNewEnv (parseOrThrow code) dict
 
         case moduleOrErr of
             Right newModule -> do
@@ -197,7 +197,7 @@ eval (Import exprs) = forM_ exprs $ \expr -> case expr of
 
 eval (ImportFrom (RelativeImport _level (Name path)) [Glob]) = do
     moduleOrErr <- loadModule path $ \code dict ->
-        evalBlockWithNewEnv (parse code) dict
+        evalBlockWithNewEnv (parseOrThrow code) dict
 
     case moduleOrErr of
         Right newModule -> do
@@ -760,7 +760,7 @@ interpret path code = do
   where
     parseEval = do
         modOrErr <- loadModule "builtins" $ \builtinsCode _ ->
-            evalBlock (parse builtinsCode)
+            evalBlock (parseOrThrow builtinsCode)
 
         case modOrErr of
             Right m -> do
@@ -770,7 +770,7 @@ interpret path code = do
                 putStrLn ("Error loading builtins module: " ++ err)
                 exitFailure
 
-        evalBlock (parse code)
+        evalBlock (parseOrThrow code)
 
 repl :: IO ()
 repl = do
@@ -789,7 +789,7 @@ repl = do
 
     readEvalApply = do
         modOrErr <- loadModule "builtins" $ \builtinsCode _ ->
-            evalBlock (parse builtinsCode)
+            evalBlock (parseOrThrow builtinsCode)
 
         case modOrErr of
             Right m -> do
@@ -805,4 +805,11 @@ repl = do
                 hFlush stdout
             line <- liftIO $ getLine `catch` errorHandler
 
-            evalBlock (parseRepl line)
+            case parseRepl line of
+                Right s     -> evalBlock s
+                Left err    -> liftIO $ putStrLn ("SyntaxError: " ++ err)
+
+parseOrThrow :: String -> [Statement]
+parseOrThrow code = case parse code of
+    Right s     -> s
+    Left err    -> fail ("SyntaxError: " ++ err)

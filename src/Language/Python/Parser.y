@@ -9,8 +9,6 @@ import Language.Python
 import qualified Language.Python.Lexer as L
 }
 
-%monad      {L.P}
-%lexer      {L.lexer}{L.EOF}
 %tokentype  {L.Token}
 %error      { parseError }
 
@@ -659,9 +657,18 @@ handleTrailers expr trailers = foldl' handleTrailer expr trailers
 names :: [String] -> [Expression]
 names xs = map Name xs
 
-parse code = L.evalP parseTokens code
-parseRepl code = L.evalP parseLine code
+parse :: String -> Either String [Statement]
+parse code = do
+    case L.lex code of
+        Right tokens    -> Right $ parseTokens tokens
+        Left err        -> Left $ show err
 
-parseError :: L.Token -> a
+parseRepl :: String -> Either String [Statement]
+parseRepl code = do
+    case L.lex code of
+        Right tokens    -> Right $ parseLine tokens
+        Left err        -> Left $ show err
+
+parseError :: [L.Token] -> a
 parseError t = error $ "Parse error: " ++ show t
 }
