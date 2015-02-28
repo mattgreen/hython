@@ -8,4 +8,5 @@ print('''hello''')
 print(1 + 3 + \
         2)
 
-#print(b"hi")
+# TODO: change to print when RT has support
+b"hi"
