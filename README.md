@@ -17,7 +17,7 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] Double quoted string literals
  * [x] Triple quoted string literals
  * [x] String escape sequences
- * [ ] Byte literals
+ * [x] Byte literals
  * [x] All operators, delimiters, and keywords
  * [ ] Implicit line joining in collections
  * [x] Explicit line joining via `\\`

@@ -7,6 +7,7 @@ import Prelude hiding (exp, lex)
 
 import Control.Monad
 import Data.Complex
+import Data.Char
 import Data.List
 
 import Text.Parsec hiding (newline, tokens)
@@ -61,11 +62,10 @@ logicalLine = do
   where
     lexemes = choice [ comment
                      , lexeme explicitLineJoin
+                     , lexeme (try literal)
                      , lexeme (try keyword)
                      , lexeme identifier
-                     , lexeme literal
                      , lexeme delimiterOrOperator
-                     {-, lexeme operator-}
                      ]
 
     explicitLineJoin = do
@@ -235,14 +235,22 @@ stringLiteral :: Lexer Tokens
 stringLiteral = try tripleQuotedString <|> singleQuotedString
   where
     singleQuotedString = do
+        prefix      <- option '_' stringPrefix
         quote       <- char '"' <|> char '\''
         contents    <- manyTill stringChar (try (char quote))
-        return [StringLiteral contents]
+        return [stringType prefix contents]
 
     tripleQuotedString = do
-        quotes <- string "\"\"\"" <|> string "'''"
-        contents <- manyTill stringChar (try (string quotes))
-        return [StringLiteral contents]
+        prefix      <- option '_' stringPrefix
+        quotes      <- string "\"\"\"" <|> string "'''"
+        contents    <- manyTill stringChar (try (string quotes))
+        return [stringType prefix contents]
+
+    stringPrefix = oneOf "bB"
+
+    stringType prefix s
+      | 'B' == toUpper prefix       = Literal $ ConstantBytes s
+      | otherwise                   = StringLiteral s
 
     stringChar = try escapedChar <|> anyChar
     escapedChar = do

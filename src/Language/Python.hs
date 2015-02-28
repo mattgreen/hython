@@ -72,6 +72,7 @@ data Expression
 data Constant
     = ConstantInt Integer
     | ConstantString String
+    | ConstantBytes String
     | ConstantFloat Double
     | ConstantImag (Complex Double)
     | ConstantBool Bool

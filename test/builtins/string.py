@@ -7,3 +7,5 @@ print('''hello''')
 
 print(1 + 3 + \
         2)
+
+#print(b"hi")
