@@ -91,8 +91,7 @@ Initialize a Cabal sandbox:
 
 Install dependencies:
 
-    $ cabal install --only-dependencies
-    $ cabal install alex happy hlint
+    $ make install-deps
 
 Build:
 

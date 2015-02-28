@@ -5,6 +5,10 @@ hython: hython.cabal $(SOURCES)
 	-@./.cabal-sandbox/bin/hlint src --ignore="Eta reduce"
 	@ln -sf dist/build/hython/hython .
 
+install-deps:
+	@cabal install --only-dependencies
+	@cabal install happy hlint
+
 .PHONY: test
 test: hython
 	@python3 test.py
