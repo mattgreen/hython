@@ -7,7 +7,7 @@ import Prelude hiding (exp, lex)
 
 import Control.Monad
 import Data.Complex
-import Data.Char
+import Data.Char hiding (digitToInt)
 import Data.List
 
 import Text.Parsec hiding (newline, tokens)
@@ -28,13 +28,17 @@ data Token
 
 type Tokens = [Token]
 
-type LexerState = [Int]
+data LexerState = LexerState
+                { lexerIndents :: [Int]
+                , lexerImplicitJoins :: Int
+                }
+
 type Lexer a = Parsec String LexerState a
 
 lex :: String -> Either ParseError Tokens
 lex code = runParser program initialState "" newlineTerminatedCode
   where
-    initialState = [0]
+    initialState = LexerState { lexerIndents = [0], lexerImplicitJoins = 0 }
     newlineTerminatedCode = code ++ "\n"
 
 program :: Lexer Tokens
@@ -44,7 +48,7 @@ program = do
     return $ concat tokens ++ dedents
   where
     remainingDedents = do
-        indents <- getState
+        indents <- fmap lexerIndents getState
         return $ replicate (length indents - 1) Dedent
 
 blankLine :: Lexer Tokens
@@ -74,9 +78,16 @@ logicalLine = do
         return []
 
     lexeme p = do
-        x <- p
-        skipMany (oneOf " \t\f")
+        x   <- p
+        ws  <- skippableWhitespace
+        skipMany (oneOf ws)
         return x
+
+    skippableWhitespace = do
+        implicitJoin <- fmap lexerImplicitJoins getState
+        if implicitJoin > 0
+            then return " \t\f\r\n"
+            else return " \t\f"
 
 comment :: Lexer Tokens
 comment = do
@@ -89,16 +100,17 @@ indentation = do
     indentChars <- many (oneOf " \t")
     let level = calculateIndent indentChars
 
-    indents <- getState
+    indents <- fmap lexerIndents getState
+
     case indents of
         (x:_)   -> case compare level x of
             EQ  -> return []
             GT  -> do
-                putState (level:indents)
+                modifyState $ \s -> s { lexerIndents = level:indents }
                 return [Indent]
             LT  -> do
                 (removed, remaining) <- dedent level indents
-                putState remaining
+                modifyState $ \s -> s { lexerIndents = remaining }
                 return $ replicate (length removed) Dedent
         []      -> unexpected "indent stack should never be empty"
   where
@@ -140,6 +152,13 @@ delimiterOrOperator = choice [try longDelim, try longOp, shortOp, shortDelim]
 
     shortDelim = do
         c <- oneOf "()[]{},:.;@="
+
+        when (c `elem` "([{") $
+            modifyState $ \s -> s{ lexerImplicitJoins = lexerImplicitJoins s + 1 }
+
+        when (c `elem` ")]}") $
+            modifyState $ \s -> s{ lexerImplicitJoins = max 0 (lexerImplicitJoins s - 1) }
+
         return [Delimiter [c]]
 
 identifier :: Lexer Tokens

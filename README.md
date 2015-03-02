@@ -19,7 +19,7 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] String escape sequences
  * [x] Byte literals
  * [x] All operators, delimiters, and keywords
- * [ ] Implicit line joining in collections
+ * [x] Implicit line joining in collections
  * [x] Explicit line joining via `\\`
 
 ### Parsing
