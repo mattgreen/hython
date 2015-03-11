@@ -8,6 +8,7 @@ import Prelude hiding (exp, lex)
 import Control.Monad
 import Data.Complex
 import Data.Char hiding (digitToInt)
+import Data.Functor
 import Data.List
 
 import Text.Parsec hiding (newline, tokens)
@@ -48,7 +49,7 @@ program = do
     return $ concat tokens ++ dedents
   where
     remainingDedents = do
-        indents <- fmap lexerIndents getState
+        indents <- lexerIndents <$> getState
         return $ replicate (length indents - 1) Dedent
 
 blankLine :: Lexer Tokens
@@ -84,7 +85,7 @@ logicalLine = do
         return x
 
     skippableWhitespace = do
-        implicitJoin <- fmap lexerImplicitJoins getState
+        implicitJoin <- lexerImplicitJoins <$> getState
         if implicitJoin > 0
             then return " \t\f\r\n"
             else return " \t\f"
