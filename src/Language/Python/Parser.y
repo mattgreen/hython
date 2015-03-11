@@ -43,6 +43,7 @@ NEWLINE     {L.Newline}
 '>>='       {L.Delimiter ">>="}
 '**='       {L.Delimiter "**="}
 '//='       {L.Delimiter "//="}
+'@'         {L.Delimiter "@"}
 '%'         {L.Operator "%"}
 '**'        {L.Operator "**"}
 '//'        {L.Operator "//"}
@@ -175,8 +176,18 @@ file_input
 -- eval_input: testlist NEWLINE* ENDMARKER
 -- 
 -- decorator: '@' dotted_name [ '(' [arglist] ')' ] NEWLINE
+decorator
+    : '@' dotted_name NEWLINE                       { Decorator $2 [] }
+    | '@' dotted_name '(' arglist ')' NEWLINE       { Decorator $2 $4 }
+
 -- decorators: decorator+
+decorators
+    : many1(decorator)      { $1 }
+
 -- decorated: decorators (classdef | funcdef)
+decorated
+    : decorators or(classdef, funcdef)  { $2 }
+
 -- funcdef: 'def' NAME parameters ['->' test] ':' suite
 funcdef
     : DEF identifier parameters ':' suite { FuncDef $2 $3 $5 }
@@ -364,6 +375,7 @@ compound_stmt
     | with_stmt     { $1 }
     | funcdef       { $1 }
     | classdef      { $1 }
+    | decorated     { $1 }
 
 -- if_stmt: 'if' test ':' suite ('elif' test ':' suite)* ['else' ':' suite]
 if_stmt

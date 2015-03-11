@@ -79,6 +79,10 @@ data Constant
     | ConstantNone
     deriving(Eq, Show)
 
+data Decorator
+    = Decorator Expression [Expression]
+    deriving(Eq, Show)
+
 data UnaryOperator
     = Not
     | Pos
