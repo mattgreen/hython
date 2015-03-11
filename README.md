@@ -30,8 +30,9 @@ The goal of this project is to become more familiar with Haskell. It is not to p
  * [x] Attribute access
  * [x] Tuples
  * [x] List literals
- * [ ] List comprehensions
+ * [x] List comprehensions
  * [x] Dictionary literals
+ * [x] Decorators
  * [x] Subscript operators
  * [x] Set literals
  * [x] All arithmetic operators

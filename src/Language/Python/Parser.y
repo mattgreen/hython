@@ -565,6 +565,7 @@ atom
 -- testlist_comp: (test|star_expr) ( comp_for | (',' (test|star_expr))* [','] )
 testlist_comp
     : exprOrTuple(or(test, star_expr))  { $1 }
+    | comp_for                          { undefined }
 
 -- trailer: '(' [arglist] ')' | '[' subscriptlist ']' | '.' NAME
 trailer
@@ -595,13 +596,15 @@ testlist
 
 -- dictorsetmaker: ( (test ':' test (comp_for | (',' test ':' test)* [','])) |
 --                   (test (comp_for | (',' test)* [','])) )
--- TODO: add rules for comprehension
 dictorsetmaker
-    : sepOptEndBy(test, ',')        { SetDef $1 }
+    : sepOptEndBy(set_item, ',')    { SetDef $1 }
     | sepOptEndBy(dict_item, ',')   { DictDef $1 }
 
+set_item
+    : test opt(comp_for)            { $1 }
+
 dict_item
-    : test ':' test         { ($1, $3)}
+    : test ':' test opt(comp_for)   { ($1, $3)}
 
 -- classdef: 'class' NAME ['(' [arglist] ')'] ':' suite
 classdef
@@ -626,10 +629,19 @@ argitem
 -- # results in an ambiguity. ast.c makes sure it's a NAME.
 -- argument: test [comp_for] | test '=' test  # Really [keyword '='] test
 argument
-    : test  { $1 }
+    : test opt(comp_for) { $1 }
+
 -- comp_iter: comp_for | comp_if
+comp_iter
+    : or(comp_for, comp_if)  { $1 }
+
 -- comp_for: 'for' exprlist 'in' or_test [comp_iter]
+comp_for
+    : FOR exprlist IN or_test opt(comp_iter) { undefined }
+
 -- comp_if: 'if' test_nocond [comp_iter]
+comp_if
+    : IF test_nocond opt(comp_iter)     { undefined }
 -- 
 -- # not used in grammar, but may appear in "node" passed from Parser to Compiler
 -- encoding_decl: NAME
