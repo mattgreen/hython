@@ -337,11 +337,14 @@ eval s@(With [As expr target] block) = evalBlock desugared
     desugared = [ Assignment target (Call (Attribute expr "__enter__") [])
                 , Try clauses block elseBlock []
                 ]
-    clauses   = [ExceptClause (Name "BaseException") exceptName [
-                    Expression $ Call (Attribute target "__exit__") [exceptCls, Name exceptName, traceback],
-                    Reraise
-                ]]
-    elseBlock = [Expression $ Call (Attribute target "__exit__") [none, none, none]]
+    clauses   = [ExceptClause (Name "BaseException") exceptName
+                    [ If
+                        [IfClause (callExit [exceptCls, Name exceptName, traceback]) [Pass]]
+                        [Reraise]
+                    ]
+                ]
+    elseBlock = [Expression $ callExit [none, none, none]]
+    callExit args = Call (Attribute target "__exit__") args
     exceptName= "__hython_with_except_" ++ show (hash $ show s)
     exceptCls = Attribute (Name exceptName) "__class__"
     traceback = Call (Name "traceback") []

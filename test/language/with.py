@@ -1,4 +1,7 @@
 class EnterAndExit(object):
+    def __init__(self, v=False):
+        self.exit_value = v
+
     def __enter__(self):
         print("__enter__")
         return self
@@ -13,6 +16,8 @@ class EnterAndExit(object):
 
         print("__exit__")
 
+        return self.exit_value
+
 print("Normal case, no as")
 with EnterAndExit():
     print("Block")
@@ -21,16 +26,13 @@ print("Normal case, as")
 with EnterAndExit() as o:
     print("Block")
 
-print("Exceptional case, no as")
+print("Exceptional case re-raising")
 try:
     with EnterAndExit():
         raise BaseException("hi")
 except:
     print("Caught")
 
-try:
-    with EnterAndExit() as e:
-        raise Exception("hi")
-except Exception:
-    print("Caught")
-
+print("Exceptional case suppressed by context manager")
+with EnterAndExit(True):
+    raise Exception("suppressed")
