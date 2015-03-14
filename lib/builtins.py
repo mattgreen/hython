@@ -91,3 +91,6 @@ class range(object):
             i = i + self.step
 
         print(self.values)
+
+class traceback(object):
+    pass

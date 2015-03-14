@@ -332,7 +332,24 @@ eval (While condition block elseBlock) = do
         modify $ \s -> s { exceptHandler = exceptHandler state }
         cont value
 
-eval (With {}) = unimplemented "with statement"
+eval s@(With [As expr target] block) = evalBlock desugared
+  where
+    desugared = [ Assignment target (Call (Attribute expr "__enter__") [])
+                , Try clauses block elseBlock []
+                ]
+    clauses   = [ExceptClause (Name "BaseException") exceptName [
+                    Expression $ Call (Attribute target "__exit__") [exceptCls, Name exceptName, traceback],
+                    Reraise
+                ]]
+    elseBlock = [Expression $ Call (Attribute target "__exit__") [none, none, none]]
+    exceptName= "__hython_with_except_" ++ show (hash $ show s)
+    exceptCls = Attribute (Name exceptName) "__class__"
+    traceback = Call (Name "traceback") []
+    none      = Constant ConstantNone
+
+eval s@(With [expr] block) = eval $ With [As expr (Name synthesizedName)] block
+  where
+    synthesizedName = "__hython_with_" ++ show (hash (show s))
 
 eval (Pass) = return ()
 

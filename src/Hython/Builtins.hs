@@ -143,6 +143,7 @@ getAttr attr (Object cls dict) = do
         Just o  -> return $ Just o
         Nothing -> lookupAttr attr cls
 
+getAttr "__name__" (ClassObj cls) = return $ Just (String (className cls))
 getAttr attr (ClassObj cls)     = lookupAttr attr cls
 getAttr attr (ModuleObj m)      = AttributeDict.lookup attr (moduleDict m)
 getAttr _ _ = fail "Only classes and objects have attrs!"
