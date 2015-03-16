@@ -332,7 +332,7 @@ eval (While condition block elseBlock) = do
         modify $ \s -> s { exceptHandler = exceptHandler state }
         cont value
 
-eval s@(With [As expr target] block) = evalBlock desugared
+eval s@(With (As expr target) block) = evalBlock desugared
   where
     desugared = [ Assignment target (Call (Attribute expr "__enter__") [])
                 , Try clauses block elseBlock []
@@ -350,7 +350,7 @@ eval s@(With [As expr target] block) = evalBlock desugared
     traceback = Call (Name "traceback") []
     none      = Constant ConstantNone
 
-eval s@(With [expr] block) = eval $ With [As expr (Name synthesizedName)] block
+eval s@(With expr block) = eval $ With (As expr (Name synthesizedName)) block
   where
     synthesizedName = "__hython_with_" ++ show (hash (show s))
 

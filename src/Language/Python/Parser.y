@@ -416,7 +416,7 @@ finally_clause
 
 -- with_stmt: 'with' with_item (',' with_item)*  ':' suite
 with_stmt
-    : WITH sepBy(with_item, ',') ':' suite  { With $2 $4 }
+    : WITH sepBy(with_item, ',') ':' suite  { expandWith $2 $4 }
 
 -- with_item: test ['as' expr]
 with_item
@@ -662,6 +662,10 @@ data Trailer
     | TrailerSub Expression
     | TrailerSlice
     deriving (Eq, Show)
+
+expandWith [] block     = error "with should have at least one condition!"
+expandWith [expr] block = With expr block
+expandWith (e:es) block = With e [expandWith es block]
 
 expressionsOf (TupleDef exprs)  = exprs
 expressionsOf expr              = [expr]

@@ -14,7 +14,7 @@ data Statement
     | Return Expression
     | Try ExceptClauses Statements Statements Statements
     | While Expression Statements Statements
-    | With Expressions Statements
+    | With Expression Statements
     | Break
     | Continue
     | Pass

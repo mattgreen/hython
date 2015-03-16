@@ -36,3 +36,12 @@ except:
 print("Exceptional case suppressed by context manager")
 with EnterAndExit(True):
     raise Exception("suppressed")
+
+print("Nested, non-exceptional case")
+with EnterAndExit(), EnterAndExit():
+    print("yep")
+
+print("Nested, exceptional case")
+with EnterAndExit(True) as a, EnterAndExit() as b:
+    print(a.__class__.__name__)
+    raise Exception("suppressed")
