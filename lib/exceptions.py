@@ -38,6 +38,9 @@ class EOFError(Exception):
 class ImportError(Exception):
     pass
 
+class KeyError(Exception):
+    pass
+
 class LookupError(Exception):
     pass
 

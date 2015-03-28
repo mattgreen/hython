@@ -50,6 +50,22 @@ class basic_iterator(object):
 def print(*args):
     __hython_primitive__("print", *args)
 
+class dict(object):
+    def __init__(self):
+        self._dict = __hython_primitive__("dict-new")
+
+    def __getitem__(self, key):
+        if __hython_primitive__("dict-contains", self._dict, key): # not quite optimal
+            return __hython_primitive__("dict-get", self._dict, key)
+        else:
+            raise KeyError("'" + key + "'")
+
+    def __setitem__(self, key, value):
+        self._dict = __hython_primitive__("dict-set", self._dict, key, value)
+
+    def clear(self):
+        self._dict = __hython_primitive__("dict-clear", self._dict)
+
 class list(object):
     def __init__(self):
         self._list = __hython_primitive__("list-new")

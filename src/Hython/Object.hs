@@ -4,6 +4,7 @@ module Hython.Object
 where
 
 import Data.Complex
+import Data.Hashable
 import Data.HashMap.Strict (HashMap)
 import Data.IORef
 
@@ -24,10 +25,12 @@ data Object
     | Slice Object Object Object
     | Tuple Objects
     | List (IORef Objects)
+    | Dict (IORef DictData)
     | None
     deriving(Eq, Show)
 
 type AttributeDict = IORef (HashMap String (IORef Object))
+type DictData = HashMap Int (IORef Object)
 
 data Class = Class
     { className         :: String
@@ -56,6 +59,16 @@ data ActiveEnv
     = ModuleEnv
     | LocalEnv
     deriving (Eq, Show)
+
+instance Hashable Object where
+    hashWithSalt s (String o)     = s + hash o
+    hashWithSalt s (Int n)        = s + hash n
+    hashWithSalt s (Float n)      = s + hash n
+    hashWithSalt s (Imaginary n)  = s + hash (realPart n) + hash (imagPart n)
+    hashWithSalt s (Bool b)         = s + hash b
+    hashWithSalt s (BuiltinFn str)  = s + hash str
+    hashWithSalt s (Lambda p st _)   = s + hash (show p) + hash (show st)
+    hashWithSalt s (Function n p st _)   = s + hash n + hash (show p) + hash (show st)
 
 instance Show (IORef a) where
     show _ = "<ioref>"

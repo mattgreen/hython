@@ -16,6 +16,7 @@ import Hython.Class
 import Hython.InterpreterState
 import Hython.Object
 
+import Hython.BuiltinTypes.Dict
 import Hython.BuiltinTypes.List
 
 builtins :: IO [(String, Object)]
@@ -88,7 +89,7 @@ primitive (String name : extraArgs) = case lookup name primitiveFunctions of
     Nothing -> fail "bad primitive"
   where
     primitiveFunctions :: [(String, PrimitiveFn)]
-    primitiveFunctions = listPrimitives ++ [("issubclass", issubclass), ("print", print')]
+    primitiveFunctions = dictPrimitives ++ listPrimitives ++ [("issubclass", issubclass), ("print", print')]
 
     issubclass [cls1, cls2] = return $ Bool (isSubClass l r)
       where

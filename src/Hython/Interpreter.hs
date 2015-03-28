@@ -78,7 +78,7 @@ defaultState path = do
 defaultExceptionHandler :: Object -> Interpreter ()
 defaultExceptionHandler exception = do
     currentFrames <- gets frames
-    details <- callMethod exception "__str__"
+    details <- callMethod exception "__str__" []
 
     liftIO $ do
         strDetails <- str details
@@ -576,6 +576,7 @@ evalExpr (Subscript expr sub) = do
         raiseError "TypeError" "tuple indicies must be integers"
         return None
     evalSubscript (String s) (Int i) = return $ String [s !! fromIntegral i]
+    evalSubscript o@(Object {}) i = callMethod o "__getitem__" [i]
     evalSubscript _ _ = do
         raiseError "TypeError" "object is not subscriptable"
         return None
@@ -594,9 +595,16 @@ evalExpr (SetDef {}) = do
     unimplemented "setdef expr"
     return None
 
-evalExpr (DictDef {}) = do
-    unimplemented "dictdef expr"
-    return None
+evalExpr (DictDef exprPairs) = do
+    dictClass   <- evalExpr (Name "dict")
+    dict        <- evalCall dictClass []
+
+    forM_ exprPairs $ \(keyExpr, valueExpr) -> do
+        key     <- evalExpr keyExpr
+        value   <- evalExpr valueExpr
+        callMethod dict "__setitem__" [key, value]
+
+    return dict
 
 evalExpr (Star {}) = do
     raiseError "SyntaxError" "can use starred expression only as assignment target"
@@ -758,11 +766,11 @@ evalBlockWithNewEnv statements dict = do
     evalBlock statements
     updateEnv env
 
-callMethod :: Object -> String -> Interpreter Object
-callMethod obj methodName = do
+callMethod :: Object -> String -> Objects -> Interpreter Object
+callMethod obj methodName args = do
     method <- liftIO $ getAttr methodName obj
     case method of
-        Just m  -> evalCall m [obj]
+        Just m  -> evalCall m (obj:args)
         Nothing -> do
             raiseError "AttributeError" attributeErrorMsg
             return None
