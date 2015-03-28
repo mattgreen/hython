@@ -14,6 +14,8 @@ dictPrimitives = [("dict-new", dictNew)
                  ,("dict-clear", dictClear)
                  ,("dict-contains", dictContains)
                  ,("dict-get", dictGet)
+                 ,("dict-items", dictItems)
+                 ,("dict-length", dictLength)
                  ,("dict-set", dictSet)
                  ]
 
@@ -30,16 +32,26 @@ dictClear [d@(Dict ref)] = do
 dictContains :: PrimitiveFn
 dictContains [d@(Dict ref), k] = do
     dict <- liftIO $ readIORef ref
-    case Map.lookup (hash k) dict of
+    case Map.lookup k dict of
         Just _  -> return $ Bool True
         Nothing -> return $ Bool False
 
 dictGet :: PrimitiveFn
 dictGet [d@(Dict ref), k] = do
     dict <- liftIO $ readIORef ref
-    case Map.lookup (hash k) dict of
+    case Map.lookup k dict of
         Just valueRef -> liftIO $ readIORef valueRef
         Nothing -> return None -- wrong
+
+dictItems :: PrimitiveFn
+dictItems [d@(Dict ref)] = do
+    dict    <- liftIO $ readIORef ref
+    items   <- mapM unwrap (Map.toList dict)
+    return $ Tuple items
+  where
+    unwrap (k, vRef) = do
+        v <- liftIO $ readIORef vRef
+        return $ Tuple [k, v]
 
 dictLength :: PrimitiveFn
 dictLength [d@(Dict ref)] = do
@@ -50,7 +62,7 @@ dictSet :: PrimitiveFn
 dictSet [d@(Dict ref), key, value] = do
     obj <- newRef value
     updateRef ref $ \m ->
-        Map.insert (hash key) obj m
+        Map.insert key obj m
     return d
 
 newRef v = liftIO $ newIORef v

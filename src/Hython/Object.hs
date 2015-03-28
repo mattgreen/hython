@@ -30,7 +30,7 @@ data Object
     deriving(Eq, Show)
 
 type AttributeDict = IORef (HashMap String (IORef Object))
-type DictData = HashMap Int (IORef Object)
+type DictData = HashMap Object (IORef Object)
 
 data Class = Class
     { className         :: String

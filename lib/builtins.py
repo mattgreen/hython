@@ -54,17 +54,61 @@ class dict(object):
     def __init__(self):
         self._dict = __hython_primitive__("dict-new")
 
+    def __contains__(self, key):
+        return __hython_primitive__("dict-contains", self._dict, key)
+
     def __getitem__(self, key):
-        if __hython_primitive__("dict-contains", self._dict, key): # not quite optimal
+        if self.__contains__(key): # not quite optimal
             return __hython_primitive__("dict-get", self._dict, key)
         else:
             raise KeyError("'" + key + "'")
+
+    def __len__(self):
+        return __hython_primitive__("dict-length", self._dict)
 
     def __setitem__(self, key, value):
         self._dict = __hython_primitive__("dict-set", self._dict, key, value)
 
     def clear(self):
         self._dict = __hython_primitive__("dict-clear", self._dict)
+
+    def get(self, key, default=None):
+        if self.__contains__(key):
+            return self.__getitem__(key)
+        else:
+            return default
+
+    def keys(self):
+        result = list()
+
+        i = 0
+        items = self.items()
+        while i < len(items):
+            result.append(items[i][0])
+            i += 1
+
+        return result
+
+    def items(self):
+        return __hython_primitive__("dict-items", self._dict)
+
+    def setdefault(self, key, default=None):
+        if self.__contains__(key):
+            return self.__getitem__(key)
+        else:
+            self.__setitem__(key, default)
+            return default
+
+    def values(self):
+        result = list()
+
+        i = 0
+        items = self.items()
+        while i < len(items):
+            result.append(items[i][1])
+            i += 1
+
+        return result
 
 class list(object):
     def __init__(self):

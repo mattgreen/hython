@@ -145,6 +145,17 @@ eval (Assignment (Attribute var attr) expr) = do
     target <- evalExpr var
     liftIO $ setAttr attr value target
 
+eval (Assignment (Subscript targetExpr idxExpr) expr) = do
+    target  <- evalExpr targetExpr
+    index   <- evalExpr idxExpr
+    rhs     <- evalExpr expr
+
+    case target of
+        o@(Object {}) -> do
+            _ <- callMethod o "__setitem__" [index, rhs]
+            return ()
+        _ -> raiseError "SystemError" "bad assignment"
+
 eval (Assignment{}) = raiseError "SyntaxError" "invalid assignment"
 
 eval (Break) = do
