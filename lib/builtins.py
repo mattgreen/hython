@@ -57,6 +57,9 @@ class dict(object):
     def __contains__(self, key):
         return __hython_primitive__("dict-contains", self._dict, key)
 
+    def __delitem__(self, key):
+        self._dict = __hython_primitive__("dict-del", self._dict, key)
+
     def __getitem__(self, key):
         if self.__contains__(key): # not quite optimal
             return __hython_primitive__("dict-get", self._dict, key)
@@ -110,6 +113,7 @@ class dict(object):
 
         return result
 
+
 class list(object):
     def __init__(self):
         self._list = __hython_primitive__("list-new")
@@ -128,6 +132,7 @@ class list(object):
             __hython_primitive__("list-concat", self._list, r._list)
         else:
             raise TypeError("not iterable")
+
 
 class range(object):
     def __init__(self, startOrStop, stop=None, step=None):
@@ -151,6 +156,26 @@ class range(object):
             i = i + self.step
 
         print(self.values)
+
+
+class set(object):
+    def __init__(self):
+        self._set = {}
+
+    def __contains__(self, key):
+        return self.__contains__(key)
+
+    def __len__(self):
+        return self._set.__len__()
+
+    def add(self, o):
+        self._set[o] = True
+
+    def clear(self):
+        self._set.clear()
+
+    def remove(self, o):
+        del self._set[o]
 
 class traceback(object):
     pass

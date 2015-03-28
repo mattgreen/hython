@@ -373,6 +373,16 @@ eval (Assert e _) = do
     unless (isTrue result) $
         raiseError "AssertionError" ""
 
+eval (Del (Subscript targetExpr subExpr)) = do
+    target  <- evalExpr targetExpr
+    index   <- evalExpr subExpr
+
+    case target of
+        o@(Object {})   -> do
+            _ <- callMethod o "__delitem__" [index]
+            return ()
+        _               -> raiseError "SystemError" "invalid del statement"
+
 eval (Del (Name name)) = do
     env <- currentEnv
     liftIO $ unbindName name env
@@ -602,9 +612,15 @@ evalExpr (TupleDef exprs) = do
     values <- mapM evalExpr exprs
     return $ Tuple values
 
-evalExpr (SetDef {}) = do
-    unimplemented "setdef expr"
-    return None
+evalExpr (SetDef exprs) = do
+    setClass    <- evalExpr (Name "set")
+    set         <- evalCall setClass []
+
+    forM_ exprs $ \(expr) -> do
+        obj     <- evalExpr expr
+        callMethod set "add" [obj]
+
+    return set
 
 evalExpr (DictDef exprPairs) = do
     dictClass   <- evalExpr (Name "dict")

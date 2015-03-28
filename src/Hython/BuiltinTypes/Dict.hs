@@ -13,6 +13,7 @@ dictPrimitives :: [(String, PrimitiveFn)]
 dictPrimitives = [("dict-new", dictNew)
                  ,("dict-clear", dictClear)
                  ,("dict-contains", dictContains)
+                 ,("dict-del", dictDel)
                  ,("dict-get", dictGet)
                  ,("dict-items", dictItems)
                  ,("dict-length", dictLength)
@@ -35,6 +36,12 @@ dictContains [d@(Dict ref), k] = do
     case Map.lookup k dict of
         Just _  -> return $ Bool True
         Nothing -> return $ Bool False
+
+dictDel :: PrimitiveFn
+dictDel [d@(Dict ref), k] = do
+    updateRef ref $ \m ->
+        Map.delete k m
+    return d
 
 dictGet :: PrimitiveFn
 dictGet [d@(Dict ref), k] = do

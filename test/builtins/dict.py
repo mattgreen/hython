@@ -3,6 +3,11 @@ blank = {}
 
 d = { "key": "value", "key2": 98123 }
 
+try:
+    d["asdf"]
+except KeyError:
+    print("Raised KeyError")
+
 # __getitem__
 print(d["key"])
 
@@ -11,6 +16,9 @@ d["new-item"] = 88
 print(d["new-item"])
 d["new-item"] = 99
 print(d["new-item"])
+
+# __delitem__
+del d["new-item"]
 
 # get()
 print(d.get("key2"))
