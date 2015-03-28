@@ -614,13 +614,8 @@ evalExpr (TupleDef exprs) = do
 
 evalExpr (SetDef exprs) = do
     setClass    <- evalExpr (Name "set")
-    set         <- evalCall setClass []
-
-    forM_ exprs $ \(expr) -> do
-        obj     <- evalExpr expr
-        callMethod set "add" [obj]
-
-    return set
+    items       <- mapM evalExpr exprs
+    evalCall setClass [Tuple items]
 
 evalExpr (DictDef exprPairs) = do
     dictClass   <- evalExpr (Name "dict")

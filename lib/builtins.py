@@ -159,8 +159,10 @@ class range(object):
 
 
 class set(object):
-    def __init__(self):
+    def __init__(self, iterable=[]):
         self._set = {}
+        for i in iterable:
+            self.add(i)
 
     def __contains__(self, key):
         return self.__contains__(key)
