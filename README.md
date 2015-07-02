@@ -81,24 +81,18 @@ The goal of this project is to become more familiar with Haskell. It is not to p
 
 ## Running
 
-Clone the repository:
+1. Install [Stack](https://github.com/commercialhaskell/stack)
+
+2. Clone the repository:
 
     $ git clone https://github.com/mattgreen/hython.git
     $ cd hython
 
-Initialize a Cabal sandbox:
-
-    $ cabal sandbox init
-
-Install dependencies:
-
-    $ make install-deps
-
-Build:
+3. Build:
 
     $ make
 
-Run automated test suite:
+4. Run automated test suite:
 
     $ make test
 

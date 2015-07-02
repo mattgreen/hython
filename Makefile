@@ -1,17 +1,14 @@
 SOURCES = $(shell find src -type f -name '*.hs' -o -name '*.y')
+DIST_DIR = $(shell stack path | grep dist-dir | sed "s/dist-dir: //")
 
 hython: hython.cabal $(SOURCES)
-	@cabal build
-	-@./.cabal-sandbox/bin/hlint src --ignore="Eta reduce"
-	@ln -sf dist/build/hython/hython .
-
-install-deps:
-	@cabal install --only-dependencies
-	@cabal install happy hlint
+	@stack build
+	@stack exec hlint -- src --ignore="Eta reduce"
+	@ln -sf $(DIST_DIR)/build/hython/hython .
 
 .PHONY: test
 test: hython
 	@python3 test.py
 
 clean:
-	@cabal clean --verbose=0
+	@stack clean
