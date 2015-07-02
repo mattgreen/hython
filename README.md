@@ -85,16 +85,16 @@ The goal of this project is to become more familiar with Haskell. It is not to p
 
 2. Clone the repository:
 
-    $ git clone https://github.com/mattgreen/hython.git
-    $ cd hython
+        $ git clone https://github.com/mattgreen/hython.git
+        $ cd hython
 
 3. Build:
 
-    $ make
+        $ make
 
 4. Run automated test suite:
 
-    $ make test
+        $ make test
 
 ## Reference
  * [Python 3.4 Language Reference](https://docs.python.org/3.4/reference/)
