@@ -1,22 +1,81 @@
 module Hython.Environment
-where
+    ( Environment
+    , bind
+    , bindGlobal
+    , bindNonlocal
+    , lookup
+    , new
+    , push
+    , pop
+    , unbind
+    ) where
 
-import Control.Monad.State
+import Prelude hiding (lookup)
 
-import Hython.Frame
-import Hython.InterpreterState
-import Hython.Object
+import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as Map
+import Data.Text (unpack)
 
-currentEnv :: Interpreter Env
-currentEnv = do
-    frame <- currentFrame
-    return $ envOf frame
+import Hython.Name
 
+data Environment a = Environment
+    { envModule     :: HashMap Name (Binding a)
+    , envBuiltins   :: HashMap Name (Binding a)
+    , envFrames     :: [HashMap Name (Binding a)]
+    }
+
+data Binding a
+    = LocalBinding a
+    | NonlocalBinding
+    | GlobalBinding
+
+bind :: Name -> a -> Environment a -> Environment a
+bind name obj env = case envFrames env of
+    (e:es)  -> case Map.lookup name e of
+        Just GlobalBinding    -> env { envModule = Map.insert name (LocalBinding obj) (envModule env) }
+        Just NonlocalBinding    -> do
+            let (before, x:xs) = break (Map.member name) es
+            env { envFrames = before ++ [Map.insert name (LocalBinding obj) x] ++ xs }
+        _                   -> env { envFrames = Map.insert name (LocalBinding obj) e : es }
+    []      -> env { envModule = Map.insert name (LocalBinding obj) (envModule env) }
+
+bindGlobal :: Name -> Environment a -> Environment a
+bindGlobal name env = case envFrames env of
+    (e:es)  -> env { envFrames = Map.insert name GlobalBinding e : es }
+    []      -> env
+
+bindNonlocal :: Name -> Environment a -> Either String (Environment a)
+bindNonlocal name env = case envFrames env of
+    (e:es)  -> if any (Map.member name) es
+                   then Right $ env { envFrames = Map.insert name NonlocalBinding e : es }
+                   else Left $ "no binding for nonlocal '" ++ unpack name ++ "' found"
+    []      -> Left "nonlocal declaration not allowed at module level"
+
+lookup :: Name -> Environment a -> Maybe a
+lookup name env = lookupIn $ envFrames env ++ [envModule env]
   where
-    envOf (Frame _ e) = e
+    lookupIn (e:es) = case Map.lookup name e of
+        Just objRef -> case objRef of
+            LocalBinding obj    -> Just obj
+            _                   -> lookupIn es
+        Nothing     -> lookupIn es
+    lookupIn _     = Nothing
 
-updateEnv :: Env -> Interpreter ()
-updateEnv env = do
-    Frame name _ : fs <- gets frames
+new :: [(Name, a)] -> Environment a
+new builtins = Environment { envBuiltins = Map.fromList refs, envFrames = [], envModule = Map.empty }
+  where
+    refs = map (\x -> (fst x, LocalBinding (snd x))) builtins
 
-    modify $ \s -> s { frames = Frame name env : fs }
+push :: Environment a -> Environment a
+push env = env { envFrames = Map.empty : envFrames env }
+
+pop :: Environment a -> Environment a
+pop env = case envFrames env of
+    _:es    -> env { envFrames = es }
+    []      -> env
+
+unbind :: Name -> Environment a -> Environment a
+unbind name env = case envFrames env of
+    (e:es)  -> env { envFrames = Map.delete name e : es }
+    []      -> env { envModule = Map.delete name (envModule env) }
+
