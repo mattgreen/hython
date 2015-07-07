@@ -4,9 +4,9 @@ build-type:       Simple
 cabal-version:    >= 1.2
 
 executable        hython
-  build-depends:  base, containers, mtl, array, utf8-string, regex-base, regex-compat, transformers, unordered-containers, filepath, safe, directory, monad-loops, executable-path, hashable, parsec, hlint
+  build-depends:  base, containers, mtl, array, utf8-string, regex-base, regex-compat, transformers, unordered-containers, filepath, safe, directory, monad-loops, executable-path, hashable, parsec, hlint, text
   build-tools:    happy
-  other-modules:  Language.Python.Lexer, Language.Python.Parser
+  other-modules:  Language.Python.Lexer, Language.Python.Parser, Hython.Interpreter, Hython.Statement, Hython.Expression
   hs-source-dirs: src
   main-is:        Main.hs
   ghc-options:    -Wall -fno-warn-missing-signatures -debug
