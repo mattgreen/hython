@@ -18,6 +18,8 @@ class Monad m => MonadInterpreter m where
 
     evalBlock       :: [Statement] -> m [Object]
 
+    raiseError      :: String -> String -> m ()
+
 newNone :: MonadInterpreter m => m Object
 newNone = return None
 

@@ -54,6 +54,8 @@ instance MonadInterpreter Interpreter where
     unbind name = Interpreter $
         modify $ \s -> s { stateEnv = Environment.unbind name (stateEnv s) }
 
+    raiseError _ msg = error msg
+
 runInterpreter :: Interpreter a -> IO a
 runInterpreter (Interpreter i) = do
     let defaultState = InterpreterState {
