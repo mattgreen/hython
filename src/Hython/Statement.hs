@@ -33,6 +33,11 @@ eval (Global names) = do
         bindGlobal (pack name)
     return Nothing
 
+eval (Nonlocal names) = do
+    forM_ names $ \name ->
+        bindNonlocal (pack name)
+    return Nothing
+
 eval (Pass) = return Nothing
 
 eval _ = do
