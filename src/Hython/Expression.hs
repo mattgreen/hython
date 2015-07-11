@@ -1,6 +1,8 @@
 module Hython.Expression
 where
 
+import Data.Text
+
 import Language.Python
 
 import Hython.Monad
@@ -15,3 +17,9 @@ evalExpr (Constant c) = case c of
     ConstantImag i      -> newImag i
     ConstantInt i       -> newInt i
     ConstantString s    -> newString s
+
+evalExpr (Name name) = do
+    result <- lookupName (pack name)
+    case result of
+        Just obj    -> return obj
+        Nothing     -> error "NameError: name not defined"
