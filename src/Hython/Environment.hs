@@ -74,8 +74,11 @@ pop env = case envFrames env of
     _:es    -> env { envFrames = es }
     []      -> env
 
-unbind :: Name -> Environment a -> Environment a
-unbind name env = case envFrames env of
-    (e:es)  -> env { envFrames = Map.delete name e : es }
-    []      -> env { envModule = Map.delete name (envModule env) }
-
+unbind :: Name -> Environment a -> Either String (Environment a)
+unbind name env = if any (Map.member name) searchedFrames
+    then Right $ case envFrames env of
+        (e:es)  -> env { envFrames = Map.delete name e : es }
+        []      -> env { envModule = Map.delete name (envModule env) }
+    else Left $ "name '" ++ unpack name ++ "' is not defined"
+  where
+    searchedFrames = envFrames env ++ [envModule env]
