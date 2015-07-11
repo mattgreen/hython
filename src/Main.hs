@@ -36,7 +36,8 @@ runREPL = runInterpreter $ forever $ do
     case parse line of
         Left msg    -> liftIO $ putStrLn msg
         Right stmts -> do
-            evalBlock stmts
+            results <- evalBlock stmts
+            forM_ results $ \r -> liftIO $ print r
             return ()
 
 runScript :: String -> IO ()
