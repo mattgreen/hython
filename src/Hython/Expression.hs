@@ -22,4 +22,6 @@ evalExpr (Name name) = do
     result <- lookupName (pack name)
     case result of
         Just obj    -> return obj
-        Nothing     -> error "NameError: name not defined"
+        Nothing     -> do
+            raiseError "NameError" "name not defined"
+            return None
