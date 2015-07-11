@@ -36,7 +36,7 @@ instance MonadInterpreter Interpreter where
     bindNonlocal name = Interpreter $ do
         env <- gets stateEnv
         case Environment.bindNonlocal name env of
-            Left msg        -> error msg
+            Left msg        -> error msg -- TODO: wrong
             Right newEnv    -> modify $ \s -> s { stateEnv = newEnv }
 
     evalBlock statements = do

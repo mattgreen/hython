@@ -359,7 +359,7 @@ global_stmt
 
 -- nonlocal_stmt: 'nonlocal' NAME (',' NAME)*
 nonlocal_stmt
-    : NONLOCAL sepBy(identifier, ',')   { Nonlocal $ names $2 }
+    : NONLOCAL sepBy(identifier, ',')   { Nonlocal $2 }
 
 -- assert_stmt: 'assert' test [',' test]
 assert_stmt

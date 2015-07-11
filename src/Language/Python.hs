@@ -20,7 +20,7 @@ data Statement
     | Pass
     | Assert Expression Expression
     | Global [String]
-    | Nonlocal Expressions
+    | Nonlocal [String]
     | ClassDef String [Expression] Statements
     | Import [Expression]
     | ImportFrom Expression [Expression]
