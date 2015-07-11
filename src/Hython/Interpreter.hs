@@ -51,8 +51,12 @@ instance MonadInterpreter Interpreter where
                 return $ Just obj
             Nothing  -> return Nothing
 
-    unbind name = Interpreter $
-        modify $ \s -> s { stateEnv = Environment.unbind name (stateEnv s) }
+    unbind name = Interpreter $ do
+        env <- gets stateEnv
+
+        case Environment.unbind name env of
+            Left msg        -> error msg -- TODO: wrong
+            Right newEnv    -> modify $ \s -> s { stateEnv = newEnv }
 
     raiseError _ msg = error msg
 
