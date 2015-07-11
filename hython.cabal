@@ -9,4 +9,4 @@ executable        hython
   other-modules:  Language.Python.Lexer, Language.Python.Parser, Hython.Interpreter, Hython.Statement, Hython.Expression
   hs-source-dirs: src
   main-is:        Main.hs
-  ghc-options:    -Wall -fno-warn-missing-signatures -debug
+  ghc-options:    -Wall -debug
