@@ -1,5 +1,4 @@
-module Hython.Expression
-where
+module Hython.Expression (evalExpr) where
 
 import Data.Text
 
