@@ -4,7 +4,7 @@ module Hython.Interpreter
 where
 
 import Control.Applicative
-import Control.Monad.State
+import Control.Monad.State.Strict
 import Data.IORef
 import Data.Maybe
 
@@ -33,11 +33,11 @@ instance MonadInterpreter Interpreter where
     bindGlobal name = Interpreter $
         modify $ \s -> s { stateEnv = Environment.bindGlobal name (stateEnv s) }
 
-    bindNonlocal name = Interpreter $ do
-        env <- gets stateEnv
+    bindNonlocal name = do
+        env <- Interpreter $ gets stateEnv
         case Environment.bindNonlocal name env of
-            Left msg        -> error msg -- TODO: wrong
-            Right newEnv    -> modify $ \s -> s { stateEnv = newEnv }
+            Left msg        -> raiseError "SyntaxError" msg
+            Right newEnv    -> Interpreter $ modify $ \s -> s { stateEnv = newEnv }
 
     evalBlock statements = do
         results <- mapM Statement.eval statements
@@ -51,12 +51,12 @@ instance MonadInterpreter Interpreter where
                 return $ Just obj
             Nothing  -> return Nothing
 
-    unbind name = Interpreter $ do
-        env <- gets stateEnv
+    unbind name = do
+        env <- Interpreter $ gets stateEnv
 
         case Environment.unbind name env of
-            Left msg        -> error msg -- TODO: wrong
-            Right newEnv    -> modify $ \s -> s { stateEnv = newEnv }
+            Left msg        -> raiseError "SyntaxError" msg
+            Right newEnv    -> Interpreter $ modify $ \s -> s { stateEnv = newEnv }
 
     raiseError _ msg = error msg
 

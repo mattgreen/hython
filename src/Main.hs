@@ -13,8 +13,9 @@ import Text.Printf
 
 import Language.Python.Parser
 
-import Hython.Interpreter
 import Hython.Monad
+import Hython.Interpreter
+import Hython.Object
 
 main :: IO ()
 main = do
@@ -37,7 +38,7 @@ runREPL = runInterpreter $ forever $ do
         Left msg    -> liftIO $ putStrLn msg
         Right stmts -> do
             results <- evalBlock stmts
-            forM_ results $ \r -> liftIO $ print r
+            forM_ results $ \r -> liftIO $ putStrLn $ toStr r
             return ()
 
 runScript :: String -> IO ()
@@ -57,3 +58,12 @@ runScript filename = do
         _ <- exitFailure
         return ""
 
+toStr :: Object -> String
+toStr (None) = "None"
+toStr (Bool b) = if b then "True" else "False"
+toStr (Bytes _b) = "b'??'"
+toStr (Float f) = show f
+toStr (Imaginary i) = show i
+toStr (Int i) = show i
+toStr (String s) = "'" ++ s ++ "'"
+toStr (BuiltinFn name)  = "<built-in function " ++ name ++ ">"

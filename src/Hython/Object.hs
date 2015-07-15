@@ -1,9 +1,9 @@
 module Hython.Object
 where
 
-import Data.ByteString
-import Data.Complex
-import Data.IORef
+import Data.ByteString (ByteString)
+import Data.Complex (Complex)
+import Data.IORef (IORef)
 
 data Object = None
             | Bool Bool
@@ -12,7 +12,6 @@ data Object = None
             | Imaginary (Complex Double)
             | Int Integer
             | String String
-            deriving (Eq, Show)
+            | BuiltinFn String
 
 type ObjectRef = IORef Object
-

@@ -1,5 +1,6 @@
-module Hython.Expression (evalExpr) where
+module Hython.Expression (evalExpr, isTruthy) where
 
+import qualified Data.ByteString as B
 import Data.Text
 
 import Language.Python
@@ -24,3 +25,29 @@ evalExpr (Name name) = do
         Nothing     -> do
             raiseError "NameError" "name not defined"
             return None
+
+{-evalExpr (Call expr argExprs) = do-}
+    {-callable <- evalExpr expr-}
+    {-args <- forM argExprs $ \arg ->-}
+        {-evalExpr arg-}
+
+    {-case callable of-}
+        {-(BuiltinFn name)    -> do-}
+            {-case lookup name builtins of-}
+                {-Just f  -> f args-}
+                {-Nothing -> do-}
+                    {-raiseError "SystemError" (name ++ " built-in not found")-}
+                    {-return None-}
+
+        {-_                   -> do-}
+            {-raiseError "TypeError" "object is not callable"-}
+            {-return None-}
+
+isTruthy :: Object -> Bool
+isTruthy (None) = False
+isTruthy (Bool False) = False
+isTruthy (Int 0) = False
+isTruthy (Float 0.0) = False
+isTruthy (String "") = False
+isTruthy (Bytes b) = not (B.null b)
+isTruthy _ = True

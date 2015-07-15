@@ -1,7 +1,6 @@
 module Hython.Statement (eval)
 where
 
-import Control.Monad
 import Data.Text
 
 import Language.Python
@@ -29,13 +28,23 @@ eval (Expression e) = do
     return $ Just obj
 
 eval (Global names) = do
-    forM_ names $ \name ->
-        bindGlobal (pack name)
+    mapM_ (bindGlobal . pack) names
     return Nothing
 
+eval (If clauses elseBlock) = case clauses of
+    [] -> do
+        _ <- evalBlock elseBlock
+        return Nothing
+    (IfClause condition block : rest) -> do
+        result <- evalExpr condition
+        if isTruthy result
+            then do
+                _ <- evalBlock block
+                return Nothing
+            else eval (If rest elseBlock)
+
 eval (Nonlocal names) = do
-    forM_ names $ \name ->
-        bindNonlocal (pack name)
+    mapM_ (bindNonlocal . pack) names
     return Nothing
 
 eval (Pass) = return Nothing
