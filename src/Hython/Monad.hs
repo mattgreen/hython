@@ -17,6 +17,7 @@ class Monad m => MonadInterpreter m where
     unbind          :: Name -> m ()
 
     evalBlock       :: [Statement] -> m [Object]
+    liftIO          :: IO a -> m a
 
     raiseError      :: String -> String -> m ()
 

@@ -4,10 +4,14 @@ module Hython.Interpreter
 where
 
 import Control.Applicative
-import Control.Monad.State.Strict
+import Control.Monad.IO.Class (MonadIO)
+import qualified Control.Monad.IO.Class as IO
+import Control.Monad.State.Strict (StateT, gets, modify, evalStateT)
 import Data.IORef
 import Data.Maybe
+import qualified Data.Text as T
 
+import Hython.Builtins (builtinFunctions)
 import Hython.Environment (Environment)
 import qualified Hython.Environment as Environment
 import Hython.Monad
@@ -22,13 +26,13 @@ data InterpreterState = InterpreterState
     }
 
 instance MonadInterpreter Interpreter where
-    bind name obj = Interpreter $ do
-        env <- gets stateEnv
+    bind name obj = do
+        env <- Interpreter $ gets stateEnv
         case Environment.lookup name env of
             Just ref -> liftIO $ writeIORef ref obj
             Nothing  -> do
                 ref <- liftIO $ newIORef obj
-                modify $ \s -> s { stateEnv = Environment.bind name ref (stateEnv s) }
+                Interpreter $ modify $ \s -> s { stateEnv = Environment.bind name ref (stateEnv s) }
 
     bindGlobal name = Interpreter $
         modify $ \s -> s { stateEnv = Environment.bindGlobal name (stateEnv s) }
@@ -43,8 +47,10 @@ instance MonadInterpreter Interpreter where
         results <- mapM Statement.eval statements
         return $ catMaybes results
 
-    lookupName name = Interpreter $ do
-        env <- gets stateEnv
+    liftIO = IO.liftIO
+
+    lookupName name = do
+        env <- Interpreter $ gets stateEnv
         case Environment.lookup name env of
             Just ref -> do
                 obj <- liftIO $ readIORef ref
@@ -62,8 +68,13 @@ instance MonadInterpreter Interpreter where
 
 runInterpreter :: Interpreter a -> IO a
 runInterpreter (Interpreter i) = do
+    builtinFns <- mapM mkBuiltin builtinFunctions
     let defaultState = InterpreterState {
-        stateEnv = Environment.new []
+        stateEnv = Environment.new builtinFns
     }
 
     evalStateT i defaultState
+  where
+    mkBuiltin name = do
+        ref <- newIORef $ BuiltinFn name
+        return (T.pack name, ref)

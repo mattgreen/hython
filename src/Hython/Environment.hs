@@ -52,7 +52,7 @@ bindNonlocal name env = case envFrames env of
     []      -> Left "nonlocal declaration not allowed at module level"
 
 lookup :: Name -> Environment a -> Maybe a
-lookup name env = lookupIn $ envFrames env ++ [envModule env]
+lookup name env = lookupIn $ envFrames env ++ [envModule env] ++ [envBuiltins env]
   where
     lookupIn (e:es) = case Map.lookup name e of
         Just objRef -> case objRef of

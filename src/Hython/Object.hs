@@ -13,5 +13,6 @@ data Object = None
             | Int Integer
             | String String
             | BuiltinFn String
+            deriving (Eq)
 
 type ObjectRef = IORef Object

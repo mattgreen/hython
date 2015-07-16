@@ -1,9 +1,9 @@
 module Main (main)
 where
 
+import Control.Applicative
 import Control.Exception
 import Control.Monad
-import Control.Monad.State
 
 import System.Environment
 import System.Exit
@@ -13,8 +13,9 @@ import Text.Printf
 
 import Language.Python.Parser
 
-import Hython.Monad
+import Hython.Builtins (toStr)
 import Hython.Interpreter
+import Hython.Monad
 import Hython.Object
 
 main :: IO ()
@@ -37,8 +38,8 @@ runREPL = runInterpreter $ forever $ do
     case parse line of
         Left msg    -> liftIO $ putStrLn msg
         Right stmts -> do
-            results <- evalBlock stmts
-            forM_ results $ \r -> liftIO $ putStrLn $ toStr r
+            results <- filter (/= None) <$> evalBlock stmts
+            forM_ results $ liftIO . putStrLn . toStr
             return ()
 
 runScript :: String -> IO ()
@@ -57,13 +58,3 @@ runScript filename = do
         putStrLn $ printf "Unable to open '%s': file %s" filename (ioeGetErrorString err)
         _ <- exitFailure
         return ""
-
-toStr :: Object -> String
-toStr (None) = "None"
-toStr (Bool b) = if b then "True" else "False"
-toStr (Bytes _b) = "b'??'"
-toStr (Float f) = show f
-toStr (Imaginary i) = show i
-toStr (Int i) = show i
-toStr (String s) = "'" ++ s ++ "'"
-toStr (BuiltinFn name)  = "<built-in function " ++ name ++ ">"

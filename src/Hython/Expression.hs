@@ -5,6 +5,7 @@ import Data.Text
 
 import Language.Python
 
+import Hython.Builtins (callBuiltin)
 import Hython.Monad
 import Hython.Object
 
@@ -26,22 +27,22 @@ evalExpr (Name name) = do
             raiseError "NameError" "name not defined"
             return None
 
-{-evalExpr (Call expr argExprs) = do-}
-    {-callable <- evalExpr expr-}
-    {-args <- forM argExprs $ \arg ->-}
-        {-evalExpr arg-}
+evalExpr (Call expr argExprs) = do
+    callable <- evalExpr expr
+    args <- mapM evalExpr argExprs
 
-    {-case callable of-}
-        {-(BuiltinFn name)    -> do-}
-            {-case lookup name builtins of-}
-                {-Just f  -> f args-}
-                {-Nothing -> do-}
-                    {-raiseError "SystemError" (name ++ " built-in not found")-}
-                    {-return None-}
+    case callable of
+        (BuiltinFn name)    -> do
+            result <- callBuiltin name args
+            case result of
+                Right obj   -> return obj
+                Left msg    -> do
+                    raiseError "TypeError" msg
+                    return None
 
-        {-_                   -> do-}
-            {-raiseError "TypeError" "object is not callable"-}
-            {-return None-}
+        _                   -> do
+            raiseError "TypeError" "object is not callable"
+            return None
 
 isTruthy :: Object -> Bool
 isTruthy (None) = False
