@@ -40,7 +40,6 @@ runREPL = runInterpreter $ forever $ do
         Right stmts -> do
             results <- filter (/= None) <$> evalBlock stmts
             forM_ results $ liftIO . putStrLn . toStr
-            return ()
 
 runScript :: String -> IO ()
 runScript filename = do
