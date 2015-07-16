@@ -227,7 +227,7 @@ simple_stmt
 
 small_stmts
     : small_stmt                    { [$1] }
-    | small_stmts ';' small_stmt    { $3 : $1 }
+    | small_stmts ';' small_stmt    { $1 ++ [$3] }
 
 -- small_stmt: (expr_stmt | del_stmt | pass_stmt | flow_stmt |
 --              import_stmt | global_stmt | nonlocal_stmt | assert_stmt)
