@@ -1,7 +1,6 @@
 module Main (main)
 where
 
-import Control.Applicative
 import Control.Exception
 import Control.Monad
 
@@ -11,12 +10,11 @@ import System.IO
 import System.IO.Error
 import Text.Printf
 
-import Language.Python.Parser
+import Language.Python.Parser (parse)
 
 import Hython.Builtins (toStr)
-import Hython.Interpreter
-import Hython.Monad
-import Hython.Object
+import Hython.Interpreter (runInterpreter)
+import Hython.Monad (evalBlock, liftIO)
 
 main :: IO ()
 main = do
@@ -38,7 +36,7 @@ runREPL = runInterpreter $ forever $ do
     case parse line of
         Left msg    -> liftIO $ putStrLn msg
         Right stmts -> do
-            results <- filter (/= None) <$> evalBlock stmts
+            results <- evalBlock stmts
             forM_ results $ liftIO . putStrLn . toStr
 
 runScript :: String -> IO ()

@@ -8,7 +8,6 @@ import Control.Monad.IO.Class (MonadIO)
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.State.Strict (StateT, gets, modify, evalStateT)
 import Data.IORef
-import Data.Maybe
 import qualified Data.Text as T
 
 import Hython.Builtins (builtinFunctions)
@@ -45,7 +44,7 @@ instance MonadInterpreter Interpreter where
 
     evalBlock statements = do
         results <- mapM Statement.eval statements
-        return $ catMaybes results
+        return $ filter (/= None) results
 
     liftIO = IO.liftIO
 

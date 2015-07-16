@@ -37,7 +37,7 @@ evalExpr (Call expr argExprs) = do
             case result of
                 Right obj   -> return obj
                 Left msg    -> do
-                    raiseError "TypeError" msg
+                    raiseError "NameError" msg
                     return None
 
         _                   -> do
