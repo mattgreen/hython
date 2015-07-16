@@ -35,9 +35,9 @@ evalExpr (Call expr argExprs) = do
         (BuiltinFn name)    -> do
             result <- callBuiltin name args
             case result of
-                Right obj   -> return obj
-                Left msg    -> do
-                    raiseError "NameError" msg
+                Just obj    -> return obj
+                Nothing     -> do
+                    raiseError "NameError" "built-in not found"
                     return None
 
         _                   -> do

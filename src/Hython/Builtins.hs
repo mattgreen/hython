@@ -6,11 +6,11 @@ import Hython.Object
 builtinFunctions :: [String]
 builtinFunctions = ["print"]
 
-callBuiltin :: MonadInterpreter m => String -> [Object] -> m (Either String Object)
+callBuiltin :: MonadInterpreter m => String -> [Object] -> m (Maybe Object)
 callBuiltin "print" args = do
     result <- print' args
-    return $ Right result
-callBuiltin _ _ = return $ Left "builtin not found"
+    return $ Just result
+callBuiltin _ _ = return Nothing
 
 print' :: MonadInterpreter m => [Object] -> m Object
 print' [] = liftIO $ putStrLn "" >> return None
