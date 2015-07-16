@@ -6,7 +6,6 @@ import Data.Text
 import Language.Python
 
 import Hython.Expression
-import Hython.Monad
 import Hython.Object
 
 eval :: MonadInterpreter m => Statement -> m Object

@@ -14,7 +14,7 @@ import Language.Python.Parser (parse)
 
 import Hython.Builtins (toStr)
 import Hython.Interpreter (runInterpreter)
-import Hython.Monad (evalBlock, liftIO)
+import Hython.Object (evalBlock, liftIO)
 
 main :: IO ()
 main = do

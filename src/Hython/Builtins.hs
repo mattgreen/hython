@@ -1,6 +1,7 @@
 module Hython.Builtins where
 
-import Hython.Monad
+import Control.Applicative
+
 import Hython.Object
 
 builtinFunctions :: [String]

@@ -13,7 +13,6 @@ import qualified Data.Text as T
 import Hython.Builtins (builtinFunctions)
 import Hython.Environment (Environment)
 import qualified Hython.Environment as Environment
-import Hython.Monad
 import Hython.Object
 import qualified Hython.Statement as Statement
 
