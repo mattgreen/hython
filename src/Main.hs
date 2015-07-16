@@ -13,8 +13,8 @@ import Text.Printf
 import Language.Python.Parser (parse)
 
 import Hython.Builtins (toStr)
-import Hython.Interpreter (runInterpreter)
-import Hython.Object (evalBlock, liftIO)
+import Hython.Interpreter (Interpreter, runInterpreter)
+import Hython.Object (evalBlock, liftIO, Object, raiseError)
 
 main :: IO ()
 main = do
@@ -26,28 +26,31 @@ main = do
             putStrLn "Usage: hython <filename>"
             exitFailure
 
+parseEval :: String -> Interpreter [Object]
+parseEval code = case parse code of
+    Left msg    -> raiseError "SyntaxError" msg >> return []
+    Right stmts -> evalBlock stmts
+
 runREPL :: IO ()
 runREPL = runInterpreter $ forever $ do
     line <- liftIO $ do
         putStr ">>> "
         hFlush stdout
-        getLine
+        getLine `catch` errorHandler
 
-    case parse line of
-        Left msg    -> liftIO $ putStrLn msg
-        Right stmts -> do
-            results <- evalBlock stmts
-            forM_ results $ liftIO . putStrLn . toStr
+    results <- parseEval line
+    mapM_ (liftIO . putStrLn . toStr) results
+  where
+    errorHandler :: IOError -> IO String
+    errorHandler _ = putStrLn "" >> exitSuccess
 
 runScript :: String -> IO ()
 runScript filename = do
     code <- readFile filename `catch` errorHandler filename
 
-    runInterpreter $ case parse code of
-        Left msg    -> error msg
-        Right statements -> do
-            _ <- evalBlock statements
-            return ()
+    runInterpreter $ do
+        _ <- parseEval code
+        return ()
 
   where
     errorHandler :: String -> IOError -> IO String
