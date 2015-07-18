@@ -22,7 +22,7 @@ data InterpreterState = InterpreterState
     { stateEnv  :: Environment ObjectRef
     }
 
-instance MonadInterpreter Interpreter where
+instance MonadEnvironment Interpreter where
     bind name obj = do
         env <- Interpreter $ gets stateEnv
         case Environment.lookup name env of
@@ -40,10 +40,6 @@ instance MonadInterpreter Interpreter where
             Left msg        -> raiseError "SyntaxError" msg
             Right newEnv    -> Interpreter $ modify $ \s -> s { stateEnv = newEnv }
 
-    evalBlock statements = do
-        results <- mapM Statement.eval statements
-        return $ filter (/= None) results
-
     lookupName name = do
         env <- Interpreter $ gets stateEnv
         case Environment.lookup name env of
@@ -54,10 +50,14 @@ instance MonadInterpreter Interpreter where
 
     unbind name = do
         env <- Interpreter $ gets stateEnv
-
         case Environment.unbind name env of
             Left msg        -> raiseError "SyntaxError" msg
             Right newEnv    -> Interpreter $ modify $ \s -> s { stateEnv = newEnv }
+
+instance MonadInterpreter Interpreter where
+    evalBlock statements = do
+        results <- mapM Statement.eval statements
+        return $ filter (/= None) results
 
     raiseError _ msg = error msg
 
