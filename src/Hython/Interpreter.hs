@@ -5,9 +5,11 @@ where
 
 import Control.Applicative
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.State.Strict (StateT, gets, modify, evalStateT)
+import Control.Monad.State.Strict (StateT, gets, modify, runStateT)
 import Data.IORef
 import qualified Data.Text as T
+
+import Language.Python.Parser (parse)
 
 import Hython.Builtins (builtinFunctions)
 import Hython.Environment (Environment)
@@ -61,15 +63,22 @@ instance MonadInterpreter Interpreter where
 
     raiseError _ msg = error msg
 
-runInterpreter :: Interpreter a -> IO a
-runInterpreter (Interpreter i) = do
+defaultInterpreterState :: IO InterpreterState
+defaultInterpreterState = do
     builtinFns <- mapM mkBuiltin builtinFunctions
-    let defaultState = InterpreterState {
+    return InterpreterState {
         stateEnv = Environment.new builtinFns
     }
-
-    evalStateT i defaultState
   where
     mkBuiltin name = do
         ref <- newIORef $ BuiltinFn name
         return (T.pack name, ref)
+
+runInterpreter :: InterpreterState -> String -> IO (Either String [Object], InterpreterState)
+runInterpreter state code = case parse code of
+    Left msg    -> return (Left msg, state)
+    Right stmts -> do
+        (objects, newState) <- flip runStateT state $ unwrap (evalBlock stmts)
+        return (Right objects, newState)
+  where
+    unwrap (Interpreter action) = action -- yay newtype?

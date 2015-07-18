@@ -2,20 +2,17 @@ module Main (main)
 where
 
 import Control.Exception
-import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 
 import System.Environment
-import System.Exit
-import System.IO
+import System.Exit (exitFailure)
 import System.IO.Error
 import Text.Printf
 
-import Language.Python.Parser (parse)
+import System.Console.Haskeline hiding (catch)
 
 import Hython.Builtins (toStr)
-import Hython.Interpreter (Interpreter, runInterpreter)
-import Hython.Object (evalBlock, Object, raiseError)
+import Hython.Interpreter (defaultInterpreterState, runInterpreter)
 
 main :: IO ()
 main = do
@@ -27,31 +24,31 @@ main = do
             putStrLn "Usage: hython <filename>"
             exitFailure
 
-parseEval :: String -> Interpreter [Object]
-parseEval code = case parse code of
-    Left msg    -> raiseError "SyntaxError" msg >> return []
-    Right stmts -> evalBlock stmts
-
 runREPL :: IO ()
-runREPL = runInterpreter $ forever $ do
-    line <- liftIO $ do
-        putStr ">>> "
-        hFlush stdout
-        getLine `catch` errorHandler
-
-    results <- parseEval line
-    mapM_ (liftIO . putStrLn . toStr) results
+runREPL = do
+    state <- defaultInterpreterState
+    runInputT defaultSettings (loop state)
   where
-    errorHandler :: IOError -> IO String
-    errorHandler _ = putStrLn "" >> exitSuccess
+    loop state = do
+        input <- getInputLine ">>> "
+        case input of
+            Nothing         -> return ()
+            Just "quit()"   -> return ()
+            Just line -> do
+                (result, newState) <- liftIO $ runInterpreter state line
+                case result of
+                    Left s      -> outputStrLn s
+                    Right objs  -> mapM_ (outputStrLn . toStr) objs
+
+                loop newState
 
 runScript :: String -> IO ()
 runScript filename = do
     code <- readFile filename `catch` errorHandler filename
 
-    runInterpreter $ do
-        _ <- parseEval code
-        return ()
+    state <- defaultInterpreterState
+    _ <- runInterpreter state code
+    return ()
 
   where
     errorHandler :: String -> IOError -> IO String

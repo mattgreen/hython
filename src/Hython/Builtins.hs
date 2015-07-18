@@ -1,7 +1,5 @@
 module Hython.Builtins where
 
-import Control.Applicative
-
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Hython.Object
 
