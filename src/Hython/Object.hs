@@ -30,8 +30,8 @@ class Monad m => MonadEnvironment m where
     unbind          :: Name -> m ()
 
 class MonadEnvironment m => MonadInterpreter m where
-    evalBlock       :: [Statement] -> m [Object]
-    raiseError      :: String -> String -> m ()
+    evalBlock   :: [Statement] -> m [Object]
+    raise       :: String -> String -> m ()
 
 
 newNone :: MonadInterpreter m => m Object
@@ -54,3 +54,12 @@ newInt i = return $ Int i
 
 newString :: MonadInterpreter m => String -> m Object
 newString s = return $ String s
+
+isTruthy :: Object -> Bool
+isTruthy (None) = False
+isTruthy (Bool False) = False
+isTruthy (Int 0) = False
+isTruthy (Float 0.0) = False
+isTruthy (String "") = False
+isTruthy (Bytes b) = not (B.null b)
+isTruthy _ = True

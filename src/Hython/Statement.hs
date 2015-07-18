@@ -20,7 +20,7 @@ eval (Del (Name name)) = do
     return None
 
 eval (Del _) = do
-    raiseError "SystemError" "invalid del statement"
+    raise "SystemError" "invalid del statement"
     return None
 
 eval (Expression e) = evalExpr e
@@ -48,5 +48,5 @@ eval (Nonlocal names) = do
 eval (Pass) = return None
 
 eval _ = do
-    raiseError "SystemError" "statement not implemented"
+    raise "SystemError" "statement not implemented"
     return None

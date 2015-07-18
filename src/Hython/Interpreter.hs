@@ -39,7 +39,7 @@ instance MonadEnvironment Interpreter where
     bindNonlocal name = do
         env <- Interpreter $ gets stateEnv
         case Environment.bindNonlocal name env of
-            Left msg        -> raiseError "SyntaxError" msg
+            Left msg        -> raise "SyntaxError" msg
             Right newEnv    -> Interpreter $ modify $ \s -> s { stateEnv = newEnv }
 
     lookupName name = do
@@ -53,7 +53,7 @@ instance MonadEnvironment Interpreter where
     unbind name = do
         env <- Interpreter $ gets stateEnv
         case Environment.unbind name env of
-            Left msg        -> raiseError "SyntaxError" msg
+            Left msg        -> raise "SyntaxError" msg
             Right newEnv    -> Interpreter $ modify $ \s -> s { stateEnv = newEnv }
 
 instance MonadInterpreter Interpreter where
@@ -61,7 +61,7 @@ instance MonadInterpreter Interpreter where
         results <- mapM Statement.eval statements
         return $ filter (/= None) results
 
-    raiseError _ msg = error msg
+    raise _ msg = error msg
 
 defaultInterpreterState :: IO InterpreterState
 defaultInterpreterState = do

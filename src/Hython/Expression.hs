@@ -1,7 +1,6 @@
 module Hython.Expression (evalExpr, isTruthy) where
 
 import Control.Monad.IO.Class (MonadIO)
-import qualified Data.ByteString as B
 import Data.Bits (complement)
 import Data.Text
 
@@ -25,7 +24,7 @@ evalExpr (Name name) = do
     case result of
         Just obj    -> return obj
         Nothing     -> do
-            raiseError "NameError" "name not defined"
+            raise "NameError" "name not defined"
             return None
 
 evalExpr (Call expr argExprs) = do
@@ -33,16 +32,9 @@ evalExpr (Call expr argExprs) = do
     args <- mapM evalExpr argExprs
 
     case callable of
-        (BuiltinFn name)    -> do
-            result <- callBuiltin name args
-            case result of
-                Just obj    -> return obj
-                Nothing     -> do
-                    raiseError "NameError" "built-in not found"
-                    return None
-
+        (BuiltinFn name)    -> callBuiltin name args
         _                   -> do
-            raiseError "TypeError" "object is not callable"
+            raise "TypeError" "object is not callable"
             return None
 
 evalExpr (UnaryOp op expr) = do
@@ -55,14 +47,7 @@ evalExpr (UnaryOp op expr) = do
         (Neg, Float f)      -> newFloat (-f)
         (Complement, Int i) -> newInt (complement i)
         _                   -> do
-            raiseError "SystemError" ("Unsupported operand type: " ++ show op)
+            raise "SystemError" ("Unsupported operand type: " ++ show op)
             return None
 
-isTruthy :: Object -> Bool
-isTruthy (None) = False
-isTruthy (Bool False) = False
-isTruthy (Int 0) = False
-isTruthy (Float 0.0) = False
-isTruthy (String "") = False
-isTruthy (Bytes b) = not (B.null b)
-isTruthy _ = True
+

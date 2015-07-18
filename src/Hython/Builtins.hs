@@ -6,17 +6,16 @@ import Hython.Object
 builtinFunctions :: [String]
 builtinFunctions = ["print"]
 
-callBuiltin :: MonadIO m => String -> [Object] -> m (Maybe Object)
-callBuiltin "print" args = do
-    result <- print' args
-    return $ Just result
-callBuiltin _ _ = return Nothing
-
-print' :: MonadIO m => [Object] -> m Object
-print' [] = liftIO $ putStrLn "" >> return None
-print' objs = do
-    liftIO $ putStrLn $ unwords $ map asStr objs
+callBuiltin :: (MonadInterpreter m, MonadIO m) => String -> [Object] -> m Object
+callBuiltin name args = do
+    case (name, args) of
+        ("print", _)    -> print' args
+        (_, _)          -> raise "SystemError" ("builtin '" ++ name ++ "' not implemented!")
     return None
+
+print' :: MonadIO m => [Object] -> m ()
+print' [] = liftIO $ putStrLn ""
+print' objs = liftIO $ putStrLn $ unwords $ map asStr objs
   where
     asStr (String s)    = s
     asStr v@_           = toStr v
