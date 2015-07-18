@@ -1,6 +1,7 @@
 module Main (main)
 where
 
+import Control.Applicative
 import Control.Exception
 import Control.Monad.IO.Class (liftIO)
 
@@ -27,7 +28,7 @@ main = do
 runREPL :: IO ()
 runREPL = do
     state <- defaultInterpreterState
-    runInputT defaultSettings (loop state)
+    runInputT settings (loop state)
   where
     loop state = do
         input <- getInputLine ">>> "
@@ -42,12 +43,12 @@ runREPL = do
 
                 loop newState
 
+    settings = defaultSettings { historyFile = Just ".hython_history" }
+
 runScript :: String -> IO ()
 runScript filename = do
     code <- readFile filename `catch` errorHandler filename
-
-    state <- defaultInterpreterState
-    _ <- runInterpreter state code
+    _ <- runInterpreter <$> defaultInterpreterState <*> pure code
     return ()
 
   where
