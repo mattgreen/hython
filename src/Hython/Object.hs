@@ -29,9 +29,10 @@ class Monad m => MonadEnvironment m where
     lookupName      :: Name -> m (Maybe Object)
     unbind          :: Name -> m ()
 
-class Monad m => MonadInterpreter m where
+class MonadEnvironment m => MonadInterpreter m where
     evalBlock       :: [Statement] -> m [Object]
     raiseError      :: String -> String -> m ()
+
 
 newNone :: MonadInterpreter m => m Object
 newNone = return None
