@@ -3,6 +3,7 @@ where
 
 import Control.Exception
 import Control.Monad
+import Control.Monad.IO.Class (liftIO)
 
 import System.Environment
 import System.Exit
@@ -14,7 +15,7 @@ import Language.Python.Parser (parse)
 
 import Hython.Builtins (toStr)
 import Hython.Interpreter (Interpreter, runInterpreter)
-import Hython.Object (evalBlock, liftIO, Object, raiseError)
+import Hython.Object (evalBlock, Object, raiseError)
 
 main :: IO ()
 main = do

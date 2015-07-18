@@ -2,18 +2,19 @@ module Hython.Builtins where
 
 import Control.Applicative
 
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Hython.Object
 
 builtinFunctions :: [String]
 builtinFunctions = ["print"]
 
-callBuiltin :: MonadInterpreter m => String -> [Object] -> m (Maybe Object)
+callBuiltin :: MonadIO m => String -> [Object] -> m (Maybe Object)
 callBuiltin "print" args = do
     result <- print' args
     return $ Just result
 callBuiltin _ _ = return Nothing
 
-print' :: MonadInterpreter m => [Object] -> m Object
+print' :: MonadIO m => [Object] -> m Object
 print' [] = liftIO $ putStrLn "" >> return None
 print' objs = do
     liftIO $ putStrLn $ unwords $ map asStr objs

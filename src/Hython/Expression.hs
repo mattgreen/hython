@@ -1,5 +1,6 @@
 module Hython.Expression (evalExpr, isTruthy) where
 
+import Control.Monad.IO.Class (MonadIO)
 import qualified Data.ByteString as B
 import Data.Text
 
@@ -8,7 +9,7 @@ import Language.Python
 import Hython.Builtins (callBuiltin)
 import Hython.Object
 
-evalExpr :: MonadInterpreter m => Expression -> m Object
+evalExpr :: (MonadIO m, MonadInterpreter m) => Expression -> m Object
 evalExpr (Constant c) = case c of
     ConstantNone        -> newNone
     ConstantBool b      -> newBool b

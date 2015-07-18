@@ -1,6 +1,7 @@
 module Hython.Statement (eval)
 where
 
+import Control.Monad.IO.Class (MonadIO)
 import Data.Text
 
 import Language.Python
@@ -8,7 +9,7 @@ import Language.Python
 import Hython.Expression
 import Hython.Object
 
-eval :: MonadInterpreter m => Statement -> m Object
+eval :: (MonadIO m, MonadInterpreter m) => Statement -> m Object
 eval (Assignment (Name name) expr) = do
     value <- evalExpr expr
     bind (pack name) value

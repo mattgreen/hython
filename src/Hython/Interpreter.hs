@@ -4,8 +4,7 @@ module Hython.Interpreter
 where
 
 import Control.Applicative
-import Control.Monad.IO.Class (MonadIO)
-import qualified Control.Monad.IO.Class as IO
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (StateT, gets, modify, evalStateT)
 import Data.IORef
 import qualified Data.Text as T
@@ -44,8 +43,6 @@ instance MonadInterpreter Interpreter where
     evalBlock statements = do
         results <- mapM Statement.eval statements
         return $ filter (/= None) results
-
-    liftIO = IO.liftIO
 
     lookupName name = do
         env <- Interpreter $ gets stateEnv
