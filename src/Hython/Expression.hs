@@ -2,6 +2,7 @@ module Hython.Expression (evalExpr, isTruthy) where
 
 import Control.Monad.IO.Class (MonadIO)
 import qualified Data.ByteString as B
+import Data.Bits (complement)
 import Data.Text
 
 import Language.Python
@@ -42,6 +43,19 @@ evalExpr (Call expr argExprs) = do
 
         _                   -> do
             raiseError "TypeError" "object is not callable"
+            return None
+
+evalExpr (UnaryOp op expr) = do
+    obj <- evalExpr expr
+    case (op, obj) of
+        (Not, Bool b)       -> newBool (not b)
+        (Pos, Int i)        -> newInt i
+        (Neg, Int i)        -> newInt (-i)
+        (Pos, Float f)      -> newFloat f
+        (Neg, Float f)      -> newFloat (-f)
+        (Complement, Int i) -> newInt (complement i)
+        _                   -> do
+            raiseError "SystemError" ("Unsupported operand type: " ++ show op)
             return None
 
 isTruthy :: Object -> Bool
