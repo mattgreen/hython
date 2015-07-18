@@ -2,7 +2,8 @@ module Hython.Expression (evalExpr, isTruthy) where
 
 import Control.Monad.IO.Class (MonadIO)
 import Data.Bits (complement)
-import Data.Text
+import Data.Fixed (mod')
+import Data.Text (pack)
 
 import Language.Python
 
@@ -10,6 +11,37 @@ import Hython.Builtins (callBuiltin)
 import Hython.Object
 
 evalExpr :: (MonadIO m, MonadInterpreter m) => Expression -> m Object
+evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
+    [lhs, rhs] <- mapM evalExpr [leftExpr, rightExpr]
+    case (op, lhs, rhs) of
+        (Add, Int l, Int r)         -> newInt (l + r)
+        (Add, Float l, Float r)     -> newFloat (l + r)
+        (Add, String l, String r)   -> newString (l ++ r)
+        (Sub, Int l, Int r)         -> newInt (l - r)
+        (Sub, Float l, Float r)     -> newFloat (l - r)
+        (Mul, Int l, Int r)         -> newInt (l * r)
+        (Mul, Float l, Float r)     -> newFloat (l * r)
+        (Mul, Int l, String r)      -> newString (concat $ replicate (fromInteger l) r)
+        (Mul, String _, Int _)      -> evalExpr (BinOp (ArithOp op) rightExpr leftExpr)
+        (Div, Int l, Int r)         -> newFloat (fromInteger l / fromInteger r)
+        (Div, Float l, Float r)     -> newFloat (l / r)
+        (Mod, Int l, Int r)         -> newInt (l `mod` r)
+        (Mod, Float l, Float r)     -> newFloat (l `mod'` r)
+        (FDiv, Int l, Int r)        -> newInt (floorInt (fromIntegral l / fromIntegral r))
+        (FDiv, Float l, Float r)    -> newFloat (fromInteger (floor (l / r)))
+        (Pow, Int l, Int r)
+            | r < 0                 -> newFloat (fromIntegral l ^^ r)
+            | otherwise             -> newInt (l ^ r)
+        (Pow, Float l, Float r)     -> newFloat (l ** r)
+        (_, Float _, Int r)         -> evalExpr (BinOp (ArithOp op) leftExpr (constantF $ fromIntegral r))
+        (_, Int l, Float _)         -> evalExpr (BinOp (ArithOp op) (constantF $ fromIntegral l) rightExpr)
+        _                           -> do
+            raise "SystemError" ("unsupported operand type " ++ show op)
+            return None
+  where
+    constantF f = Constant (ConstantFloat f)
+    floorInt = floor :: Double -> Integer
+
 evalExpr (Constant c) = case c of
     ConstantNone        -> newNone
     ConstantBool b      -> newBool b
@@ -19,14 +51,6 @@ evalExpr (Constant c) = case c of
     ConstantInt i       -> newInt i
     ConstantString s    -> newString s
 
-evalExpr (Name name) = do
-    result <- lookupName (pack name)
-    case result of
-        Just obj    -> return obj
-        Nothing     -> do
-            raise "NameError" "name not defined"
-            return None
-
 evalExpr (Call expr argExprs) = do
     callable <- evalExpr expr
     args <- mapM evalExpr argExprs
@@ -35,6 +59,14 @@ evalExpr (Call expr argExprs) = do
         (BuiltinFn name)    -> callBuiltin name args
         _                   -> do
             raise "TypeError" "object is not callable"
+            return None
+
+evalExpr (Name name) = do
+    result <- lookupName (pack name)
+    case result of
+        Just obj    -> return obj
+        Nothing     -> do
+            raise "NameError" "name not defined"
             return None
 
 evalExpr (UnaryOp op expr) = do

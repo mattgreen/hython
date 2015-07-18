@@ -9,4 +9,4 @@ executable        hython
   other-modules:  Language.Python.Lexer, Language.Python.Parser, Hython.Interpreter, Hython.Statement, Hython.Environment, Hython.Object, Hython.Expression, Hython.Builtins
   hs-source-dirs: src
   main-is:        Main.hs
-  ghc-options:    -Wall -debug
+  ghc-options:    -Wall -debug -O2
