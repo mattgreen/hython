@@ -1,7 +1,7 @@
-module Hython.Expression (evalExpr, isTruthy) where
+module Hython.Expression (evalExpr) where
 
 import Control.Monad.IO.Class (MonadIO)
-import Data.Bits (complement)
+import Data.Bits ((.&.), (.|.), complement, shiftL, shiftR, xor)
 import Data.Fixed (mod')
 import Data.Text (pack)
 
@@ -41,6 +41,47 @@ evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
   where
     constantF f = Constant (ConstantFloat f)
     floorInt = floor :: Double -> Integer
+
+evalExpr (BinOp (BitOp op) leftExpr rightExpr) = do
+    [lhs, rhs] <- mapM evalExpr [leftExpr, rightExpr]
+    case (op, lhs, rhs) of
+        (BitAnd, Int l, Int r)      -> newInt (l .&. r)
+        (BitOr, Int l, Int r)       -> newInt (l .|. r)
+        (BitXor, Int l, Int r)      -> newInt (l `xor` r)
+        (LShift, Int l, Int r)      -> newInt (l `shiftL` fromIntegral r)
+        (RShift, Int l, Int r)      -> newInt (l `shiftR` fromIntegral r)
+        _                           -> do
+            raise "SystemError" ("unsupported operand type " ++ show op)
+            return None
+
+evalExpr (BinOp (BoolOp op) leftExpr rightExpr) = do
+    [lhs, rhs] <- mapM evalExpr [leftExpr, rightExpr]
+    case (op, lhs, rhs) of
+        (And, Bool l, Bool r)   -> newBool (l && r)
+        (And, l, r)             -> return $ if isTruthy l && isTruthy r
+                                       then r
+                                       else l
+        (Or, Bool l, Bool r)    -> newBool (l || r)
+        (Or, l, r)              -> return $ if isTruthy l
+                                       then l
+                                       else r
+
+evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
+    [lhs, rhs] <- mapM evalExpr [leftExpr, rightExpr]
+    case (op, lhs, rhs) of
+        (Eq, l, r)                          -> newBool (l == r)
+        (NotEq, l, r)                       -> newBool (l /= r)
+        (LessThan, Int l, Int r)            -> newBool (l < r)
+        (LessThan, Float l, Float r)        -> newBool (l < r)
+        (LessThanEq, Int l, Int r)          -> newBool (l <= r)
+        (LessThanEq, Float l, Float r)      -> newBool (l <= r)
+        (GreaterThan, Int l, Int r)         -> newBool (l > r)
+        (GreaterThan, Float l, Float r)     -> newBool (l > r)
+        (GreaterThanEq, Int l, Int r)       -> newBool (l >= r)
+        (GreaterThanEq, Float l, Float r)   -> newBool (l >= r)
+        _ -> do
+            raise "SystemError" ("unsupported operand type " ++ show op)
+            return None
 
 evalExpr (Constant c) = case c of
     ConstantNone        -> newNone
