@@ -1,7 +1,6 @@
 module Main (main)
 where
 
-import Control.Applicative
 import Control.Exception
 import Control.Monad.IO.Class (liftIO)
 
@@ -48,8 +47,12 @@ runREPL = do
 runScript :: String -> IO ()
 runScript filename = do
     code <- readFile filename `catch` errorHandler filename
-    _ <- runInterpreter <$> defaultInterpreterState <*> pure code
-    return ()
+    state <- defaultInterpreterState
+
+    (result, _) <- runInterpreter state code
+    case result of
+        Left msg    -> putStrLn msg
+        Right _     -> return ()
 
   where
     errorHandler :: String -> IOError -> IO String
