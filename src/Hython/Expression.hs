@@ -69,14 +69,23 @@ evalExpr (BinOp (BoolOp op) leftExpr rightExpr) = do
 evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
     [lhs, rhs] <- mapM evalExpr [leftExpr, rightExpr]
     case (op, lhs, rhs) of
-        (Eq, l, r)                          -> newBool (l == r)
-        (NotEq, l, r)                       -> newBool (l /= r)
-        (LessThan, Int l, Int r)            -> newBool (l < r)
+        (Eq, Bool l, Bool r)                -> newBool (l == r)
+        (Eq, Bytes l, Bytes r)              -> newBool (l == r)
+        (Eq, Float l, Float r)              -> newBool (l == r)
+        (Eq, Imaginary l, Imaginary r)      -> newBool (l == r)
+        (Eq, Int l, Int r)                  -> newBool (l == r)
+        (Eq, String l, String r)            -> newBool (l == r)
+        (Eq, BuiltinFn l, BuiltinFn r)      -> newBool (l == r)
+        (Eq, _, _)                          -> newBool False
+        (NotEq, _, _) -> do
+            (Bool b) <- evalExpr (BinOp (CompOp Eq) leftExpr rightExpr)
+            newBool $ not b
         (LessThan, Float l, Float r)        -> newBool (l < r)
-        (LessThanEq, Int l, Int r)          -> newBool (l <= r)
+        (LessThan, Int l, Int r)            -> newBool (l < r)
         (LessThanEq, Float l, Float r)      -> newBool (l <= r)
-        (GreaterThan, Int l, Int r)         -> newBool (l > r)
+        (LessThanEq, Int l, Int r)          -> newBool (l <= r)
         (GreaterThan, Float l, Float r)     -> newBool (l > r)
+        (GreaterThan, Int l, Int r)         -> newBool (l > r)
         (GreaterThanEq, Int l, Int r)       -> newBool (l >= r)
         (GreaterThanEq, Float l, Float r)   -> newBool (l >= r)
         (_, Float _, Int r)                 -> evalExpr (BinOp (CompOp op) leftExpr (constantF r))
