@@ -79,9 +79,13 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
         (GreaterThan, Float l, Float r)     -> newBool (l > r)
         (GreaterThanEq, Int l, Int r)       -> newBool (l >= r)
         (GreaterThanEq, Float l, Float r)   -> newBool (l >= r)
+        (_, Float _, Int r)                 -> evalExpr (BinOp (CompOp op) leftExpr (constantF r))
+        (_, Int l, Float _)                 -> evalExpr (BinOp (CompOp op) (constantF l) rightExpr)
         _ -> do
             raise "SystemError" ("unsupported operand type " ++ show op)
             return None
+  where
+    constantF i = Constant $ ConstantFloat $ fromIntegral i
 
 evalExpr (Constant c) = case c of
     ConstantNone        -> newNone
