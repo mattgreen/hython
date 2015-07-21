@@ -6,6 +6,7 @@ where
 import Control.Applicative
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (StateT, gets, modify, runStateT)
+import Control.Monad.Trans.Cont (ContT, resetT, runContT)
 import Data.IORef
 import qualified Data.Text as T
 
@@ -17,7 +18,7 @@ import qualified Hython.Environment as Environment
 import Hython.Object
 import qualified Hython.Statement as Statement
 
-newtype Interpreter a = Interpreter (StateT InterpreterState IO a)
+newtype Interpreter a = Interpreter (ContT [Object] (StateT InterpreterState IO) a)
     deriving (Functor, Applicative, Monad, MonadIO)
 
 data InterpreterState = InterpreterState
@@ -78,7 +79,7 @@ runInterpreter :: InterpreterState -> String -> IO (Either String [Object], Inte
 runInterpreter state code = case parse code of
     Left msg    -> return (Left msg, state)
     Right stmts -> do
-        (objects, newState) <- flip runStateT state $ unwrap (evalBlock stmts)
+        (objects, newState) <- flip runStateT state $ runContT (unwrap (evalBlock stmts)) return
         return (Right objects, newState)
   where
     unwrap (Interpreter action) = action -- yay newtype?
