@@ -1,15 +1,31 @@
 module Hython.Statement (eval)
 where
 
+import Control.Monad (unless)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Text
 
 import Language.Python
 
+import Hython.Builtins (toStr)
 import Hython.Expression
 import Hython.Object
 
 eval :: (MonadIO m, MonadInterpreter m) => Statement -> m Object
+eval (Assert expr msgExpr) = do
+    result  <- evalExpr expr
+    msg     <- evalExpr msgExpr
+
+    truthy  <- isTruthy result
+    unless truthy $
+        if isNone msg
+            then raise "AssertionError" ""
+            else do
+                str <- toStr msg
+                raise "AssertionError" str
+
+    return None
+
 eval (Assignment (Name name) expr) = do
     value <- evalExpr expr
     bind (pack name) value

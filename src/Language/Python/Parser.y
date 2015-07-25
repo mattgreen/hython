@@ -363,7 +363,7 @@ nonlocal_stmt
 
 -- assert_stmt: 'assert' test [',' test]
 assert_stmt
-    : ASSERT test           { Assert $2 (Name "AssertionError") }
+    : ASSERT test           { Assert $2 (Constant ConstantNone) }
     | ASSERT test ',' test  { Assert $2 $4 }
 
 -- compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated
