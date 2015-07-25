@@ -162,6 +162,12 @@ evalExpr (Subscript expr idxExpr) = do
             raise "TypeError" "object is not subscriptable"
             return None
 
+evalExpr (TernOp condExpr thenExpr elseExpr) = do
+    condition <- evalExpr condExpr
+    evalExpr $ if isTruthy condition
+                   then thenExpr
+                   else elseExpr
+
 evalExpr (UnaryOp op expr) = do
     obj <- evalExpr expr
     case (op, obj) of
