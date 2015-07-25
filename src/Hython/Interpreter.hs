@@ -62,7 +62,7 @@ instance MonadInterpreter Interpreter where
         results <- mapM Statement.eval statements
         return $ filter (not . isNone) results
 
-    raise _ msg = error msg
+    raise exceptionType msg = error (exceptionType ++ ": " ++ msg)
 
 defaultInterpreterState :: IO InterpreterState
 defaultInterpreterState = do
