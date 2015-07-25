@@ -150,6 +150,18 @@ evalExpr (Name name) = do
             raise "NameError" "name not defined"
             return None
 
+evalExpr (Subscript expr idxExpr) = do
+    target  <- evalExpr expr
+    index   <- evalExpr idxExpr
+    case (target, index) of
+        (List ref, Int i) -> do
+            l <- liftIO $ readIORef ref
+            return $ l !! fromIntegral i
+        (String s, Int i) -> newString [s !! fromIntegral i]
+        _ -> do
+            raise "TypeError" "object is not subscriptable"
+            return None
+
 evalExpr (UnaryOp op expr) = do
     obj <- evalExpr expr
     case (op, obj) of
