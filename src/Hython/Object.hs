@@ -5,7 +5,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Complex (Complex)
-import Data.IORef (IORef, newIORef)
+import Data.IORef (IORef, newIORef, readIORef)
 
 import Language.Python (Statement)
 
@@ -19,6 +19,7 @@ data Object = None
             | Int Integer
             | String String
             | List (IORef [Object])
+            | Tuple (IORef [Object])
             | BuiltinFn String
 
 type ObjectRef = IORef Object
@@ -60,15 +61,26 @@ newList l = do
 newString :: MonadInterpreter m => String -> m Object
 newString s = return $ String s
 
+newTuple :: (MonadInterpreter m, MonadIO m) => [Object] -> m Object
+newTuple l = do
+    ref <- liftIO $ newIORef l
+    return $ Tuple ref
+
 isNone :: Object -> Bool
 isNone (None) = True
 isNone _ = False
 
-isTruthy :: Object -> Bool
-isTruthy (None) = False
-isTruthy (Bool False) = False
-isTruthy (Int 0) = False
-isTruthy (Float 0.0) = False
-isTruthy (String "") = False
-isTruthy (Bytes b) = not (B.null b)
-isTruthy _ = True
+isTruthy :: MonadIO m => Object -> m Bool
+isTruthy (None) = return False
+isTruthy (Bool False) = return False
+isTruthy (Int 0) = return False
+isTruthy (Float 0.0) = return False
+isTruthy (String "") = return False
+isTruthy (Bytes b) = return $ not (B.null b)
+isTruthy (List ref) = do
+    l <- liftIO $ readIORef ref
+    return $ not (null l)
+isTruthy (Tuple ref) = do
+    l <- liftIO $ readIORef ref
+    return $ not (null l)
+isTruthy _ = return True

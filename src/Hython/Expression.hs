@@ -1,10 +1,10 @@
 module Hython.Expression (evalExpr) where
 
-import Control.Monad (zipWithM)
+import Control.Monad (when, zipWithM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bits ((.&.), (.|.), complement, shiftL, shiftR, xor)
 import Data.Fixed (mod')
-import Data.IORef (readIORef)
+import Data.IORef (newIORef, readIORef)
 import Data.Text (pack)
 
 import Language.Python
@@ -23,6 +23,10 @@ evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
             left    <- liftIO $ readIORef l
             right   <- liftIO $ readIORef r
             newList (left ++ right)
+        (Add, Tuple l, Tuple r)     -> do
+            left    <- liftIO $ readIORef l
+            right   <- liftIO $ readIORef r
+            newTuple (left ++ right)
         (Sub, Int l, Int r)         -> newInt (l - r)
         (Sub, Float l, Float r)     -> newFloat (l - r)
         (Mul, Int l, Int r)         -> newInt (l * r)
@@ -33,6 +37,11 @@ evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
             items <- liftIO $ readIORef l
             newList $ concat $ replicate (fromInteger r) items
         (Mul, Int _, List _)        -> evalExpr (BinOp (ArithOp op) rightExpr leftExpr)
+        (Mul, Tuple l, Int r)       -> do
+            items <- liftIO $ readIORef l
+            newTuple $ concat $ replicate (fromInteger r) items
+        (Mul, Int _, Tuple _)       -> evalExpr (BinOp (ArithOp op) rightExpr leftExpr)
+
         (Div, Int l, Int r)         -> newFloat (fromInteger l / fromInteger r)
         (Div, Float l, Float r)     -> newFloat (l / r)
         (Mod, Int l, Int r)         -> newInt (l `mod` r)
@@ -68,13 +77,18 @@ evalExpr (BinOp (BoolOp op) leftExpr rightExpr) = do
     [lhs, rhs] <- mapM evalExpr [leftExpr, rightExpr]
     case (op, lhs, rhs) of
         (And, Bool l, Bool r)   -> newBool (l && r)
-        (And, l, r)             -> return $ if isTruthy l && isTruthy r
-                                       then r
-                                       else l
+        (And, l, r)             -> do
+            left    <- isTruthy l
+            right   <- isTruthy r
+            return $ if left && right
+                         then r
+                         else l
         (Or, Bool l, Bool r)    -> newBool (l || r)
-        (Or, l, r)              -> return $ if isTruthy l
-                                       then l
-                                       else r
+        (Or, l, r)              -> do
+            left    <- isTruthy l
+            return $ if left
+                         then l
+                         else r
 
 evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
     [lhs, rhs] <- mapM evalExpr [leftExpr, rightExpr]
@@ -155,18 +169,39 @@ evalExpr (Subscript expr idxExpr) = do
     index   <- evalExpr idxExpr
     case (target, index) of
         (List ref, Int i) -> do
-            l <- liftIO $ readIORef ref
-            return $ l !! fromIntegral i
-        (String s, Int i) -> newString [s !! fromIntegral i]
+            items <- liftIO $ readIORef ref
+            raiseIfOutOfRange i items
+            return $ items !! fromIntegral i
+
+        (String s, Int i) -> do
+            raiseIfOutOfRange i s
+            newString [s !! fromIntegral i]
+
+        (Tuple ref, Int i) -> do
+            objs <- liftIO $ readIORef ref
+            raiseIfOutOfRange i objs
+            return $ objs !! fromIntegral i
+
         _ -> do
             raise "TypeError" "object is not subscriptable"
             return None
+  where
+    raiseIfOutOfRange index xs = when (fromIntegral index > length xs) $
+        raise "IndexError" "index out of range"
+
+
 
 evalExpr (TernOp condExpr thenExpr elseExpr) = do
-    condition <- evalExpr condExpr
-    evalExpr $ if isTruthy condition
+    condition   <- evalExpr condExpr
+    truthy      <- isTruthy condition
+    evalExpr $ if truthy
                    then thenExpr
                    else elseExpr
+
+evalExpr (TupleDef exprs) = do
+    objs <- mapM evalExpr exprs
+    ref  <- liftIO $ newIORef objs
+    return $ Tuple ref
 
 evalExpr (UnaryOp op expr) = do
     obj <- evalExpr expr

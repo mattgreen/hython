@@ -37,4 +37,10 @@ toStr (List ref) = do
     l <- liftIO $ readIORef ref
     strItems <- mapM toStr l
     return $ "[" ++ intercalate ", " strItems ++ "]"
+toStr (Tuple ref) = do
+    l <- liftIO $ readIORef ref
+    strItems <- mapM toStr l
+    case strItems of
+        [obj]   -> return $ "(" ++ obj ++ ",)"
+        _       -> return $ "(" ++ intercalate ", " strItems ++ ")"
 toStr (BuiltinFn name)  = return $ "<built-in function " ++ name ++ ">"

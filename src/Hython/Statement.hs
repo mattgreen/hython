@@ -34,8 +34,9 @@ eval (If clauses elseBlock) = case clauses of
         _ <- evalBlock elseBlock
         return None
     (IfClause condition block : rest) -> do
-        result <- evalExpr condition
-        if isTruthy result
+        result  <- evalExpr condition
+        truthy  <- isTruthy result
+        if truthy
             then do
                 _ <- evalBlock block
                 return None
