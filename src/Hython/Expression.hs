@@ -13,6 +13,10 @@ import Hython.Builtins (callBuiltin)
 import Hython.Object
 
 evalExpr :: (MonadIO m, MonadInterpreter m) => Expression -> m Object
+evalExpr (As {}) = unimplemented "as"
+
+evalExpr (Attribute {}) = unimplemented "attributes"
+
 evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
     [lhs, rhs] <- mapM evalExpr [leftExpr, rightExpr]
     case (op, lhs, rhs) of
@@ -41,7 +45,6 @@ evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
             items <- liftIO $ readIORef l
             newTuple $ concat $ replicate (fromInteger r) items
         (Mul, Int _, Tuple _)       -> evalExpr (BinOp (ArithOp op) rightExpr leftExpr)
-
         (Div, Int l, Int r)         -> newFloat (fromInteger l / fromInteger r)
         (Div, Float l, Float r)     -> newFloat (l / r)
         (Mod, Int l, Int r)         -> newInt (l `mod` r)
@@ -151,6 +154,16 @@ evalExpr (Constant c) = case c of
     ConstantInt i       -> newInt i
     ConstantString s    -> newString s
 
+evalExpr (DictDef {}) = unimplemented "dictionaries"
+
+evalExpr (DoubleStar {}) = unimplemented "double star expr"
+
+evalExpr (From {}) = unimplemented "from"
+
+evalExpr (Glob {}) = unimplemented "glob"
+
+evalExpr (LambdaExpr {}) = unimplemented "lambda"
+
 evalExpr (ListDef exprs) = do
     objs <- mapM evalExpr exprs
     newList objs
@@ -162,6 +175,14 @@ evalExpr (Name name) = do
         Nothing     -> do
             raise "NameError" "name not defined"
             return None
+
+evalExpr (RelativeImport {}) = unimplemented "relative import"
+
+evalExpr (SetDef {}) = unimplemented "sets"
+
+evalExpr (SliceDef {}) = unimplemented "slices"
+
+evalExpr (Star {}) = unimplemented "star expr"
 
 evalExpr (Subscript expr idxExpr) = do
     target  <- evalExpr expr
@@ -188,6 +209,7 @@ evalExpr (Subscript expr idxExpr) = do
     raiseIfOutOfRange index xs = when (fromIntegral index > length xs) $
         raise "IndexError" "index out of range"
 
+
 evalExpr (TernOp condExpr thenExpr elseExpr) = do
     condition   <- evalExpr condExpr
     truthy      <- isTruthy condition
@@ -212,3 +234,10 @@ evalExpr (UnaryOp op expr) = do
         _                   -> do
             raise "SystemError" ("Unsupported operand type: " ++ show op)
             return None
+
+evalExpr (Yield {}) = unimplemented "yield"
+
+unimplemented :: (MonadInterpreter m) => String -> m Object
+unimplemented expr = do
+    raise "SystemError" $ expr ++ " not yet implemented"
+    return None
