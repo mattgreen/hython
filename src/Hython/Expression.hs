@@ -1,5 +1,6 @@
 module Hython.Expression (evalExpr) where
 
+import Control.Monad (zipWithM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bits ((.&.), (.|.), complement, shiftL, shiftR, xor)
 import Data.Fixed (mod')
@@ -78,16 +79,11 @@ evalExpr (BinOp (BoolOp op) leftExpr rightExpr) = do
 evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
     [lhs, rhs] <- mapM evalExpr [leftExpr, rightExpr]
     case (op, lhs, rhs) of
-        (Eq, Bool l, Bool r)                -> newBool (l == r)
-        (Eq, Bytes l, Bytes r)              -> newBool (l == r)
-        (Eq, Float l, Float r)              -> newBool (l == r)
-        (Eq, Imaginary l, Imaginary r)      -> newBool (l == r)
-        (Eq, Int l, Int r)                  -> newBool (l == r)
-        (Eq, String l, String r)            -> newBool (l == r)
-        (Eq, BuiltinFn l, BuiltinFn r)      -> newBool (l == r)
-        (Eq, _, _)                          -> newBool False
-        (NotEq, _, _) -> do
-            (Bool b) <- evalExpr (BinOp (CompOp Eq) leftExpr rightExpr)
+        (Eq, l, r) -> do
+            b <- equal l r
+            newBool b
+        (NotEq, l, r) -> do
+            b <- equal l r
             newBool $ not b
         (LessThan, Float l, Float r)        -> newBool (l < r)
         (LessThan, Int l, Int r)            -> newBool (l < r)
@@ -104,6 +100,24 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
             return None
   where
     constantF i = Constant $ ConstantFloat $ fromIntegral i
+
+    equal (Bool l) (Bool r)                  = return $ l == r
+    equal (Bytes l) (Bytes r)                = return $ l == r
+    equal (Float l) (Float r)                = return $ l == r
+    equal (Imaginary l) (Imaginary r)        = return $ l == r
+    equal (Int l) (Int r)                    = return $ l == r
+    equal (String l) (String r)              = return $ l == r
+    equal (BuiltinFn l) (BuiltinFn r)        = return $ l == r
+    equal (List l) (List r) = do
+        left    <- liftIO $ readIORef l
+        right   <- liftIO $ readIORef r
+        if length left /= length right
+            then return False
+            else do
+                results <- zipWithM equal left right
+                return $ all (== True) results
+    equal _ _                           = return False
+
 
 evalExpr (Constant c) = case c of
     ConstantNone        -> newNone
