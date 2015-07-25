@@ -38,7 +38,9 @@ runREPL = do
                 (result, newState) <- liftIO $ runInterpreter state line
                 case result of
                     Left s      -> outputStrLn s
-                    Right objs  -> mapM_ (outputStrLn . toStr) objs
+                    Right objs  -> do
+                        strs <- mapM toStr objs
+                        mapM_ outputStrLn strs
 
                 loop newState
 

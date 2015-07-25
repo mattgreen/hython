@@ -1,10 +1,11 @@
 module Hython.Object
 where
 
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Complex (Complex)
-import Data.IORef (IORef)
+import Data.IORef (IORef, newIORef)
 
 import Language.Python (Statement)
 
@@ -17,6 +18,7 @@ data Object = None
             | Imaginary (Complex Double)
             | Int Integer
             | String String
+            | List (IORef [Object])
             | BuiltinFn String
             deriving (Eq)
 
@@ -32,7 +34,6 @@ class Monad m => MonadEnvironment m where
 class MonadEnvironment m => MonadInterpreter m where
     evalBlock   :: [Statement] -> m [Object]
     raise       :: String -> String -> m ()
-
 
 newNone :: MonadInterpreter m => m Object
 newNone = return None
@@ -51,6 +52,11 @@ newImag i = return $ Imaginary i
 
 newInt :: MonadInterpreter m => Integer -> m Object
 newInt i = return $ Int i
+
+newList :: (MonadInterpreter m, MonadIO m) => [Object] -> m Object
+newList l = do
+    ref <- liftIO $ newIORef l
+    return $ List ref
 
 newString :: MonadInterpreter m => String -> m Object
 newString s = return $ String s

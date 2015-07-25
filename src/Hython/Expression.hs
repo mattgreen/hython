@@ -1,8 +1,9 @@
 module Hython.Expression (evalExpr) where
 
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bits ((.&.), (.|.), complement, shiftL, shiftR, xor)
 import Data.Fixed (mod')
+import Data.IORef (readIORef)
 import Data.Text (pack)
 
 import Language.Python
@@ -17,12 +18,20 @@ evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
         (Add, Int l, Int r)         -> newInt (l + r)
         (Add, Float l, Float r)     -> newFloat (l + r)
         (Add, String l, String r)   -> newString (l ++ r)
+        (Add, List l, List r)       -> do
+            left    <- liftIO $ readIORef l
+            right   <- liftIO $ readIORef r
+            newList (left ++ right)
         (Sub, Int l, Int r)         -> newInt (l - r)
         (Sub, Float l, Float r)     -> newFloat (l - r)
         (Mul, Int l, Int r)         -> newInt (l * r)
         (Mul, Float l, Float r)     -> newFloat (l * r)
         (Mul, Int l, String r)      -> newString (concat $ replicate (fromInteger l) r)
         (Mul, String _, Int _)      -> evalExpr (BinOp (ArithOp op) rightExpr leftExpr)
+        (Mul, List l, Int r)        -> do
+            items <- liftIO $ readIORef l
+            newList $ concat $ replicate (fromInteger r) items
+        (Mul, Int _, List _)        -> evalExpr (BinOp (ArithOp op) rightExpr leftExpr)
         (Div, Int l, Int r)         -> newFloat (fromInteger l / fromInteger r)
         (Div, Float l, Float r)     -> newFloat (l / r)
         (Mod, Int l, Int r)         -> newInt (l `mod` r)
@@ -114,6 +123,10 @@ evalExpr (Call expr argExprs) = do
         _                   -> do
             raise "TypeError" "object is not callable"
             return None
+
+evalExpr (ListDef exprs) = do
+    objs <- mapM evalExpr exprs
+    newList objs
 
 evalExpr (Name name) = do
     result <- lookupName (pack name)

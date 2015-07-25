@@ -1,6 +1,9 @@
 module Hython.Builtins where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Data.IORef (readIORef)
+import Data.List (intercalate)
+
 import Hython.Object
 
 builtinFunctions :: [String]
@@ -15,17 +18,23 @@ callBuiltin name args = do
 
 print' :: MonadIO m => [Object] -> m ()
 print' [] = liftIO $ putStrLn ""
-print' objs = liftIO $ putStrLn $ unwords $ map asStr objs
+print' objs = do
+    strs <- mapM asStr objs
+    liftIO $ putStrLn $ unwords strs
   where
-    asStr (String s)    = s
+    asStr (String s)    = return s
     asStr v@_           = toStr v
 
-toStr :: Object -> String
-toStr (None) = "None"
-toStr (Bool b) = if b then "True" else "False"
-toStr (Bytes _b) = "b'??'"
-toStr (Float f) = show f
-toStr (Imaginary i) = show i
-toStr (Int i) = show i
-toStr (String s) = "'" ++ s ++ "'"
-toStr (BuiltinFn name)  = "<built-in function " ++ name ++ ">"
+toStr :: MonadIO m => Object -> m String
+toStr (None) = return "None"
+toStr (Bool b) = return $ if b then "True" else "False"
+toStr (Bytes _b) = return "b'??'"
+toStr (Float f) = return $ show f
+toStr (Imaginary i) = return $ show i
+toStr (Int i) = return $ show i
+toStr (String s) = return $ "'" ++ s ++ "'"
+toStr (List ref) = do
+    l <- liftIO $ readIORef ref
+    strItems <- mapM toStr l
+    return $ "[" ++ intercalate ", " strItems ++ "]"
+toStr (BuiltinFn name)  = return $ "<built-in function " ++ name ++ ">"
