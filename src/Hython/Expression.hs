@@ -132,16 +132,6 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
                 return $ all (== True) results
     equal _ _                           = return False
 
-
-evalExpr (Constant c) = case c of
-    ConstantNone        -> newNone
-    ConstantBool b      -> newBool b
-    ConstantBytes b     -> newBytes b
-    ConstantFloat f     -> newFloat f
-    ConstantImag i      -> newImag i
-    ConstantInt i       -> newInt i
-    ConstantString s    -> newString s
-
 evalExpr (Call expr argExprs) = do
     callable <- evalExpr expr
     args <- mapM evalExpr argExprs
@@ -151,6 +141,15 @@ evalExpr (Call expr argExprs) = do
         _                   -> do
             raise "TypeError" "object is not callable"
             return None
+
+evalExpr (Constant c) = case c of
+    ConstantNone        -> newNone
+    ConstantBool b      -> newBool b
+    ConstantBytes b     -> newBytes b
+    ConstantFloat f     -> newFloat f
+    ConstantImag i      -> newImag i
+    ConstantInt i       -> newInt i
+    ConstantString s    -> newString s
 
 evalExpr (ListDef exprs) = do
     objs <- mapM evalExpr exprs
@@ -189,8 +188,6 @@ evalExpr (Subscript expr idxExpr) = do
     raiseIfOutOfRange index xs = when (fromIntegral index > length xs) $
         raise "IndexError" "index out of range"
 
-
-
 evalExpr (TernOp condExpr thenExpr elseExpr) = do
     condition   <- evalExpr condExpr
     truthy      <- isTruthy condition
@@ -215,5 +212,3 @@ evalExpr (UnaryOp op expr) = do
         _                   -> do
             raise "SystemError" ("Unsupported operand type: " ++ show op)
             return None
-
-
