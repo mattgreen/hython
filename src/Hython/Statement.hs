@@ -8,7 +8,7 @@ import Data.Text
 import Language.Python
 
 import Hython.Builtins (toStr)
-import Hython.Expression
+import Hython.Expression (evalExpr)
 import Hython.Object
 
 eval :: (MonadIO m, MonadInterpreter m) => Statement -> m Object

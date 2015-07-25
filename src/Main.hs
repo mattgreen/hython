@@ -2,17 +2,14 @@ module Main (main)
 where
 
 import Control.Exception
-import Control.Monad.IO.Class (liftIO)
 
 import System.Environment
 import System.Exit (exitFailure)
 import System.IO.Error
 import Text.Printf
 
-import System.Console.Haskeline hiding (catch)
-
-import Hython.Builtins (toStr)
 import Hython.Interpreter (defaultInterpreterState, runInterpreter)
+import REPL (runREPL)
 
 main :: IO ()
 main = do
@@ -23,28 +20,6 @@ main = do
         _           -> do
             putStrLn "Usage: hython <filename>"
             exitFailure
-
-runREPL :: IO ()
-runREPL = do
-    state <- defaultInterpreterState
-    runInputT settings (loop state)
-  where
-    loop state = do
-        input <- getInputLine ">>> "
-        case input of
-            Nothing         -> return ()
-            Just "quit()"   -> return ()
-            Just line -> do
-                (result, newState) <- liftIO $ runInterpreter state line
-                case result of
-                    Left s      -> outputStrLn s
-                    Right objs  -> do
-                        strs <- mapM toStr objs
-                        mapM_ outputStrLn strs
-
-                loop newState
-
-    settings = defaultSettings { historyFile = Just ".hython_history" }
 
 runScript :: String -> IO ()
 runScript filename = do

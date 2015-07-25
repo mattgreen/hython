@@ -209,7 +209,6 @@ evalExpr (Subscript expr idxExpr) = do
     raiseIfOutOfRange index xs = when (fromIntegral index > length xs) $
         raise "IndexError" "index out of range"
 
-
 evalExpr (TernOp condExpr thenExpr elseExpr) = do
     condition   <- evalExpr condExpr
     truthy      <- isTruthy condition
