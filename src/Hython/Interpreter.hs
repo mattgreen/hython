@@ -60,7 +60,7 @@ instance MonadEnvironment Interpreter where
 instance MonadInterpreter Interpreter where
     evalBlock statements = do
         results <- mapM Statement.eval statements
-        return $ filter (/= None) results
+        return $ filter (not . isNone) results
 
     raise _ msg = error msg
 

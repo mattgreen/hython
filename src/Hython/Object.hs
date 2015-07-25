@@ -20,7 +20,6 @@ data Object = None
             | String String
             | List (IORef [Object])
             | BuiltinFn String
-            deriving (Eq)
 
 type ObjectRef = IORef Object
 
@@ -60,6 +59,10 @@ newList l = do
 
 newString :: MonadInterpreter m => String -> m Object
 newString s = return $ String s
+
+isNone :: Object -> Bool
+isNone (None) = True
+isNone _ = False
 
 isTruthy :: Object -> Bool
 isTruthy (None) = False
