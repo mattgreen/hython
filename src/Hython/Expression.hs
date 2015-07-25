@@ -101,13 +101,13 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
   where
     constantF i = Constant $ ConstantFloat $ fromIntegral i
 
-    equal (Bool l) (Bool r)                  = return $ l == r
-    equal (Bytes l) (Bytes r)                = return $ l == r
-    equal (Float l) (Float r)                = return $ l == r
-    equal (Imaginary l) (Imaginary r)        = return $ l == r
-    equal (Int l) (Int r)                    = return $ l == r
-    equal (String l) (String r)              = return $ l == r
-    equal (BuiltinFn l) (BuiltinFn r)        = return $ l == r
+    equal (Bool l) (Bool r)             = return $ l == r
+    equal (Bytes l) (Bytes r)           = return $ l == r
+    equal (Float l) (Float r)           = return $ l == r
+    equal (Imaginary l) (Imaginary r)   = return $ l == r
+    equal (Int l) (Int r)               = return $ l == r
+    equal (String l) (String r)         = return $ l == r
+    equal (BuiltinFn l) (BuiltinFn r)   = return $ l == r
     equal (List l) (List r) = do
         left    <- liftIO $ readIORef l
         right   <- liftIO $ readIORef r
