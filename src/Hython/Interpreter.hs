@@ -6,7 +6,7 @@ where
 import Control.Applicative
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (StateT, gets, modify, runStateT)
-import Control.Monad.Trans.Cont (ContT, resetT, runContT)
+import Control.Monad.Trans.Cont (ContT, evalContT)
 import Data.IORef
 import qualified Data.Text as T
 
@@ -79,7 +79,7 @@ runInterpreter :: InterpreterState -> String -> IO (Either String [Object], Inte
 runInterpreter state code = case parse code of
     Left msg    -> return (Left msg, state)
     Right stmts -> do
-        (objects, newState) <- flip runStateT state $ runContT (unwrap (evalBlock stmts)) return
+        (objects, newState) <- flip runStateT state $ evalContT (unwrap (evalBlock stmts))
         return (Right objects, newState)
   where
     unwrap (Interpreter action) = action -- yay newtype?
