@@ -1,8 +1,10 @@
 module Hython.Builtins where
 
+import Control.Monad (forM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.IORef (readIORef)
 import Data.List (intercalate)
+import Data.IntMap (elems)
 
 import Hython.Object
 
@@ -42,4 +44,11 @@ toStr (Tuple objs) = do
     case strItems of
         [str]   -> return $ "(" ++ str ++ ",)"
         _       -> return $ "(" ++ intercalate ", " strItems ++ ")"
+toStr (Dict ref) = do
+    items <- liftIO $ readIORef ref
+    strItems <- forM (elems items) $ \(k, v) -> do
+        key     <- toStr k
+        value   <- toStr v
+        return $ key ++ ": " ++ value
+    return $ "{" ++ intercalate ", " strItems ++ "}"
 toStr (BuiltinFn name)  = return $ "<built-in function " ++ name ++ ">"

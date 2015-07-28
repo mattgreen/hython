@@ -1,15 +1,16 @@
 module Hython.Expression (evalExpr) where
 
-import Control.Monad (when, zipWithM)
+import Control.Monad (forM, when, zipWithM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bits ((.&.), (.|.), complement, shiftL, shiftR, xor)
 import Data.Fixed (mod')
+import qualified Data.IntMap as IntMap
 import Data.IORef (readIORef)
 import Data.Text (pack)
 
 import Language.Python
 
-import Hython.Builtins (callBuiltin)
+import Hython.Builtins (callBuiltin, toStr)
 import Hython.Object
 
 evalExpr :: (MonadIO m, MonadInterpreter m) => Expression -> m Object
@@ -107,6 +108,20 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
         (GreaterThanEq, Float l, Float r)   -> newBool (l >= r)
         (_, Float _, Int r)                 -> evalExpr (BinOp (CompOp op) leftExpr (constantF r))
         (_, Int l, Float _)                 -> evalExpr (BinOp (CompOp op) (constantF l) rightExpr)
+        (In, l, Dict ref)                   -> do
+            h <- hash l
+            items <- liftIO $ readIORef ref
+            newBool $ IntMap.member h items
+        (In, l, List ref)                   -> do
+            items <- liftIO $ readIORef ref
+            results <- mapM (equal l) items
+            newBool $ True `elem` results
+        (In, l, Tuple items)                -> do
+            results <- mapM (equal l) items
+            newBool $ True `elem` results
+        (NotIn, _, _)                       -> do
+            (Bool b) <- evalExpr (BinOp (CompOp In) leftExpr rightExpr)
+            newBool (not b)
         _ -> do
             raise "SystemError" ("unsupported operand type " ++ show op)
             return None
@@ -120,14 +135,16 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
     equal (Int l) (Int r)               = return $ l == r
     equal (String l) (String r)         = return $ l == r
     equal (BuiltinFn l) (BuiltinFn r)   = return $ l == r
+    equal (Tuple l) (Tuple r)           =
+        if length l /= length r
+            then return False
+            else do
+                results <- zipWithM equal l r
+                return $ all (== True) results
     equal (List l) (List r) = do
         left    <- liftIO $ readIORef l
         right   <- liftIO $ readIORef r
-        if length left /= length right
-            then return False
-            else do
-                results <- zipWithM equal left right
-                return $ all (== True) results
+        equal (Tuple left) (Tuple right)
     equal _ _                           = return False
 
 evalExpr (Call expr argExprs) = do
@@ -149,7 +166,12 @@ evalExpr (Constant c) = case c of
     ConstantInt i       -> newInt i
     ConstantString s    -> newString s
 
-evalExpr (DictDef {}) = unimplemented "dictionaries"
+evalExpr (DictDef exprs) = do
+    objs <- forM exprs $ \(keyExpr, valueExpr) -> do
+        key <- evalExpr keyExpr
+        value <- evalExpr valueExpr
+        return (key, value)
+    newDict objs
 
 evalExpr (DoubleStar {}) = unimplemented "double star expr"
 
@@ -183,6 +205,17 @@ evalExpr (Subscript expr idxExpr) = do
     target  <- evalExpr expr
     index   <- evalExpr idxExpr
     case (target, index) of
+        (Dict ref, key) -> do
+            items <- liftIO $ readIORef ref
+            h <- hash key
+
+            case IntMap.lookup h items of
+                Just (_, value) -> return value
+                Nothing -> do
+                    s <- toStr key
+                    raise "KeyError" s
+                    return None
+
         (List ref, Int i) -> do
             items <- liftIO $ readIORef ref
             raiseIfOutOfRange i items

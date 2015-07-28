@@ -1,10 +1,14 @@
 module Hython.Object
 where
 
+import Control.Monad (forM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.ByteString (ByteString)
+import qualified Data.Hashable as H
 import qualified Data.ByteString.Char8 as B
-import Data.Complex (Complex)
+import Data.Complex (Complex, realPart, imagPart)
+import Data.IntMap.Strict (IntMap)
+import qualified Data.IntMap as IntMap
 import Data.IORef (IORef, newIORef, readIORef)
 
 import Language.Python (Statement)
@@ -19,6 +23,7 @@ data Object = None
             | Int Integer
             | String String
             | List (IORef [Object])
+            | Dict (IORef (IntMap (Object, Object)))
             | Tuple [Object]
             | BuiltinFn String
 
@@ -35,6 +40,23 @@ class MonadEnvironment m => MonadInterpreter m where
     evalBlock   :: [Statement] -> m [Object]
     raise       :: String -> String -> m ()
 
+hash :: (MonadInterpreter m, MonadIO m) => Object -> m Int
+hash obj = case obj of
+    (None)          -> return 0
+    (Bool b)        -> return $ H.hash b
+    (BuiltinFn b)   -> return $ H.hash b
+    (Bytes b)       -> return $ H.hash b
+    (Float d)       -> return $ H.hash d
+    (Imaginary i)   -> return $ H.hash (realPart i) + H.hash (imagPart i)
+    (Int i)         -> return $ H.hash i
+    (String s)      -> return $ H.hash s
+    (Tuple items)   -> do
+        hashes <- mapM hash items
+        return $ sum hashes
+    _               -> do
+        raise "TypeError" "unhashable type"
+        return 0
+
 newNone :: MonadInterpreter m => m Object
 newNone = return None
 
@@ -43,6 +65,14 @@ newBool b = return $ Bool b
 
 newBytes :: MonadInterpreter m => String -> m Object
 newBytes b = return $ Bytes (B.pack b)
+
+newDict :: (MonadInterpreter m, MonadIO m) => [(Object, Object)] -> m Object
+newDict objs = do
+    items <- forM objs $ \p@(key, _) -> do
+        h <- hash key
+        return (h, p)
+    ref <- liftIO $ newIORef (IntMap.fromList items)
+    return $ Dict ref
 
 newFloat :: MonadInterpreter m => Double -> m Object
 newFloat d = return $ Float d

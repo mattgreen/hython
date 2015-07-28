@@ -2,8 +2,10 @@ module Hython.Statement (eval)
 where
 
 import Control.Monad (unless)
-import Control.Monad.IO.Class (MonadIO)
-import Data.Text
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import qualified Data.IntMap as IntMap
+import Data.IORef (modifyIORef)
+import Data.Text (pack)
 
 import Language.Python
 
@@ -30,6 +32,22 @@ eval (Assignment (Name name) expr) = do
     value <- evalExpr expr
     bind (pack name) value
     return None
+
+eval (Assignment (Subscript targetExpr idxExpr) expr) = do
+    target  <- evalExpr targetExpr
+    index   <- evalExpr idxExpr
+    value   <- evalExpr expr
+
+    case (target, index) of
+        (Dict ref, key) -> do
+            h <- hash key
+            liftIO $ modifyIORef ref $ IntMap.insert h (key, value)
+            return None
+
+        _ -> do
+            raise "TypeError" "object does not support item assignment"
+            return None
+
 
 eval (Del (Name name)) = do
     unbind (pack name)
