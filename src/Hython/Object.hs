@@ -19,7 +19,7 @@ data Object = None
             | Int Integer
             | String String
             | List (IORef [Object])
-            | Tuple (IORef [Object])
+            | Tuple [Object]
             | BuiltinFn String
 
 type ObjectRef = IORef Object
@@ -61,10 +61,8 @@ newList l = do
 newString :: MonadInterpreter m => String -> m Object
 newString s = return $ String s
 
-newTuple :: (MonadInterpreter m, MonadIO m) => [Object] -> m Object
-newTuple l = do
-    ref <- liftIO $ newIORef l
-    return $ Tuple ref
+newTuple :: (MonadInterpreter m) => [Object] -> m Object
+newTuple l = return $ Tuple l
 
 isNone :: Object -> Bool
 isNone (None) = True
@@ -80,7 +78,5 @@ isTruthy (Bytes b) = return $ not (B.null b)
 isTruthy (List ref) = do
     l <- liftIO $ readIORef ref
     return $ not (null l)
-isTruthy (Tuple ref) = do
-    l <- liftIO $ readIORef ref
-    return $ not (null l)
+isTruthy (Tuple objs) = return $ not $ null objs
 isTruthy _ = return True

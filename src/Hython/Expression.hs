@@ -4,7 +4,7 @@ import Control.Monad (when, zipWithM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bits ((.&.), (.|.), complement, shiftL, shiftR, xor)
 import Data.Fixed (mod')
-import Data.IORef (newIORef, readIORef)
+import Data.IORef (readIORef)
 import Data.Text (pack)
 
 import Language.Python
@@ -27,10 +27,7 @@ evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
             left    <- liftIO $ readIORef l
             right   <- liftIO $ readIORef r
             newList (left ++ right)
-        (Add, Tuple l, Tuple r)     -> do
-            left    <- liftIO $ readIORef l
-            right   <- liftIO $ readIORef r
-            newTuple (left ++ right)
+        (Add, Tuple l, Tuple r)     -> newTuple (l ++ r)
         (Sub, Int l, Int r)         -> newInt (l - r)
         (Sub, Float l, Float r)     -> newFloat (l - r)
         (Mul, Int l, Int r)         -> newInt (l * r)
@@ -41,9 +38,7 @@ evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
             items <- liftIO $ readIORef l
             newList $ concat $ replicate (fromInteger r) items
         (Mul, Int _, List _)        -> evalExpr (BinOp (ArithOp op) rightExpr leftExpr)
-        (Mul, Tuple l, Int r)       -> do
-            items <- liftIO $ readIORef l
-            newTuple $ concat $ replicate (fromInteger r) items
+        (Mul, Tuple l, Int r)       -> newTuple $ concat $ replicate (fromInteger r) l
         (Mul, Int _, Tuple _)       -> evalExpr (BinOp (ArithOp op) rightExpr leftExpr)
         (Div, Int l, Int r)         -> newFloat (fromInteger l / fromInteger r)
         (Div, Float l, Float r)     -> newFloat (l / r)
@@ -197,8 +192,7 @@ evalExpr (Subscript expr idxExpr) = do
             raiseIfOutOfRange i s
             newString [s !! fromIntegral i]
 
-        (Tuple ref, Int i) -> do
-            objs <- liftIO $ readIORef ref
+        (Tuple objs, Int i) -> do
             raiseIfOutOfRange i objs
             return $ objs !! fromIntegral i
 
@@ -218,8 +212,7 @@ evalExpr (TernOp condExpr thenExpr elseExpr) = do
 
 evalExpr (TupleDef exprs) = do
     objs <- mapM evalExpr exprs
-    ref  <- liftIO $ newIORef objs
-    return $ Tuple ref
+    return $ Tuple objs
 
 evalExpr (UnaryOp op expr) = do
     obj <- evalExpr expr
