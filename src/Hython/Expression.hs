@@ -1,12 +1,13 @@
 module Hython.Expression (evalExpr) where
 
-import Control.Monad (forM, when, zipWithM)
+import Control.Monad (forM, zipWithM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bits ((.&.), (.|.), complement, shiftL, shiftR, xor)
 import Data.Fixed (mod')
 import qualified Data.IntMap as IntMap
 import Data.IORef (readIORef)
 import Data.Text (pack)
+import Safe (atMay)
 
 import Language.Python
 
@@ -241,23 +242,27 @@ evalExpr (Subscript expr idxExpr) = do
 
         (List ref, Int i) -> do
             items <- liftIO $ readIORef ref
-            raiseIfOutOfRange i items
-            return $ items !! fromIntegral i
+            case atMay items (fromIntegral i) of
+                Just obj    -> return obj
+                Nothing     -> do
+                    raise "TypeError" "index out of range"
+                    return None
 
-        (String s, Int i) -> do
-            raiseIfOutOfRange i s
-            newString [s !! fromIntegral i]
+        (String s, Int i) -> case atMay s (fromIntegral i) of
+            Just c      -> newString [c]
+            Nothing     -> do
+                raise "IndexError" "index out of range"
+                return None
 
-        (Tuple objs, Int i) -> do
-            raiseIfOutOfRange i objs
-            return $ objs !! fromIntegral i
+        (Tuple objs, Int i) -> case atMay objs (fromIntegral i) of
+            Just obj    -> return obj
+            Nothing     -> do
+                raise "IndexErrror" "index out of range"
+                return None
 
         _ -> do
             raise "TypeError" "object is not subscriptable"
             return None
-  where
-    raiseIfOutOfRange index xs = when (fromIntegral index > length xs) $
-        raise "IndexError" "index out of range"
 
 evalExpr (TernOp condExpr thenExpr elseExpr) = do
     condition   <- evalExpr condExpr
