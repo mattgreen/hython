@@ -44,6 +44,10 @@ toStr (Tuple objs) = do
     case strItems of
         [str]   -> return $ "(" ++ str ++ ",)"
         _       -> return $ "(" ++ intercalate ", " strItems ++ ")"
+toStr (Set ref) = do
+    items <- liftIO $ readIORef ref
+    strItems <- mapM toStr $ elems items
+    return $ "{" ++ intercalate ", " strItems ++ "}"
 toStr (Dict ref) = do
     items <- liftIO $ readIORef ref
     strItems <- forM (elems items) $ \(k, v) -> do

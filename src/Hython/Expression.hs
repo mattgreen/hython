@@ -116,6 +116,10 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
             items <- liftIO $ readIORef ref
             results <- mapM (equal l) items
             newBool $ True `elem` results
+        (In, l, Set ref)                    -> do
+            key <- hash l
+            items <- liftIO $ readIORef ref
+            newBool $ key `IntMap.member` items
         (In, l, Tuple items)                -> do
             results <- mapM (equal l) items
             newBool $ True `elem` results
@@ -195,7 +199,9 @@ evalExpr (Name name) = do
 
 evalExpr (RelativeImport {}) = unimplemented "relative import"
 
-evalExpr (SetDef {}) = unimplemented "sets"
+evalExpr (SetDef exprs) = do
+    objs <- mapM evalExpr exprs
+    newSet objs
 
 evalExpr (SliceDef {}) = unimplemented "slices"
 

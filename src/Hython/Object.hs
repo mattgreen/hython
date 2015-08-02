@@ -24,6 +24,7 @@ data Object = None
             | String String
             | List (IORef [Object])
             | Dict (IORef (IntMap (Object, Object)))
+            | Set (IORef (IntMap Object))
             | Tuple [Object]
             | BuiltinFn String
 
@@ -87,6 +88,14 @@ newList :: (MonadInterpreter m, MonadIO m) => [Object] -> m Object
 newList l = do
     ref <- liftIO $ newIORef l
     return $ List ref
+
+newSet :: (MonadInterpreter m, MonadIO m) => [Object] -> m Object
+newSet objs = do
+    items <- forM objs $ \obj -> do
+        key <- hash obj
+        return (key, obj)
+    ref <- liftIO $ newIORef (IntMap.fromList items)
+    return $ Set ref
 
 newString :: MonadInterpreter m => String -> m Object
 newString s = return $ String s
