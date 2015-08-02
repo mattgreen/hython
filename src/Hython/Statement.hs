@@ -4,8 +4,9 @@ where
 import Control.Monad (unless)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.IntMap as IntMap
-import Data.IORef (modifyIORef)
+import Data.IORef (modifyIORef, readIORef, writeIORef)
 import Data.Text (pack)
+import Safe (atMay)
 
 import Language.Python
 
@@ -42,6 +43,15 @@ eval (Assignment (Subscript targetExpr idxExpr) expr) = do
         (Dict ref, key) -> do
             h <- hash key
             liftIO $ modifyIORef ref $ IntMap.insert h (key, value)
+            return None
+
+        (List ref, Int i) -> do
+            items <- liftIO $ readIORef ref
+            case atMay items (fromIntegral i) of
+                Just _ -> do
+                    let (left, right) = splitAt (fromIntegral i) items
+                    liftIO $ writeIORef ref (left ++ [value] ++ tail right)
+                Nothing -> raise "IndexError" "index is out of range"
             return None
 
         _ -> do
