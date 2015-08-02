@@ -149,7 +149,24 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
         left    <- liftIO $ readIORef l
         right   <- liftIO $ readIORef r
         equal (Tuple left) (Tuple right)
+    equal (Set l) (Set r) = do
+        left    <- liftIO $ readIORef l
+        right   <- liftIO $ readIORef r
+        equal (Tuple $ IntMap.elems left) (Tuple $ IntMap.elems right)
+    equal (Dict l) (Dict r) = do
+        left    <- liftIO $ readIORef l
+        right   <- liftIO $ readIORef r
+        if IntMap.size left /= IntMap.size right
+            then return False
+            else do
+                results <- zipWithM pairEqual (IntMap.elems left) (IntMap.elems right)
+                return $ all (== True) results
     equal _ _                           = return False
+
+    pairEqual (lk, lv) (rk, rv) = do
+        k <- equal lk rk
+        v <- equal lv rv
+        return $ k && v
 
 evalExpr (Call expr argExprs) = do
     callable <- evalExpr expr
