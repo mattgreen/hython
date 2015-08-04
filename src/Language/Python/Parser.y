@@ -4,6 +4,7 @@ import Control.Monad.Error
 import Data.Either
 import Data.List
 import Data.Maybe
+import Data.Text (Text)
 
 import Language.Python
 import qualified Language.Python.Lexer as L
@@ -685,13 +686,13 @@ handleTrailers expr trailers = foldl' handleTrailer expr trailers
 names :: [String] -> [Expression]
 names xs = map Name xs
 
-parse :: String -> Either String [Statement]
+parse :: Text -> Either String [Statement]
 parse code = do
     case L.lex code of
         Right tokens    -> Right $ parseTokens tokens
         Left err        -> Left $ show err
 
-parseRepl :: String -> Either String [Statement]
+parseRepl :: Text -> Either String [Statement]
 parseRepl code = do
     case L.lex code of
         Right tokens    -> Right $ parseLine tokens

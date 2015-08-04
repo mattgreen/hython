@@ -1,7 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main (main)
 where
 
+import Prelude hiding (readFile)
+
 import Control.Exception
+import Data.Text (Text)
+import Data.Text.IO (readFile)
 
 import System.Environment
 import System.Exit (exitFailure)
@@ -32,7 +37,7 @@ runScript filename = do
         Right _     -> return ()
 
   where
-    errorHandler :: String -> IOError -> IO String
+    errorHandler :: String -> IOError -> IO Text
     errorHandler _ err = do
         putStrLn $ printf "Unable to open '%s': file %s" filename (ioeGetErrorString err)
         _ <- exitFailure

@@ -10,6 +10,8 @@ import Data.Complex
 import Data.Char hiding (digitToInt)
 import Data.Functor
 import Data.List
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Text.Parsec hiding (newline, tokens)
 
@@ -34,13 +36,13 @@ data LexerState = LexerState
                 , lexerImplicitJoins :: Int
                 }
 
-type Lexer a = Parsec String LexerState a
+type Lexer a = Parsec Text LexerState a
 
-lex :: String -> Either ParseError Tokens
+lex :: Text -> Either ParseError Tokens
 lex code = runParser program initialState "" newlineTerminatedCode
   where
     initialState = LexerState { lexerIndents = [0], lexerImplicitJoins = 0 }
-    newlineTerminatedCode = code ++ "\n"
+    newlineTerminatedCode = T.snoc code '\n'
 
 program :: Lexer Tokens
 program = do

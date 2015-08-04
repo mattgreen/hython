@@ -8,6 +8,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (StateT, gets, modify, runStateT)
 import Control.Monad.Trans.Cont (ContT, evalContT)
 import Data.IORef
+import Data.Text (Text)
 import qualified Data.Text as T
 
 import Language.Python.Parser (parse)
@@ -75,7 +76,7 @@ defaultInterpreterState = do
         ref <- newIORef $ BuiltinFn name
         return (T.pack name, ref)
 
-runInterpreter :: InterpreterState -> String -> IO (Either String [Object], InterpreterState)
+runInterpreter :: InterpreterState -> Text -> IO (Either String [Object], InterpreterState)
 runInterpreter state code = case parse code of
     Left msg    -> return (Left msg, state)
     Right stmts -> do

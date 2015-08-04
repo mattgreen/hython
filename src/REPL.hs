@@ -1,6 +1,7 @@
 module REPL (runREPL) where
 
 import Control.Monad.IO.Class (liftIO)
+import Data.Text (pack)
 
 import System.Console.Haskeline
 
@@ -18,7 +19,7 @@ runREPL = do
             Nothing         -> return ()
             Just "quit()"   -> return ()
             Just line -> do
-                (result, newState) <- liftIO $ runInterpreter state line
+                (result, newState) <- liftIO $ runInterpreter state (pack line)
                 case result of
                     Left s      -> outputStrLn s
                     Right objs  -> do
