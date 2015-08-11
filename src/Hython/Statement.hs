@@ -1,7 +1,8 @@
 module Hython.Statement (eval)
 where
 
-import Control.Monad (unless)
+import Control.Monad (liftM, unless)
+import Control.Monad.CC (MonadDelimitedCont, abort, reset, shift)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.IntMap as IntMap
 import Data.IORef (modifyIORef, readIORef, writeIORef)
@@ -14,7 +15,7 @@ import Hython.Builtins (toStr)
 import Hython.Expression (evalExpr)
 import Hython.Object
 
-eval :: (MonadIO m, MonadInterpreter m) => Statement -> m Object
+eval :: (MonadIO m, MonadDelimitedCont p s m, MonadInterpreter m) => Statement -> m Object
 eval (Assert expr msgExpr) = do
     result  <- evalExpr expr
     msg     <- evalExpr msgExpr
@@ -91,6 +92,16 @@ eval (Nonlocal names) = do
     return None
 
 eval (Pass) = return None
+
+eval (While condition block elseBlock) = do
+    reset $ \p -> do
+        fix $ \loop -> do
+            result <- evalExpr condition
+            bool <- isTruthy result
+            if bool
+                then evalBlock block >> return None
+                else abort p (return None)
+        return None
 
 eval _ = do
     raise "SystemError" "statement not implemented"

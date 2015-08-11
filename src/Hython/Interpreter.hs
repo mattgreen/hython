@@ -1,12 +1,12 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, GeneralizedNewtypeDeriving, RankNTypes #-}
 
 module Hython.Interpreter
 where
 
 import Control.Applicative
+import Control.Monad.CC
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (StateT, gets, modify, runStateT)
-import Control.Monad.Trans.Cont (ContT, evalContT)
 import Data.IORef
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -19,14 +19,20 @@ import qualified Hython.Environment as Environment
 import Hython.Object
 import qualified Hython.Statement as Statement
 
-newtype Interpreter a = Interpreter (ContT [Object] (StateT InterpreterState IO) a)
-    deriving (Functor, Applicative, Monad, MonadIO)
+newtype Interpreter ans a = Interpreter { unInterpreter :: CCT ans (StateT InterpreterState IO) a }
+                            deriving (Functor, Applicative, Monad, MonadIO)
+
+instance MonadDelimitedCont (Prompt ans) (SubCont ans (StateT InterpreterState IO)) (Interpreter ans) where
+    newPrompt = Interpreter $ newPrompt
+    pushPrompt p x = Interpreter (pushPrompt p (unInterpreter x))
+    withSubCont p f = Interpreter (withSubCont p (unInterpreter . f))
+    pushSubCont s x = Interpreter (pushSubCont s (unInterpreter x))
 
 data InterpreterState = InterpreterState
     { stateEnv  :: Environment ObjectRef
     }
 
-instance MonadEnvironment Interpreter where
+instance MonadEnvironment (Interpreter ans) where
     bind name obj = do
         env <- Interpreter $ gets stateEnv
         case Environment.lookup name env of
@@ -58,7 +64,7 @@ instance MonadEnvironment Interpreter where
             Left msg        -> raise "SyntaxError" msg
             Right newEnv    -> Interpreter $ modify $ \s -> s { stateEnv = newEnv }
 
-instance MonadInterpreter Interpreter where
+instance MonadInterpreter (Interpreter ans) where
     evalBlock statements = do
         results <- mapM Statement.eval statements
         return $ filter (not . isNone) results
@@ -80,7 +86,5 @@ runInterpreter :: InterpreterState -> Text -> IO (Either String [Object], Interp
 runInterpreter state code = case parse code of
     Left msg    -> return (Left msg, state)
     Right stmts -> do
-        (objects, newState) <- flip runStateT state $ evalContT (unwrap (evalBlock stmts))
-        return (Right objects, newState)
-  where
-    unwrap (Interpreter action) = action -- yay newtype?
+        (objs, newState) <- flip runStateT state (runCCT (unInterpreter $ evalBlock stmts))
+        return (Right objs, newState)
