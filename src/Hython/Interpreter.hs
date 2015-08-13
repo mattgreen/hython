@@ -2,7 +2,6 @@
 module Hython.Interpreter
 where
 
-import Control.Applicative
 import Control.Monad.Cont.Class (MonadCont)
 import Control.Monad.Cont (ContT, runContT)
 import Control.Monad.IO.Class (MonadIO, liftIO)

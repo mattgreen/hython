@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 
 module Language.Python.Lexer
@@ -8,7 +9,6 @@ import Prelude hiding (exp, lex)
 import Control.Monad
 import Data.Complex
 import Data.Char hiding (digitToInt)
-import Data.Functor
 import Data.List
 import Data.Text (Text)
 import qualified Data.Text as T
