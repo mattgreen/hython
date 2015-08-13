@@ -1,5 +1,5 @@
 flags: {}
 packages:
 - '.'
-extra-deps: ["CC-delcont-0.2"]
+extra-deps: []
 resolver: lts-2.16

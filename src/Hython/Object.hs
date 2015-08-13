@@ -38,8 +38,14 @@ class Monad m => MonadEnvironment m where
     unbind          :: Name -> m ()
 
 class MonadEnvironment m => MonadInterpreter m where
-    evalBlock   :: [Statement] -> m [Object]
-    raise       :: String -> String -> m ()
+    evalBlock       :: [Statement] -> m [Object]
+    getControlCont  :: ControlCont -> m (Maybe (m ()))
+    pushControlCont :: ControlCont -> m () -> m ()
+    popControlCont  :: ControlCont -> m ()
+    raise           :: String -> String -> m ()
+
+data ControlCont = BreakCont
+                 | ContinueCont
 
 hash :: (MonadInterpreter m, MonadIO m) => Object -> m Int
 hash obj = case obj of

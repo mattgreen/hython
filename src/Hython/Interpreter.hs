@@ -1,10 +1,10 @@
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, GeneralizedNewtypeDeriving, RankNTypes #-}
-
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Hython.Interpreter
 where
 
 import Control.Applicative
-import Control.Monad.CC
+import Control.Monad.Cont.Class (MonadCont)
+import Control.Monad.Cont (ContT, runContT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (StateT, gets, modify, runStateT)
 import Data.IORef
@@ -14,25 +14,22 @@ import qualified Data.Text as T
 import Language.Python.Parser (parse)
 
 import Hython.Builtins (builtinFunctions)
+import Hython.ControlFlow (ControlFlow)
+import qualified Hython.ControlFlow as ControlFlow
 import Hython.Environment (Environment)
 import qualified Hython.Environment as Environment
 import Hython.Object
 import qualified Hython.Statement as Statement
 
-newtype Interpreter ans a = Interpreter { unInterpreter :: CCT ans (StateT InterpreterState IO) a }
-                            deriving (Functor, Applicative, Monad, MonadIO)
-
-instance MonadDelimitedCont (Prompt ans) (SubCont ans (StateT InterpreterState IO)) (Interpreter ans) where
-    newPrompt = Interpreter $ newPrompt
-    pushPrompt p x = Interpreter (pushPrompt p (unInterpreter x))
-    withSubCont p f = Interpreter (withSubCont p (unInterpreter . f))
-    pushSubCont s x = Interpreter (pushSubCont s (unInterpreter x))
+newtype Interpreter a = Interpreter { unInterpreter :: ContT [Object] (StateT InterpreterState IO) a }
+                            deriving (Functor, Applicative, Monad, MonadIO, MonadCont)
 
 data InterpreterState = InterpreterState
-    { stateEnv  :: Environment ObjectRef
+    { stateEnv          :: Environment ObjectRef
+    , stateFlow         :: ControlFlow Interpreter
     }
 
-instance MonadEnvironment (Interpreter ans) where
+instance MonadEnvironment Interpreter where
     bind name obj = do
         env <- Interpreter $ gets stateEnv
         case Environment.lookup name env of
@@ -64,10 +61,27 @@ instance MonadEnvironment (Interpreter ans) where
             Left msg        -> raise "SyntaxError" msg
             Right newEnv    -> Interpreter $ modify $ \s -> s { stateEnv = newEnv }
 
-instance MonadInterpreter (Interpreter ans) where
+instance MonadInterpreter Interpreter where
     evalBlock statements = do
         results <- mapM Statement.eval statements
         return $ filter (not . isNone) results
+
+    getControlCont ctrl = do
+        flow <- Interpreter $ gets stateFlow
+        case ctrl of
+            BreakCont    -> return $ ControlFlow.getBreak flow
+            ContinueCont -> return $ ControlFlow.getContinue flow
+
+    popControlCont _ = do
+        flow <- Interpreter $ gets stateFlow
+        Interpreter $ modify $ \s -> s { stateFlow = ControlFlow.popBreak flow }
+
+    pushControlCont ctrl c = do
+        flow <- Interpreter $ gets stateFlow
+        Interpreter $ modify $ \s -> s { stateFlow = action ctrl c flow }
+      where
+        action (BreakCont) = ControlFlow.pushBreak
+        action (ContinueCont) = ControlFlow.pushContinue
 
     raise exceptionType msg = error (exceptionType ++ ": " ++ msg)
 
@@ -75,7 +89,8 @@ defaultInterpreterState :: IO InterpreterState
 defaultInterpreterState = do
     builtinFns <- mapM mkBuiltin builtinFunctions
     return InterpreterState {
-        stateEnv = Environment.new builtinFns
+        stateEnv = Environment.new builtinFns,
+        stateFlow = ControlFlow.new
     }
   where
     mkBuiltin name = do
@@ -86,5 +101,5 @@ runInterpreter :: InterpreterState -> Text -> IO (Either String [Object], Interp
 runInterpreter state code = case parse code of
     Left msg    -> return (Left msg, state)
     Right stmts -> do
-        (objs, newState) <- flip runStateT state (runCCT (unInterpreter $ evalBlock stmts))
+        (objs, newState) <- runStateT (runContT (unInterpreter $ evalBlock stmts) return) state
         return (Right objs, newState)

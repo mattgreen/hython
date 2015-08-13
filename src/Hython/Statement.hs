@@ -1,11 +1,14 @@
 module Hython.Statement (eval)
 where
 
-import Control.Monad (liftM, unless)
-import Control.Monad.CC (MonadDelimitedCont, abort, reset, shift)
+import Control.Monad (unless)
+import Control.Monad.Cont (callCC)
+import Control.Monad.Fix (fix)
+import Control.Monad.Cont.Class (MonadCont)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.IntMap as IntMap
 import Data.IORef (modifyIORef, readIORef, writeIORef)
+import Data.Maybe (fromMaybe)
 import Data.Text (pack)
 import Safe (atMay)
 
@@ -15,7 +18,7 @@ import Hython.Builtins (toStr)
 import Hython.Expression (evalExpr)
 import Hython.Object
 
-eval :: (MonadIO m, MonadDelimitedCont p s m, MonadInterpreter m) => Statement -> m Object
+eval :: (MonadIO m, MonadCont m, MonadInterpreter m) => Statement -> m Object
 eval (Assert expr msgExpr) = do
     result  <- evalExpr expr
     msg     <- evalExpr msgExpr
@@ -59,6 +62,15 @@ eval (Assignment (Subscript targetExpr idxExpr) expr) = do
             raise "TypeError" "object does not support item assignment"
             return None
 
+eval (Break) = do
+    cont <- getControlCont BreakCont
+    fromMaybe (raise "SyntaxError" "'break' outside loop") cont
+    return None
+
+eval (Continue) = do
+    cont <- getControlCont ContinueCont
+    fromMaybe (raise "SyntaxError" "'continue' outside loop") cont
+    return None
 
 eval (Del (Name name)) = do
     unbind (pack name)
@@ -94,14 +106,22 @@ eval (Nonlocal names) = do
 eval (Pass) = return None
 
 eval (While condition block elseBlock) = do
-    reset $ \p -> do
-        fix $ \loop -> do
-            result <- evalExpr condition
-            bool <- isTruthy result
-            if bool
-                then evalBlock block >> return None
-                else abort p (return None)
-        return None
+    _ <- callCC $ \breakCont -> do
+        pushControlCont BreakCont (breakCont [])
+        fix $ \loop ->
+            callCC $ \continueCont -> do
+                pushControlCont ContinueCont (continueCont [])
+                result <- evalExpr condition
+                truthy <- isTruthy result
+                unless truthy $ do
+                    _ <- evalBlock elseBlock
+                    breakCont []
+                _ <- evalBlock block
+                loop
+
+    popControlCont ContinueCont
+    popControlCont BreakCont
+    return None
 
 eval _ = do
     raise "SystemError" "statement not implemented"
