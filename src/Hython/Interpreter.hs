@@ -20,13 +20,16 @@ import qualified Hython.Environment as Environment
 import Hython.Object
 import qualified Hython.Statement as Statement
 
-newtype Interpreter a = Interpreter { unInterpreter :: ContT [Object] (StateT InterpreterState IO) a }
+newtype Interpreter a = Interpreter { unwrap :: ContT Object (StateT InterpreterState IO) a }
                             deriving (Functor, Applicative, Monad, MonadIO, MonadCont)
 
 data InterpreterState = InterpreterState
     { stateEnv          :: Environment ObjectRef
-    , stateFlow         :: ControlFlow Interpreter
+    , stateFlow         :: ControlFlow InterpreterCont
+    , stateResults      :: [Object]
     }
+
+type InterpreterCont = Object -> Interpreter ()
 
 instance MonadEnvironment Interpreter where
     bind name obj = do
@@ -54,6 +57,9 @@ instance MonadEnvironment Interpreter where
                 return $ Just obj
             Nothing  -> return Nothing
 
+    popEnvFrame = Interpreter $ modify $ \s -> s { stateEnv = Environment.pop (stateEnv s) }
+    pushEnvFrame = Interpreter $ modify $ \s -> s { stateEnv = Environment.push (stateEnv s) }
+
     unbind name = do
         env <- Interpreter $ gets stateEnv
         case Environment.unbind name env of
@@ -61,19 +67,24 @@ instance MonadEnvironment Interpreter where
             Right newEnv    -> Interpreter $ modify $ \s -> s { stateEnv = newEnv }
 
 instance MonadInterpreter Interpreter where
-    evalBlock statements = do
-        results <- mapM Statement.eval statements
-        return $ filter (not . isNone) results
+    evalBlock statements = mapM_ Statement.eval statements
 
     getControlCont ctrl = do
         flow <- Interpreter $ gets stateFlow
         case ctrl of
-            BreakCont    -> return $ ControlFlow.getBreak flow
-            ContinueCont -> return $ ControlFlow.getContinue flow
+            BreakCont       -> return $ ControlFlow.getBreak flow
+            ContinueCont    -> return $ ControlFlow.getContinue flow
+            ReturnCont      -> return $ ControlFlow.getReturn flow
 
-    popControlCont _ = do
+    popControlCont ctrl = do
         flow <- Interpreter $ gets stateFlow
-        Interpreter $ modify $ \s -> s { stateFlow = ControlFlow.popBreak flow }
+        Interpreter $ modify $ \s -> s { stateFlow = action ctrl flow }
+      where
+        action (BreakCont) = ControlFlow.popBreak
+        action (ContinueCont) = ControlFlow.popContinue
+        action (ReturnCont) = ControlFlow.popReturn
+
+    pushEvalResult obj = Interpreter $ modify $ \s -> s { stateResults = stateResults s ++ [obj] }
 
     pushControlCont ctrl c = do
         flow <- Interpreter $ gets stateFlow
@@ -81,6 +92,7 @@ instance MonadInterpreter Interpreter where
       where
         action (BreakCont) = ControlFlow.pushBreak
         action (ContinueCont) = ControlFlow.pushContinue
+        action (ReturnCont) = ControlFlow.pushReturn
 
     raise exceptionType msg = error (exceptionType ++ ": " ++ msg)
 
@@ -89,7 +101,8 @@ defaultInterpreterState = do
     builtinFns <- mapM mkBuiltin builtinFunctions
     return InterpreterState {
         stateEnv = Environment.new builtinFns,
-        stateFlow = ControlFlow.new
+        stateFlow = ControlFlow.new,
+        stateResults = []
     }
   where
     mkBuiltin name = do
@@ -100,5 +113,10 @@ runInterpreter :: InterpreterState -> Text -> IO (Either String [Object], Interp
 runInterpreter state code = case parse code of
     Left msg    -> return (Left msg, state)
     Right stmts -> do
-        (objs, newState) <- runStateT (runContT (unInterpreter $ evalBlock stmts) return) state
-        return (Right objs, newState)
+        (_, newState) <- runStateT (runContT (unwrap $ run stmts) return) state
+        let objs = stateResults newState
+        return (Right objs, newState { stateResults = [] })
+  where
+    run stmts = do
+        evalBlock stmts
+        return None

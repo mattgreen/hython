@@ -15,7 +15,7 @@ import Prelude hiding (lookup)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
 import Data.Text (unpack)
-
+import Safe (headDef)
 import Hython.Name
 
 data Environment a = Environment
@@ -23,11 +23,13 @@ data Environment a = Environment
     , envBuiltins   :: HashMap Name (Binding a)
     , envFrames     :: [HashMap Name (Binding a)]
     }
+    deriving (Show)
 
 data Binding a
     = LocalBinding a
     | NonlocalBinding
     | GlobalBinding
+    deriving (Show)
 
 bind :: Name -> a -> Environment a -> Environment a
 bind name obj env = case envFrames env of
@@ -52,7 +54,7 @@ bindNonlocal name env = case envFrames env of
     []      -> Left "nonlocal declaration not allowed at module level"
 
 lookup :: Name -> Environment a -> Maybe a
-lookup name env = lookupIn $ envFrames env ++ [envModule env] ++ [envBuiltins env]
+lookup name env = lookupIn $ [headDef Map.empty (envFrames env)] ++ [envModule env] ++ [envBuiltins env]
   where
     lookupIn (e:es) = case Map.lookup name e of
         Just objRef -> case objRef of

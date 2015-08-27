@@ -32,6 +32,7 @@ toStr (None) = return "None"
 toStr (Bool b) = return $ if b then "True" else "False"
 toStr (Bytes _b) = return "b'??'"
 toStr (Float f) = return $ show f
+toStr (Function name _ _) = return name
 toStr (Imaginary i) = return $ show i
 toStr (Int i) = return $ show i
 toStr (String s) = return $ "'" ++ s ++ "'"

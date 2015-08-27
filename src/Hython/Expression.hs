@@ -1,6 +1,7 @@
 module Hython.Expression (evalExpr) where
 
 import Control.Monad (forM, zipWithM)
+import Control.Monad.Cont.Class (MonadCont)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Bits ((.&.), (.|.), complement, shiftL, shiftR, xor)
 import Data.Fixed (mod')
@@ -11,10 +12,11 @@ import Safe (atMay)
 
 import Language.Python
 
-import Hython.Builtins (callBuiltin, toStr)
+import Hython.Builtins (toStr)
+import Hython.Call (call)
 import Hython.Object
 
-evalExpr :: (MonadIO m, MonadInterpreter m) => Expression -> m Object
+evalExpr :: (MonadCont m, MonadIO m, MonadInterpreter m) => Expression -> m Object
 evalExpr (As {}) = unimplemented "as"
 
 evalExpr (Attribute {}) = unimplemented "attributes"
@@ -170,14 +172,9 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
         return $ k && v
 
 evalExpr (Call expr argExprs) = do
-    callable <- evalExpr expr
+    target <- evalExpr expr
     args <- mapM evalExpr argExprs
-
-    case callable of
-        (BuiltinFn name)    -> callBuiltin name args
-        _                   -> do
-            raise "TypeError" "object is not callable"
-            return None
+    call target args
 
 evalExpr (Constant c) = case c of
     ConstantNone        -> newNone
@@ -212,7 +209,7 @@ evalExpr (Name name) = do
     case result of
         Just obj    -> return obj
         Nothing     -> do
-            raise "NameError" "name not defined"
+            raise "NameError" ("name '" ++ name ++ "' not defined")
             return None
 
 evalExpr (RelativeImport {}) = unimplemented "relative import"

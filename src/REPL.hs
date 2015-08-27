@@ -7,6 +7,7 @@ import System.Console.Haskeline
 
 import Hython.Builtins (toStr)
 import Hython.Interpreter (defaultInterpreterState, runInterpreter)
+import Hython.Object (isNone)
 
 runREPL :: IO ()
 runREPL = do
@@ -23,7 +24,7 @@ runREPL = do
                 case result of
                     Left s      -> outputStrLn s
                     Right objs  -> do
-                        strs <- mapM toStr objs
+                        strs <- mapM toStr (filter (not . isNone) objs)
                         mapM_ outputStrLn strs
 
                 loop newState

@@ -11,7 +11,7 @@ import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap as IntMap
 import Data.IORef (IORef, newIORef, readIORef)
 
-import Language.Python (Statement)
+import Language.Python (Param, Statement)
 
 import Hython.Name
 
@@ -27,6 +27,7 @@ data Object = None
             | Set (IORef (IntMap Object))
             | Tuple [Object]
             | BuiltinFn String
+            | Function String [Param] [Statement]
 
 type ObjectRef = IORef Object
 
@@ -35,17 +36,21 @@ class Monad m => MonadEnvironment m where
     bindGlobal      :: Name -> m ()
     bindNonlocal    :: Name -> m ()
     lookupName      :: Name -> m (Maybe Object)
+    pushEnvFrame    :: m ()
+    popEnvFrame     :: m ()
     unbind          :: Name -> m ()
 
 class MonadEnvironment m => MonadInterpreter m where
-    evalBlock       :: [Statement] -> m [Object]
-    getControlCont  :: ControlCont -> m (Maybe (m ()))
-    pushControlCont :: ControlCont -> m () -> m ()
+    evalBlock       :: [Statement] -> m ()
+    getControlCont  :: ControlCont -> m (Maybe (Object -> m ()))
     popControlCont  :: ControlCont -> m ()
+    pushControlCont :: ControlCont -> (Object -> m ()) -> m ()
+    pushEvalResult  :: Object -> m ()
     raise           :: String -> String -> m ()
 
 data ControlCont = BreakCont
                  | ContinueCont
+                 | ReturnCont
 
 hash :: (MonadInterpreter m, MonadIO m) => Object -> m Int
 hash obj = case obj of
@@ -83,6 +88,9 @@ newDict objs = do
 
 newFloat :: MonadInterpreter m => Double -> m Object
 newFloat d = return $ Float d
+
+newFunction :: MonadInterpreter m => String -> [Param] -> [Statement] -> m Object
+newFunction name params block = return $ Function name params block
 
 newImag :: MonadInterpreter m => Complex Double -> m Object
 newImag i = return $ Imaginary i
