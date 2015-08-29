@@ -75,8 +75,16 @@ eval (Expression e) = do
     pushEvalResult result
 
 eval (FuncDef name params block) = do
-    fn <- newFunction name params block
+    params' <- mapM evalParam params
+    fn      <- newFunction name params' block
     bind (pack name) fn
+  where
+    evalParam (FormalParam param) = return $ NamedParam param
+    evalParam (DefaultParam param expr) = do
+        obj <- evalExpr expr
+        return $ DefParam param obj
+    evalParam (SplatParam param) = return $ SParam param
+    evalParam (DoubleSplatParam param) = return $ DSParam param
 
 eval (Global names) = mapM_ (bindGlobal . pack) names
 

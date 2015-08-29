@@ -27,7 +27,12 @@ data Object = None
             | Set (IORef (IntMap Object))
             | Tuple [Object]
             | BuiltinFn String
-            | Function String [Param] [Statement]
+            | Function String [FnParam] [Statement]
+
+data FnParam = NamedParam String
+             | DefParam String Object
+             | SParam String
+             | DSParam String
 
 type ObjectRef = IORef Object
 
@@ -89,7 +94,7 @@ newDict objs = do
 newFloat :: MonadInterpreter m => Double -> m Object
 newFloat d = return $ Float d
 
-newFunction :: MonadInterpreter m => String -> [Param] -> [Statement] -> m Object
+newFunction :: MonadInterpreter m => String -> [FnParam] -> [Statement] -> m Object
 newFunction name params block = return $ Function name params block
 
 newImag :: MonadInterpreter m => Complex Double -> m Object
@@ -114,7 +119,7 @@ newSet objs = do
 newString :: MonadInterpreter m => String -> m Object
 newString s = return $ String s
 
-newTuple :: (MonadInterpreter m) => [Object] -> m Object
+newTuple :: MonadInterpreter m => [Object] -> m Object
 newTuple l = return $ Tuple l
 
 isNone :: Object -> Bool
