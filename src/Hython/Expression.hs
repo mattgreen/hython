@@ -172,11 +172,19 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
         return $ k && v
 
 evalExpr (Call expr argExprs) = do
-    target <- evalExpr expr
-    args <- mapM evalArg argExprs
-    call target args
+    target      <- evalExpr expr
+    args        <- mapM evalArg (filter (not . isKeywordArg) argExprs)
+    kwargs      <- mapM evalKWArg (filter isKeywordArg argExprs)
+    call target args kwargs
   where
     evalArg (Arg e) = evalExpr e
+    evalKWArg (KeywordArg name e) = do
+        obj <- evalExpr e
+        return (name, obj)
+    evalKWArg _ = error "non-keyword arg passed to evalKWArg"
+
+    isKeywordArg (KeywordArg {}) = True
+    isKeywordArg _ = False
 
 evalExpr (Constant c) = case c of
     ConstantNone        -> newNone

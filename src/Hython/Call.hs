@@ -1,6 +1,7 @@
 module Hython.Call (call)
 where
 
+import Control.Arrow (first)
 import Control.Monad (forM_, when, zipWithM)
 import Control.Monad.Cont (callCC)
 import Control.Monad.Cont.Class (MonadCont)
@@ -11,10 +12,10 @@ import Safe (atDef)
 import Hython.Builtins (callBuiltin)
 import Hython.Object
 
-call :: (MonadCont m, MonadInterpreter m, MonadIO m) => Object -> [Object] -> m Object
-call (BuiltinFn name) args = callBuiltin name args
+call :: (MonadCont m, MonadInterpreter m, MonadIO m) => Object -> [Object] -> [(String, Object)] -> m Object
+call (BuiltinFn name) args _ = callBuiltin name args
 
-call (Function fnName params statements) args = do
+call (Function fnName params statements) args kwargs = do
     requiredParams <- pure $ takeWhile isRequiredParam params
     when (length args < length requiredParams) $
         raise "TypeError" ("not enough arguments passed to '" ++ fnName ++ "'")
@@ -43,14 +44,14 @@ call (Function fnName params statements) args = do
     getArg (SParam name) i = do
         tuple <- newTuple (drop i args)
         return (name, tuple)
-    getArg (DSParam name) = do
-        dict <- newDict []
+    getArg (DSParam name) _ = do
+        dict <- newDict $ map (first String) kwargs
         return (name, dict)
 
     isRequiredParam (NamedParam _) = True
     isRequiredParam _ = False
 
-call _ _ = do
+call _ _ _ = do
     raise "TypeError" "object is not callable"
     return None
 
