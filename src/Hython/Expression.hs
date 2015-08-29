@@ -173,18 +173,51 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
 
 evalExpr (Call expr argExprs) = do
     target      <- evalExpr expr
-    args        <- mapM evalArg (filter (not . isKeywordArg) argExprs)
-    kwargs      <- mapM evalKWArg (filter isKeywordArg argExprs)
+    args        <- concatMapM evalArg argExprs
+    kwargs      <- concatMapM evalKWArg argExprs
     call target args kwargs
+
   where
-    evalArg (Arg e) = evalExpr e
+    concatMapM f xs = concat <$> mapM f xs
+
+    evalArg (Arg e) = do
+        obj <- evalExpr e
+        return [obj]
+
+    evalArg (StarArg e) = do
+        obj <- evalExpr e
+        case obj of
+            (Tuple objs)    -> return objs
+            (List ref)      -> liftIO $ readIORef ref
+            _               -> do
+                raise "TypeError" "argument after * must be a sequence"
+                return []
+
+    evalArg _ = return []
+
     evalKWArg (KeywordArg name e) = do
         obj <- evalExpr e
-        return (name, obj)
-    evalKWArg _ = error "non-keyword arg passed to evalKWArg"
+        return [(name, obj)]
 
-    isKeywordArg (KeywordArg {}) = True
-    isKeywordArg _ = False
+    evalKWArg (DoubleStarArg e) = do
+        obj <- evalExpr e
+        case obj of
+            (Dict ref)  -> do
+                dict <- liftIO $ readIORef ref
+                objs <- forM (IntMap.elems dict) $ \(key, value) ->
+                    case key of
+                        (String s)  -> return (s, value)
+                        _           -> do
+                            raise "TypeError" "keyword args must be strings"
+                            return ("", None)
+
+                return objs
+
+            _           -> do
+                raise "TypeError" "argument after ** must be a mapping"
+                return []
+
+    evalKWArg _ = return []
 
 evalExpr (Constant c) = case c of
     ConstantNone        -> newNone
