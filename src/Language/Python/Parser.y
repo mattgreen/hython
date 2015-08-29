@@ -623,14 +623,15 @@ arglist
 
 argitem
     : argument      { $1 }
-    | '*' test      { Star $2 }
-    | '**' test     { DoubleStar $2 }
+    | '*' test      { StarArg $2 }
+    | '**' test     { DoubleStarArg $2 }
 
 -- # The reason that keywords are test nodes instead of NAME is that using NAME
 -- # results in an ambiguity. ast.c makes sure it's a NAME.
 -- argument: test [comp_for] | test '=' test  # Really [keyword '='] test
 argument
-    : test opt(comp_for) { $1 }
+    : test opt(comp_for)    { Arg $1 }
+    | identifier '=' test   { KeywordArg $1 $3 }
 
 -- comp_iter: comp_for | comp_if
 comp_iter
@@ -658,7 +659,7 @@ yield_arg
 {
 
 data Trailer
-    = TrailerCall [Expression]
+    = TrailerCall [Arg]
     | TrailerAttr String
     | TrailerSub Expression
     | TrailerSlice

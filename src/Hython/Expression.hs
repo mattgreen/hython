@@ -173,8 +173,10 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
 
 evalExpr (Call expr argExprs) = do
     target <- evalExpr expr
-    args <- mapM evalExpr argExprs
+    args <- mapM evalArg argExprs
     call target args
+  where
+    evalArg (Arg e) = evalExpr e
 
 evalExpr (Constant c) = case c of
     ConstantNone        -> newNone
@@ -191,8 +193,6 @@ evalExpr (DictDef exprs) = do
         value <- evalExpr valueExpr
         return (key, value)
     newDict objs
-
-evalExpr (DoubleStar {}) = unimplemented "double star expr"
 
 evalExpr (From {}) = unimplemented "from"
 
@@ -219,8 +219,6 @@ evalExpr (SetDef exprs) = do
     newSet objs
 
 evalExpr (SliceDef {}) = unimplemented "slices"
-
-evalExpr (Star {}) = unimplemented "star expr"
 
 evalExpr (Subscript expr idxExpr) = do
     target  <- evalExpr expr

@@ -21,7 +21,7 @@ data Statement
     | Assert Expression Expression
     | Global [String]
     | Nonlocal [String]
-    | ClassDef String [Expression] Statements
+    | ClassDef String [Arg] Statements
     | Import [Expression]
     | ImportFrom Expression [Expression]
     deriving(Eq, Show)
@@ -31,6 +31,13 @@ data Param
     | DefaultParam String Expression
     | SplatParam String
     | DoubleSplatParam String
+    deriving (Eq, Show)
+
+data Arg
+    = Arg Expression
+    | KeywordArg String Expression
+    | StarArg Expression
+    | DoubleStarArg Expression
     deriving (Eq, Show)
 
 data IfClause = IfClause Expression [Statement] deriving (Eq, Show)
@@ -46,15 +53,13 @@ type ExceptClauses  = [ExceptClause]
 type Expressions = [Expression]
 
 data Expression
-    = Call Expression [Expression]
+    = Call Expression [Arg]
     | Attribute Expression String
     | Name String
     | Constant Constant
     | Subscript Expression Expression
     | As Expression Expression
     | Yield Expression
-    | Star Expression
-    | DoubleStar Expression
     | From Expression
     | Glob
     | RelativeImport Int Expression
@@ -80,7 +85,7 @@ data Constant
     deriving(Eq, Show)
 
 data Decorator
-    = Decorator Expression [Expression]
+    = Decorator Expression [Arg]
     deriving(Eq, Show)
 
 data UnaryOperator

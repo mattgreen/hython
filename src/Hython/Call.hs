@@ -38,11 +38,14 @@ call (Function fnName params statements) args = do
     return result
 
   where
-    getArg (NamedParam name) i     = return (name, args !! i)
-    getArg (DefParam name obj) i   = return (name, atDef obj args i)
-    getArg (SParam name) i         = do
+    getArg (NamedParam name) i = return (name, args !! i)
+    getArg (DefParam name obj) i = return (name, atDef obj args i)
+    getArg (SParam name) i = do
         tuple <- newTuple (drop i args)
         return (name, tuple)
+    getArg (DSParam name) = do
+        dict <- newDict []
+        return (name, dict)
 
     isRequiredParam (NamedParam _) = True
     isRequiredParam _ = False
