@@ -1,7 +1,7 @@
 module Hython.Call (call)
 where
 
-import Control.Monad (forM_, zipWithM)
+import Control.Monad (forM_, when, zipWithM)
 import Control.Monad.Cont (callCC)
 import Control.Monad.Cont.Class (MonadCont)
 import Control.Monad.IO.Class (MonadIO)
@@ -14,7 +14,13 @@ import Hython.Object
 call :: (MonadCont m, MonadInterpreter m, MonadIO m) => Object -> [Object] -> m Object
 call (BuiltinFn name) args = callBuiltin name args
 
-call (Function _ params statements) args = do
+call (Function fnName params statements) args = do
+    requiredParams <- pure $ takeWhile isRequiredParam params
+    when (length args < length requiredParams) $
+        raise "TypeError" ("not enough arguments passed to '" ++ fnName ++ "'")
+    when (length requiredParams == length params && length args > length requiredParams) $
+        raise "TypeError" ("too many args passed to '" ++ fnName ++ "'")
+
     result <- callCC $ \returnCont -> do
         pushEnvFrame
         bindings <- zipWithM getArg params [0..]
@@ -28,6 +34,7 @@ call (Function _ params statements) args = do
 
     popEnvFrame
     popControlCont ReturnCont
+
     return result
 
   where
@@ -36,6 +43,9 @@ call (Function _ params statements) args = do
     getArg (SParam name) i         = do
         tuple <- newTuple (drop i args)
         return (name, tuple)
+
+    isRequiredParam (NamedParam _) = True
+    isRequiredParam _ = False
 
 call _ _ = do
     raise "TypeError" "object is not callable"
