@@ -10,6 +10,7 @@ import Data.Complex (Complex, realPart, imagPart)
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap as IntMap
 import Data.IORef (IORef, newIORef, readIORef)
+import Data.List (intercalate)
 
 import Language.Python (Param, Statement)
 
@@ -138,3 +139,34 @@ isTruthy (List ref) = do
     return $ not (null l)
 isTruthy (Tuple objs) = return $ not $ null objs
 isTruthy _ = return True
+
+toStr :: MonadIO m => Object -> m String
+toStr (None) = return "None"
+toStr (Bool b) = return $ if b then "True" else "False"
+toStr (Bytes _b) = return "b'??'"
+toStr (Float f) = return $ show f
+toStr (Function name _ _) = return name
+toStr (Imaginary i) = return $ show i
+toStr (Int i) = return $ show i
+toStr (String s) = return $ "'" ++ s ++ "'"
+toStr (List ref) = do
+    l <- liftIO $ readIORef ref
+    strItems <- mapM toStr l
+    return $ "[" ++ intercalate ", " strItems ++ "]"
+toStr (Tuple objs) = do
+    strItems <- mapM toStr objs
+    case strItems of
+        [str]   -> return $ "(" ++ str ++ ",)"
+        _       -> return $ "(" ++ intercalate ", " strItems ++ ")"
+toStr (Set ref) = do
+    items <- liftIO $ readIORef ref
+    strItems <- mapM toStr $ IntMap.elems items
+    return $ "{" ++ intercalate ", " strItems ++ "}"
+toStr (Dict ref) = do
+    items <- liftIO $ readIORef ref
+    strItems <- forM (IntMap.elems items) $ \(k, v) -> do
+        key     <- toStr k
+        value   <- toStr v
+        return $ key ++ ": " ++ value
+    return $ "{" ++ intercalate ", " strItems ++ "}"
+toStr (BuiltinFn name)  = return $ "<built-in function " ++ name ++ ">"

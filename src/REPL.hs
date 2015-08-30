@@ -5,9 +5,8 @@ import Data.Text (pack)
 
 import System.Console.Haskeline
 
-import Hython.Builtins (toStr)
 import Hython.Interpreter (defaultInterpreterState, runInterpreter)
-import Hython.Object (isNone)
+import Hython.Object (isNone, toStr)
 
 runREPL :: IO ()
 runREPL = do

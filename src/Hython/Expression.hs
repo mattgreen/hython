@@ -12,7 +12,6 @@ import Safe (atMay)
 
 import Language.Python
 
-import Hython.Builtins (toStr)
 import Hython.Call (call)
 import Hython.Object
 

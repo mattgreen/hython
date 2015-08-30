@@ -13,7 +13,6 @@ import Safe (atMay)
 
 import Language.Python
 
-import Hython.Builtins (toStr)
 import Hython.Expression (evalExpr)
 import Hython.Object
 
