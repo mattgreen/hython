@@ -7,6 +7,7 @@ import Data.ByteString (ByteString)
 import qualified Data.Hashable as H
 import qualified Data.ByteString.Char8 as B
 import Data.Complex (Complex, realPart, imagPart)
+import Data.HashMap.Strict (HashMap)
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap as IntMap
 import Data.IORef (IORef, newIORef, readIORef)
@@ -30,12 +31,20 @@ data Object = None
             | BuiltinFn String
             | Function String [FnParam] [Statement]
 
+type ObjectRef = IORef Object
+
 data FnParam = NamedParam String
              | DefParam String Object
              | SParam String
              | DSParam String
 
-type ObjectRef = IORef Object
+data Class = Class
+           { className  :: String
+           , classBases :: [Class]
+           , classDict  :: AttributeDict
+           }
+
+type AttributeDict = HashMap String (IORef Object)
 
 class Monad m => MonadEnvironment m where
     bind            :: Name -> Object -> m ()

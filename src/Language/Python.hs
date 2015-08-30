@@ -14,7 +14,7 @@ data Statement
     | Return Expression
     | Try ExceptClauses Statements Statements Statements
     | While Expression Statements Statements
-    | With Expression Statements
+    | With WithExpression Statements
     | Break
     | Continue
     | Pass
@@ -44,6 +44,10 @@ data IfClause = IfClause Expression [Statement] deriving (Eq, Show)
 
 data ExceptClause
     = ExceptClause Expression String Statements
+    deriving (Eq, Show)
+
+data WithExpression
+    = WithExpression Expression String
     deriving (Eq, Show)
 
 type Statements     = [Statement]

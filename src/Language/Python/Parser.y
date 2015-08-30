@@ -421,8 +421,8 @@ with_stmt
 
 -- with_item: test ['as' expr]
 with_item
-    : test                  { $1 }
-    | test AS expr          { As $1 $3 }
+    : test                  { WithExpression $1 "" }
+    | test AS identifier    { WithExpression $1 $3 }
 
 -- # NB compile.c makes sure that the default except clause is last
 -- except_clause: 'except' [test ['as' NAME]]
