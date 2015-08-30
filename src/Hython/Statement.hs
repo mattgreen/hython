@@ -48,7 +48,7 @@ eval (Assignment (Subscript targetExpr idxExpr) expr) = do
             items <- liftIO $ readIORef ref
             case atMay items (fromIntegral i) of
                 Just _ -> do
-                    let (left, right) = splitAt (fromIntegral i) items
+                    (left, right) <- pure $ splitAt (fromIntegral i) items
                     liftIO $ writeIORef ref (left ++ [value] ++ tail right)
                 Nothing -> raise "IndexError" "index is out of range"
 
@@ -89,13 +89,12 @@ eval (FuncDef name params block) = do
 eval (Global names) = mapM_ (bindGlobal . pack) names
 
 eval (If clauses elseBlock) = case clauses of
-    [] -> evalBlock elseBlock
     (IfClause condition block : rest) -> do
-        result  <- evalExpr condition
-        truthy  <- isTruthy result
+        truthy  <- isTruthy =<< evalExpr condition
         if truthy
             then evalBlock block
             else eval (If rest elseBlock)
+    [] -> evalBlock elseBlock
 
 eval (Nonlocal names) = mapM_ (bindNonlocal . pack) names
 
@@ -114,11 +113,12 @@ eval (While condition block elseBlock) = do
         fix $ \loop ->
             callCC $ \continueCont -> do
                 pushControlCont ContinueCont continueCont
-                result <- evalExpr condition
-                truthy <- isTruthy result
+
+                truthy <- isTruthy =<< evalExpr condition
                 unless truthy $ do
                     evalBlock elseBlock
                     breakCont None
+
                 evalBlock block
                 loop
 

@@ -95,9 +95,7 @@ evalExpr (BinOp (BoolOp op) leftExpr rightExpr) = do
 evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
     [lhs, rhs] <- mapM evalExpr [leftExpr, rightExpr]
     case (op, lhs, rhs) of
-        (Eq, l, r) -> do
-            b <- equal l r
-            newBool b
+        (Eq, l, r) -> newBool =<< equal l r
         (NotEq, l, r) -> do
             b <- equal l r
             newBool $ not b
@@ -173,13 +171,11 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
 
 evalExpr (Call expr argExprs) = do
     target      <- evalExpr expr
-    args        <- concatMapM evalArg argExprs
-    kwargs      <- concatMapM evalKWArg argExprs
+    args        <- concat <$> mapM evalArg argExprs
+    kwargs      <- concat <$> mapM evalKWArg argExprs
     call target args kwargs
 
   where
-    concatMapM f xs = concat <$> mapM f xs
-
     evalArg (Arg e) = do
         obj <- evalExpr e
         return [obj]
@@ -204,14 +200,12 @@ evalExpr (Call expr argExprs) = do
         case obj of
             (Dict ref)  -> do
                 dict <- liftIO $ readIORef ref
-                objs <- forM (IntMap.elems dict) $ \(key, value) ->
+                forM (IntMap.elems dict) $ \(key, value) ->
                     case key of
                         (String s)  -> return (s, value)
                         _           -> do
                             raise "TypeError" "keyword args must be strings"
                             return ("", None)
-
-                return objs
 
             _           -> do
                 raise "TypeError" "argument after ** must be a mapping"
@@ -301,11 +295,9 @@ evalExpr (Subscript expr idxExpr) = do
             return None
 
 evalExpr (TernOp condExpr thenExpr elseExpr) = do
-    condition   <- evalExpr condExpr
-    truthy      <- isTruthy condition
-    evalExpr $ if truthy
-                   then thenExpr
-                   else elseExpr
+    truthy      <- isTruthy =<< evalExpr condExpr
+    expr        <- pure $ if truthy then thenExpr else elseExpr
+    evalExpr expr
 
 evalExpr (TupleDef exprs) = do
     objs <- mapM evalExpr exprs
