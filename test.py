@@ -8,13 +8,21 @@ def output_of(args):
     return subprocess.check_output(args).decode('ascii', 'ignore').split("\n")
 
 testcases = []
-for root, dirs, files in os.walk("test"):
-    for file in files:
-        if not file.endswith(".py"):
-            continue
 
-        testcase = os.path.join(root, file)
-        testcases.append(testcase)
+test_path = "test"
+if len(sys.argv) > 1:
+    test_path = sys.argv[1]
+
+if os.path.isdir(test_path):
+    for root, dirs, files in os.walk(test_path):
+        for file in files:
+            if not file.endswith(".py"):
+                continue
+
+            testcase = os.path.join(root, file)
+            testcases.append(testcase)
+else:
+    testcases.append(test_path)
 
 testcases.sort()
 failures = []
@@ -39,7 +47,7 @@ for testcase in testcases:
                 fromfile=" ".join(python_cmdline), tofile=" ".join(hython_cmdline))
         failures.append(diff)
 
-print()
+print('')
 
 if failures:
     for failure in failures:
