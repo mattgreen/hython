@@ -4,7 +4,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.IORef (readIORef, writeIORef)
 
 import qualified Hython.AttributeDict as AttributeDict
-import Hython.Object
+import Hython.Types
 
 builtinFunctions :: [String]
 builtinFunctions = ["print"]

@@ -16,7 +16,7 @@ import Language.Python
 
 import Hython.Builtins (setAttr)
 import Hython.Expression (evalExpr)
-import Hython.Object
+import Hython.Types
 
 eval :: (MonadIO m, MonadCont m, MonadInterpreter m) => Statement -> m ()
 eval (Assert expr msgExpr) = do

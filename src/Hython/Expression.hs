@@ -14,7 +14,7 @@ import Language.Python
 
 import Hython.Builtins (getAttr)
 import Hython.Call (call)
-import Hython.Object
+import Hython.Types
 
 evalExpr :: (MonadCont m, MonadIO m, MonadInterpreter m) => Expression -> m Object
 evalExpr (As {}) = unimplemented "as"

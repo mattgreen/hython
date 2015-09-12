@@ -5,7 +5,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.IORef (newIORef, readIORef, writeIORef)
 import qualified Data.HashMap.Strict as HashMap
 
-import Hython.Object
+import Hython.Types
 
 lookup :: (MonadIO m) => String -> AttributeDict -> m (Maybe Object)
 lookup attr dict = case HashMap.lookup attr dict of

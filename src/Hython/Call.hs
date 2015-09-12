@@ -10,7 +10,7 @@ import Data.Text (pack)
 import Safe (atDef)
 
 import Hython.Builtins (callBuiltin, getAttr)
-import Hython.Object
+import Hython.Types
 
 call :: (MonadCont m, MonadInterpreter m, MonadIO m) => Object -> [Object] -> [(String, Object)] -> m Object
 call (BuiltinFn name) args _ = callBuiltin name args

@@ -17,7 +17,7 @@ import Hython.ControlFlow (ControlFlow)
 import qualified Hython.ControlFlow as ControlFlow
 import Hython.Environment (Environment)
 import qualified Hython.Environment as Environment
-import Hython.Object
+import Hython.Types
 import qualified Hython.Statement as Statement
 
 newtype Interpreter a = Interpreter { unwrap :: ContT Object (StateT InterpreterState IO) a }

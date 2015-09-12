@@ -1,4 +1,4 @@
-module Hython.Object
+module Hython.Types
 where
 
 import Control.Monad (forM)
