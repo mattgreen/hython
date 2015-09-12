@@ -103,9 +103,13 @@ instance MonadInterpreter Interpreter where
 
 defaultInterpreterState :: IO InterpreterState
 defaultInterpreterState = do
-    builtinFns <- mapM mkBuiltin builtinFunctions
+    builtinFns  <- mapM mkBuiltin builtinFunctions
+
+    objClass    <- liftIO $ newIORef =<< newClass "object" [] []
+    builtins    <- pure $ builtinFns ++ [(T.pack "object", objClass)]
+
     return InterpreterState {
-        stateEnv = Environment.new builtinFns,
+        stateEnv = Environment.new builtins,
         stateFlow = ControlFlow.new,
         stateResults = []
     }

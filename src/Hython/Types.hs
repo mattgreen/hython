@@ -113,7 +113,7 @@ newBool b = return $ Bool b
 newBytes :: MonadInterpreter m => String -> m Object
 newBytes b = return $ Bytes (B.pack b)
 
-newClass :: (MonadIO m, MonadInterpreter m) => String -> [ClassInfo] -> [(String, ObjectRef)] -> m Object
+newClass :: (MonadIO m) => String -> [ClassInfo] -> [(String, ObjectRef)] -> m Object
 newClass name bases dict = do
     ref <- liftIO $ newIORef $ HashMap.fromList dict
     classInfo <- pure ClassInfo {
