@@ -8,6 +8,7 @@ import qualified Data.Hashable as H
 import qualified Data.ByteString.Char8 as B
 import Data.Complex (Complex, realPart, imagPart)
 import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HashMap
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap as IntMap
 import Data.IORef (IORef, newIORef, readIORef)
@@ -30,21 +31,40 @@ data Object = None
             | Tuple [Object]
             | BuiltinFn String
             | Function String [FnParam] [Statement]
+            | Method String MethodBinding [FnParam] [Statement]
+            | Class ClassInfo
+            | Object ObjectInfo
 
 type ObjectRef = IORef Object
+
+data MethodBinding = ClassBinding String Object
+                   | InstanceBinding String Object
 
 data FnParam = NamedParam String
              | DefParam String Object
              | SParam String
              | DSParam String
 
-data Class = Class
-           { className  :: String
-           , classBases :: [Class]
-           , classDict  :: AttributeDict
-           }
+data ClassInfo = ClassInfo
+               { className  :: String
+               , classBases :: [ClassInfo]
+               , classDict  :: IORef AttributeDict
+               }
+
+data ObjectInfo = ObjectInfo
+                { objectClass :: ClassInfo
+                , objectDict :: IORef AttributeDict
+                }
 
 type AttributeDict = HashMap String (IORef Object)
+
+class HasAttributes a where
+    getObjAttrs :: a -> Maybe (IORef AttributeDict)
+
+instance HasAttributes Object where
+    getObjAttrs (Object info) = Just $ objectDict info
+    getObjAttrs (Class info) = Just $ classDict info
+    getObjAttrs _ = Nothing
 
 class Monad m => MonadEnvironment m where
     bind            :: Name -> Object -> m ()
@@ -52,10 +72,10 @@ class Monad m => MonadEnvironment m where
     bindNonlocal    :: Name -> m ()
     lookupName      :: Name -> m (Maybe Object)
     pushEnvFrame    :: m ()
-    popEnvFrame     :: m ()
+    popEnvFrame     :: m [(String, ObjectRef)]
     unbind          :: Name -> m ()
 
-class MonadEnvironment m => MonadInterpreter m where
+class (MonadEnvironment m, MonadIO m) => MonadInterpreter m where
     evalBlock       :: [Statement] -> m ()
     getControlCont  :: ControlCont -> m (Maybe (Object -> m ()))
     popControlCont  :: ControlCont -> m ()
@@ -93,6 +113,17 @@ newBool b = return $ Bool b
 newBytes :: MonadInterpreter m => String -> m Object
 newBytes b = return $ Bytes (B.pack b)
 
+newClass :: (MonadIO m, MonadInterpreter m) => String -> [ClassInfo] -> [(String, ObjectRef)] -> m Object
+newClass name bases dict = do
+    ref <- liftIO $ newIORef $ HashMap.fromList dict
+    classInfo <- pure ClassInfo {
+        className = name,
+        classBases = bases,
+        classDict = ref
+    }
+
+    return $ Class classInfo
+
 newDict :: (MonadInterpreter m, MonadIO m) => [(Object, Object)] -> m Object
 newDict objs = do
     items <- forM objs $ \p@(key, _) -> do
@@ -117,6 +148,17 @@ newList :: (MonadInterpreter m, MonadIO m) => [Object] -> m Object
 newList l = do
     ref <- liftIO $ newIORef l
     return $ List ref
+
+newObject :: (MonadIO m) => ClassInfo -> m Object
+newObject cls = do
+    clsDict <- liftIO $ readIORef (classDict cls)
+    dict <- liftIO $ newIORef clsDict
+    info <- pure ObjectInfo {
+        objectClass = cls,
+        objectDict = dict
+    }
+
+    return $ Object info
 
 newSet :: (MonadInterpreter m, MonadIO m) => [Object] -> m Object
 newSet objs = do
@@ -181,3 +223,10 @@ toStr (Dict ref) = do
         return $ key ++ ": " ++ value
     return $ "{" ++ intercalate ", " strItems ++ "}"
 toStr (BuiltinFn name)  = return $ "<built-in function " ++ name ++ ">"
+toStr (Class info) = return $ "<class '" ++ className info ++ "'>"
+toStr (Object info) = return $ "<" ++ className (objectClass info) ++ " object>"
+toStr (Method name (ClassBinding clsName _) _ _) = 
+    return $ "<method '" ++ name ++ "' of '" ++ clsName ++ "' objects>"
+toStr (Method name (InstanceBinding clsName obj) _ _) = do
+    s <- toStr obj
+    return $ "<bound method " ++ clsName ++ "." ++ name ++ " of " ++ s ++ ">"

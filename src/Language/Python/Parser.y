@@ -612,8 +612,8 @@ classdef
     : CLASS identifier base_classes ':' suite { ClassDef $2 $3 $5 }
 
 base_classes
-    :                   { [] }
-    | '(' arglist ')'   { $2 }
+    :                               { [] }
+    | '(' sepBy0(identifier, ',') ')'    { $2 }
 
 -- arglist: (argument ',')* (argument [',']
 --                          |'*' test (',' argument)* [',' '**' test] 

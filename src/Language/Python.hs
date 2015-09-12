@@ -21,7 +21,7 @@ data Statement
     | Assert Expression Expression
     | Global [String]
     | Nonlocal [String]
-    | ClassDef String [Arg] Statements
+    | ClassDef String [String] Statements
     | Import [Expression]
     | ImportFrom Expression [Expression]
     deriving(Eq, Show)

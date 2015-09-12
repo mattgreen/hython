@@ -9,11 +9,21 @@ import Control.Monad.IO.Class (MonadIO)
 import Data.Text (pack)
 import Safe (atDef)
 
-import Hython.Builtins (callBuiltin)
+import Hython.Builtins (callBuiltin, getAttr)
 import Hython.Object
 
 call :: (MonadCont m, MonadInterpreter m, MonadIO m) => Object -> [Object] -> [(String, Object)] -> m Object
 call (BuiltinFn name) args _ = callBuiltin name args
+
+call (Class info) args kwargs = do
+    obj <- newObject info
+
+    mconstructor <- getAttr "__init__" obj
+    _ <- case mconstructor of
+        Just ctor   -> call ctor args kwargs
+        Nothing     -> return None
+
+    return obj
 
 call (Function fnName params statements) args kwargs = do
     requiredParams <- pure $ takeWhile isRequiredParam params
@@ -33,7 +43,7 @@ call (Function fnName params statements) args kwargs = do
         evalBlock statements
         return None
 
-    popEnvFrame
+    _ <- popEnvFrame
     popControlCont ReturnCont
 
     return result
@@ -50,6 +60,11 @@ call (Function fnName params statements) args kwargs = do
 
     isRequiredParam (NamedParam _) = True
     isRequiredParam _ = False
+
+call (Method name receiver params statements) args kwargs =
+    case receiver of
+        ClassBinding _ cls      -> call (Function name params statements) (cls:args) kwargs
+        InstanceBinding _ obj   -> call (Function name params statements) (obj:args) kwargs
 
 call _ _ _ = do
     raise "TypeError" "object is not callable"

@@ -8,11 +8,13 @@ import Control.Monad.Cont.Class (MonadCont)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.IntMap as IntMap
 import Data.IORef (modifyIORef, readIORef, writeIORef)
+import Data.Maybe (catMaybes)
 import Data.Text (pack)
 import Safe (atMay)
 
 import Language.Python
 
+import Hython.Builtins (setAttr)
 import Hython.Expression (evalExpr)
 import Hython.Object
 
@@ -28,6 +30,11 @@ eval (Assert expr msgExpr) = do
             else do
                 str <- toStr msg
                 raise "AssertionError" str
+
+eval (Assignment (Attribute targetExpr attr) expr) = do
+    obj     <- evalExpr expr
+    target  <- evalExpr targetExpr
+    setAttr attr obj target
 
 eval (Assignment (Name name) expr) = do
     value <- evalExpr expr
@@ -58,6 +65,24 @@ eval (Break) = do
     case mcont of
         Just cont   -> cont None
         Nothing     -> raise "SyntaxError" "'break' outside loop"
+
+eval (ClassDef name bases block) = do
+    baseClasses <- catMaybes <$> mapM evalBase bases
+
+    pushEnvFrame
+    evalBlock block
+    dict <- popEnvFrame
+
+    cls <- newClass name baseClasses dict
+    bind (pack name) cls
+  where
+    evalBase baseName = do
+        obj <- evalExpr $ Name baseName
+        case obj of
+            Class info  -> return $ Just info
+            _           -> do
+                raise "TypeError" "error when evaluating bases"
+                return Nothing
 
 eval (Continue) = do
     mcont <- getControlCont ContinueCont

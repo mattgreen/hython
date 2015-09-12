@@ -12,13 +12,22 @@ import Safe (atMay)
 
 import Language.Python
 
+import Hython.Builtins (getAttr)
 import Hython.Call (call)
 import Hython.Object
 
 evalExpr :: (MonadCont m, MonadIO m, MonadInterpreter m) => Expression -> m Object
 evalExpr (As {}) = unimplemented "as"
 
-evalExpr (Attribute {}) = unimplemented "attributes"
+evalExpr (Attribute expr attr) = do
+    target  <- evalExpr expr
+    mobj    <- getAttr attr target
+
+    case mobj of
+        Just obj    -> return obj
+        Nothing     -> do
+            raise "TypeError" ("object has no attribute '" ++ attr ++ "'")
+            return None
 
 evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
     [lhs, rhs] <- mapM evalExpr [leftExpr, rightExpr]

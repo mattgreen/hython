@@ -14,6 +14,7 @@ import Prelude hiding (lookup)
 
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
+import Data.Maybe (mapMaybe)
 import Data.Text (unpack)
 import Safe (headDef)
 import Hython.Name
@@ -71,10 +72,14 @@ new builtins = Environment { envBuiltins = Map.fromList refs, envFrames = [], en
 push :: Environment a -> Environment a
 push env = env { envFrames = Map.empty : envFrames env }
 
-pop :: Environment a -> Environment a
+pop :: Environment a -> ([(String, a)], Environment a)
 pop env = case envFrames env of
-    _:es    -> env { envFrames = es }
-    []      -> env
+    f:fs    -> (convert f, env { envFrames = fs })
+    []      -> ([], env)
+  where
+    convert f = mapMaybe unwrap (Map.toList f)
+    unwrap (name, LocalBinding o) = Just (unpack name, o)
+    unwrap (_, _) = Nothing
 
 unbind :: Name -> Environment a -> Either String (Environment a)
 unbind name env = if any (Map.member name) searchedFrames

@@ -57,7 +57,12 @@ instance MonadEnvironment Interpreter where
                 return $ Just obj
             Nothing  -> return Nothing
 
-    popEnvFrame = Interpreter $ modify $ \s -> s { stateEnv = Environment.pop (stateEnv s) }
+    popEnvFrame = do
+        env <- Interpreter $ gets stateEnv
+        (bindings, env') <- pure $ Environment.pop env
+        Interpreter $ modify $ \s -> s { stateEnv = env' }
+        return bindings
+
     pushEnvFrame = Interpreter $ modify $ \s -> s { stateEnv = Environment.push (stateEnv s) }
 
     unbind name = do
