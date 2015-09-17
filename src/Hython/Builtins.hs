@@ -4,6 +4,8 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.IORef (readIORef, writeIORef)
 
 import qualified Hython.AttributeDict as AttributeDict
+import qualified Hython.Class as Class
+import qualified Hython.Object as O
 import Hython.Types
 
 builtinFunctions :: [String]
@@ -17,6 +19,7 @@ callBuiltin name args = do
     return None
 
 getAttr :: (MonadInterpreter m) => String -> Object -> m (Maybe Object)
+{-getAttr attr (Class cls) = -}
 getAttr attr target = case getObjAttrs target of
         Just ref -> do
             dict <- liftIO $ readIORef ref

@@ -9,14 +9,15 @@ import Control.Monad.IO.Class (MonadIO)
 import Data.Text (pack)
 import Safe (atDef)
 
-import Hython.Builtins (callBuiltin, getAttr)
+import Hython.Builtins (callBuiltin, getAttr, setAttr)
 import Hython.Types
 
 call :: (MonadCont m, MonadInterpreter m, MonadIO m) => Object -> [Object] -> [(String, Object)] -> m Object
 call (BuiltinFn name) args _ = callBuiltin name args
 
-call (Class info) args kwargs = do
+call cls@(Class info) args kwargs = do
     obj <- newObject info
+    setAttr "__class__" cls obj
 
     mconstructor <- getAttr "__init__" obj
     _ <- case mconstructor of
