@@ -58,6 +58,17 @@ data ObjectInfo = ObjectInfo
 
 type AttributeDict = HashMap String (IORef Object)
 
+data Env = Env
+    { envModule     :: HashMap Name Binding
+    , envBuiltins   :: HashMap Name Binding
+    , envFrames     :: [HashMap Name Binding]
+    }
+
+data Binding
+    = LocalBinding ObjectRef
+    | NonlocalBinding
+    | GlobalBinding
+
 class HasAttributes a where
     getObjAttrs :: a -> Maybe (IORef AttributeDict)
 
@@ -66,16 +77,17 @@ instance HasAttributes Object where
     getObjAttrs (Class info) = Just $ classDict info
     getObjAttrs _ = Nothing
 
-class Monad m => MonadEnvironment m where
-    bind            :: Name -> Object -> m ()
-    bindGlobal      :: Name -> m ()
-    bindNonlocal    :: Name -> m ()
-    lookupName      :: Name -> m (Maybe Object)
-    pushEnvFrame    :: m ()
-    popEnvFrame     :: m [(String, ObjectRef)]
-    unbind          :: Name -> m ()
+class MonadIO m => MonadEnv m where
+    getEnv          :: m Env
 
-class (MonadEnvironment m, MonadIO m) => MonadInterpreter m where
+    modifyEnv       :: (Env -> Env) -> m ()
+    modifyEnv action = do
+        env <- getEnv
+        putEnv $ action env
+
+    putEnv          :: Env -> m ()
+
+class (MonadIO m) => MonadInterpreter m where
     evalBlock       :: [Statement] -> m ()
     getControlCont  :: ControlCont -> m (Maybe (Object -> m ()))
     popControlCont  :: ControlCont -> m ()

@@ -15,7 +15,6 @@ import Language.Python.Parser (parse)
 import Hython.Builtins (builtinFunctions)
 import Hython.ControlFlow (ControlFlow)
 import qualified Hython.ControlFlow as ControlFlow
-import Hython.Environment (Environment)
 import qualified Hython.Environment as Environment
 import Hython.Types
 import qualified Hython.Statement as Statement
@@ -24,52 +23,16 @@ newtype Interpreter a = Interpreter { unwrap :: ContT Object (StateT Interpreter
                             deriving (Functor, Applicative, Monad, MonadIO, MonadCont)
 
 data InterpreterState = InterpreterState
-    { stateEnv          :: Environment ObjectRef
+    { stateEnv          :: Env
     , stateFlow         :: ControlFlow InterpreterCont
     , stateResults      :: [Object]
     }
 
 type InterpreterCont = Object -> Interpreter ()
 
-instance MonadEnvironment Interpreter where
-    bind name obj = do
-        env <- Interpreter $ gets stateEnv
-        case Environment.lookup name env of
-            Just ref -> liftIO $ writeIORef ref obj
-            Nothing  -> do
-                ref <- liftIO $ newIORef obj
-                Interpreter $ modify $ \s -> s { stateEnv = Environment.bind name ref (stateEnv s) }
-
-    bindGlobal name = Interpreter $
-        modify $ \s -> s { stateEnv = Environment.bindGlobal name (stateEnv s) }
-
-    bindNonlocal name = do
-        env <- Interpreter $ gets stateEnv
-        case Environment.bindNonlocal name env of
-            Left msg        -> raise "SyntaxError" msg
-            Right newEnv    -> Interpreter $ modify $ \s -> s { stateEnv = newEnv }
-
-    lookupName name = do
-        env <- Interpreter $ gets stateEnv
-        case Environment.lookup name env of
-            Just ref -> do
-                obj <- liftIO $ readIORef ref
-                return $ Just obj
-            Nothing  -> return Nothing
-
-    popEnvFrame = do
-        env <- Interpreter $ gets stateEnv
-        (bindings, env') <- pure $ Environment.pop env
-        Interpreter $ modify $ \s -> s { stateEnv = env' }
-        return bindings
-
-    pushEnvFrame = Interpreter $ modify $ \s -> s { stateEnv = Environment.push (stateEnv s) }
-
-    unbind name = do
-        env <- Interpreter $ gets stateEnv
-        case Environment.unbind name env of
-            Left msg        -> raise "SyntaxError" msg
-            Right newEnv    -> Interpreter $ modify $ \s -> s { stateEnv = newEnv }
+instance MonadEnv Interpreter where
+    getEnv      = Interpreter $ gets stateEnv
+    putEnv env  = Interpreter $ modify $ \s -> s { stateEnv = env }
 
 instance MonadInterpreter Interpreter where
     evalBlock statements = mapM_ Statement.eval statements

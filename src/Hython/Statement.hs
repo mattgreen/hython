@@ -15,10 +15,11 @@ import Safe (atMay)
 import Language.Python
 
 import Hython.Builtins (setAttr)
+import Hython.Environment (bind, bindGlobal, bindNonlocal, pushEnvFrame, popEnvFrame, unbind)
 import Hython.Expression (evalExpr)
 import Hython.Types
 
-eval :: (MonadIO m, MonadCont m, MonadInterpreter m) => Statement -> m ()
+eval :: (MonadIO m, MonadCont m, MonadEnv m, MonadInterpreter m) => Statement -> m ()
 eval (Assert expr msgExpr) = do
     result  <- evalExpr expr
     msg     <- evalExpr msgExpr
@@ -90,7 +91,11 @@ eval (Continue) = do
         Just cont   -> cont None
         Nothing     -> raise "SyntaxError" "'continue' outside loop"
 
-eval (Del (Name name)) = unbind (pack name)
+eval (Del (Name name)) = do
+    result <- unbind (pack name)
+    case result of
+        Left msg    -> raise "SyntaxError" msg
+        Right _     -> return ()
 
 eval (Del _) = raise "SystemError" "invalid del statement"
 

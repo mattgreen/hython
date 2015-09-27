@@ -10,9 +10,10 @@ import Data.Text (pack)
 import Safe (atDef)
 
 import Hython.Builtins (callBuiltin, getAttr, setAttr)
+import Hython.Environment (bind, pushEnvFrame, popEnvFrame)
 import Hython.Types
 
-call :: (MonadCont m, MonadInterpreter m, MonadIO m) => Object -> [Object] -> [(String, Object)] -> m Object
+call :: (MonadCont m, MonadEnv m, MonadInterpreter m, MonadIO m) => Object -> [Object] -> [(String, Object)] -> m Object
 call (BuiltinFn name) args _ = callBuiltin name args
 
 call cls@(Class info) args kwargs = do

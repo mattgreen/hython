@@ -4,8 +4,6 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.IORef (readIORef, writeIORef)
 
 import qualified Hython.AttributeDict as AttributeDict
-import qualified Hython.Class as Class
-import qualified Hython.Object as O
 import Hython.Types
 
 builtinFunctions :: [String]
