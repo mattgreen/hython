@@ -3,7 +3,9 @@ where
 
 import Prelude hiding (lookup)
 
+import Control.Applicative ((<|>))
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Trans.Maybe
 import Data.IORef (newIORef, readIORef, writeIORef)
 import qualified Data.HashMap.Strict as Map
 import Data.Maybe (mapMaybe)
@@ -47,26 +49,23 @@ bindNonlocal name = do
         []  -> return . Left $ "nonlocal declaration not allowed at module level"
 
 lookupName :: MonadEnv m => Name -> m (Maybe Object)
-lookupName name = do
-    mref <- lookupRef name
-    case mref of
-        Just ref    -> do
-            obj <- liftIO . readIORef $ ref
-            return $ Just obj
-        Nothing     -> return Nothing
+lookupName name = runMaybeT $ do
+    ref <- MaybeT $ lookupRef name
+    liftIO $ readIORef ref
 
 lookupRef :: MonadEnv m => Name -> m (Maybe ObjectRef)
 lookupRef name = do
-    env     <- getEnv
-    scope   <- pure $ [headDef Map.empty (envFrames env)] ++ [envModule env] ++ [envBuiltins env]
-    return $ lookupIn scope
+    env <- getEnv
+    return $ lookupLocal (currentFrame env)
+         <|> lookupLocal (envModule env)
+         <|> lookupLocal (envBuiltins env)
   where
-    lookupIn (e:es) = case Map.lookup name e of
-        Just objRef -> case objRef of
-            LocalBinding ref    -> Just ref
-            _                   -> lookupIn es
-        Nothing     -> lookupIn es
-    lookupIn _     = Nothing
+    currentFrame env = headDef Map.empty (envFrames env)
+    lookupLocal m = getLocalRef =<< Map.lookup name m
+
+getLocalRef :: Binding -> Maybe ObjectRef
+getLocalRef (LocalBinding ref) = Just ref
+getLocalRef _ = Nothing
 
 new :: [(Name, ObjectRef)] -> Env
 new builtins = Env { envBuiltins = Map.fromList refs, envFrames = [], envModule = Map.empty }
@@ -85,9 +84,9 @@ popEnvFrame = do
             return . getLocals $ f
         []      -> return []
   where
-    getLocals f = mapMaybe unwrap (Map.toList f)
-    unwrap (name, LocalBinding ref) = Just (unpack name, ref)
-    unwrap _ = Nothing
+    getLocals f = flip mapMaybe (Map.toList f) $ \(name, binding) -> do
+        ref <- getLocalRef binding
+        return (unpack name, ref)
 
 unbind :: MonadEnv m => Name -> m (Either String ())
 unbind name = do

@@ -1,6 +1,7 @@
-module Hython.Object
+module Hython.Object (lookup)
 where
 
+import Prelude hiding (lookup)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.IORef (readIORef)
 

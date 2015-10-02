@@ -49,7 +49,7 @@ data ClassInfo = ClassInfo
                { className  :: String
                , classBases :: [ClassInfo]
                , classDict  :: IORef AttributeDict
-               }
+               } deriving (Eq)
 
 data ObjectInfo = ObjectInfo
                 { objectClass :: ClassInfo
