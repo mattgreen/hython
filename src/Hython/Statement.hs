@@ -17,9 +17,10 @@ import Language.Python
 import Hython.Builtins (setAttr)
 import Hython.Environment (bind, bindGlobal, bindNonlocal, pushEnvFrame, popEnvFrame, unbind)
 import Hython.Expression (evalExpr)
+import Hython.ControlFlow
 import Hython.Types
 
-eval :: (MonadIO m, MonadCont m, MonadEnv m, MonadInterpreter m) => Statement -> m ()
+eval :: (MonadIO m, MonadCont m, MonadFlow m, MonadInterpreter m) => Statement -> m ()
 eval (Assert expr msgExpr) = do
     result  <- evalExpr expr
     msg     <- evalExpr msgExpr
@@ -62,7 +63,7 @@ eval (Assignment (Subscript targetExpr idxExpr) expr) = do
         _ -> raise "TypeError" "object does not support item assignment"
 
 eval (Break) = do
-    mcont <- getControlCont BreakCont
+    mcont <- getBreak
     case mcont of
         Just cont   -> cont None
         Nothing     -> raise "SyntaxError" "'break' outside loop"
@@ -86,7 +87,7 @@ eval (ClassDef name bases block) = do
                 return Nothing
 
 eval (Continue) = do
-    mcont <- getControlCont ContinueCont
+    mcont <- getContinue
     case mcont of
         Just cont   -> cont None
         Nothing     -> raise "SyntaxError" "'continue' outside loop"
@@ -130,18 +131,18 @@ eval (Nonlocal names) = mapM_ (bindNonlocal . pack) names
 eval (Pass) = return ()
 
 eval (Return expr) = do
-    obj <- evalExpr expr
-    mcont <- getControlCont ReturnCont
+    obj     <- evalExpr expr
+    mcont   <- getReturn
     case mcont of
         Just cont   -> cont obj
         Nothing     -> raise "SyntaxError" "'return' outside of function"
 
 eval (While condition block elseBlock) = do
     _ <- callCC $ \breakCont -> do
-        pushControlCont BreakCont breakCont
+        pushBreakCont breakCont
         fix $ \loop ->
             callCC $ \continueCont -> do
-                pushControlCont ContinueCont continueCont
+                pushContinueCont continueCont
 
                 truthy <- isTruthy =<< evalExpr condition
                 unless truthy $ do
@@ -151,7 +152,7 @@ eval (While condition block elseBlock) = do
                 evalBlock block
                 loop
 
-    popControlCont ContinueCont
-    popControlCont BreakCont
+    popContinueCont
+    popBreakCont
 
 eval _ = raise "SystemError" "statement not implemented"

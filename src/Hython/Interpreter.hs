@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Hython.Interpreter
 where
 
@@ -13,7 +14,6 @@ import qualified Data.Text as T
 import Language.Python.Parser (parse)
 
 import Hython.Builtins (builtinFunctions)
-import Hython.ControlFlow (ControlFlow)
 import qualified Hython.ControlFlow as ControlFlow
 import qualified Hython.Environment as Environment
 import Hython.Types
@@ -24,44 +24,21 @@ newtype Interpreter a = Interpreter { unwrap :: ContT Object (StateT Interpreter
 
 data InterpreterState = InterpreterState
     { stateEnv          :: Env
-    , stateFlow         :: ControlFlow InterpreterCont
+    , stateFlow         :: Flow Interpreter
     , stateResults      :: [Object]
     }
-
-type InterpreterCont = Object -> Interpreter ()
 
 instance MonadEnv Interpreter where
     getEnv      = Interpreter $ gets stateEnv
     putEnv env  = Interpreter $ modify $ \s -> s { stateEnv = env }
 
+instance MonadFlow Interpreter where
+    getFlow     = Interpreter $ gets stateFlow
+    putFlow f   = Interpreter . modify $ \s -> s { stateFlow = f }
+
 instance MonadInterpreter Interpreter where
     evalBlock statements = mapM_ Statement.eval statements
-
-    getControlCont ctrl = do
-        flow <- Interpreter $ gets stateFlow
-        case ctrl of
-            BreakCont       -> return $ ControlFlow.getBreak flow
-            ContinueCont    -> return $ ControlFlow.getContinue flow
-            ReturnCont      -> return $ ControlFlow.getReturn flow
-
-    popControlCont ctrl = do
-        flow <- Interpreter $ gets stateFlow
-        Interpreter $ modify $ \s -> s { stateFlow = action ctrl flow }
-      where
-        action (BreakCont) = ControlFlow.popBreak
-        action (ContinueCont) = ControlFlow.popContinue
-        action (ReturnCont) = ControlFlow.popReturn
-
     pushEvalResult obj = Interpreter $ modify $ \s -> s { stateResults = stateResults s ++ [obj] }
-
-    pushControlCont ctrl c = do
-        flow <- Interpreter $ gets stateFlow
-        Interpreter $ modify $ \s -> s { stateFlow = action ctrl c flow }
-      where
-        action (BreakCont) = ControlFlow.pushBreak
-        action (ContinueCont) = ControlFlow.pushContinue
-        action (ReturnCont) = ControlFlow.pushReturn
-
     raise exceptionType msg = error (exceptionType ++ ": " ++ msg)
 
 defaultInterpreterState :: IO InterpreterState

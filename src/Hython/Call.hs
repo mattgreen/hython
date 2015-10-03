@@ -10,10 +10,11 @@ import Data.Text (pack)
 import Safe (atDef)
 
 import Hython.Builtins (callBuiltin, getAttr, setAttr)
+import Hython.ControlFlow
 import Hython.Environment (bind, pushEnvFrame, popEnvFrame)
 import Hython.Types
 
-call :: (MonadCont m, MonadEnv m, MonadInterpreter m, MonadIO m) => Object -> [Object] -> [(String, Object)] -> m Object
+call :: (MonadCont m, MonadFlow m, MonadInterpreter m, MonadIO m) => Object -> [Object] -> [(String, Object)] -> m Object
 call (BuiltinFn name) args _ = callBuiltin name args
 
 call cls@(Class info) args kwargs = do
@@ -40,13 +41,13 @@ call (Function fnName params statements) args kwargs = do
         forM_ bindings $ \(name, obj) ->
             bind (pack name) obj
 
-        pushControlCont ReturnCont returnCont
+        pushReturnCont returnCont
 
         evalBlock statements
         return None
 
     _ <- popEnvFrame
-    popControlCont ReturnCont
+    popReturnCont
 
     return result
 

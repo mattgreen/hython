@@ -79,25 +79,32 @@ instance HasAttributes Object where
 
 class MonadIO m => MonadEnv m where
     getEnv          :: m Env
-
+    putEnv          :: Env -> m ()
     modifyEnv       :: (Env -> Env) -> m ()
     modifyEnv action = do
         env <- getEnv
         putEnv $ action env
 
-    putEnv          :: Env -> m ()
+data Flow m = Flow
+    { flowBreakConts    :: [Continuation m]
+    , flowContinueConts :: [Continuation m]
+    , flowReturnConts   :: [Continuation m]
+    }
 
-class (MonadIO m) => MonadInterpreter m where
+type Continuation m = Object -> m ()
+
+class Monad m => MonadFlow m where
+    getFlow         :: m (Flow m)
+    putFlow         :: Flow m -> m ()
+    modifyFlow      :: (Flow m -> Flow m) -> m ()
+    modifyFlow f = do
+        flow <- getFlow
+        putFlow $ f flow
+
+class (MonadEnv m, MonadIO m) => MonadInterpreter m where
     evalBlock       :: [Statement] -> m ()
-    getControlCont  :: ControlCont -> m (Maybe (Object -> m ()))
-    popControlCont  :: ControlCont -> m ()
-    pushControlCont :: ControlCont -> (Object -> m ()) -> m ()
     pushEvalResult  :: Object -> m ()
     raise           :: String -> String -> m ()
-
-data ControlCont = BreakCont
-                 | ContinueCont
-                 | ReturnCont
 
 hash :: (MonadInterpreter m, MonadIO m) => Object -> m Int
 hash obj = case obj of

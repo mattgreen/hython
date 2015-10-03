@@ -3,48 +3,44 @@ where
 
 import Safe (headMay, tailSafe)
 
-data ControlFlow cont = ControlFlow
-    { flowBreakConts    :: [cont]
-    , flowContinueConts :: [cont]
-    , flowReturnConts   :: [cont]
-    }
+import Hython.Types
 
-data Frame cont = Frame
-    { frameBreakConts       :: [cont]
-    , frameContinueConts    :: [cont]
-    , frameReturnCont       :: [cont]
-    }
-
-new :: ControlFlow cont
-new = ControlFlow {
+new :: Flow m
+new = Flow {
     flowBreakConts = [],
     flowContinueConts = [],
     flowReturnConts = []
 }
 
-getBreak :: ControlFlow cont -> Maybe cont
-getBreak flow = headMay . flowBreakConts $ flow
+getBreak :: MonadFlow m => m (Maybe (Continuation m))
+getBreak = headMay . flowBreakConts <$> getFlow
 
-getContinue :: ControlFlow cont -> Maybe cont
-getContinue flow = headMay . flowContinueConts $ flow
+getContinue :: MonadFlow m => m (Maybe (Continuation m))
+getContinue = headMay . flowContinueConts <$> getFlow
 
-getReturn :: ControlFlow cont -> Maybe cont
-getReturn flow = headMay . flowReturnConts $ flow
+getReturn :: MonadFlow m => m (Maybe (Continuation m))
+getReturn = headMay . flowReturnConts <$> getFlow
 
-popBreak :: ControlFlow cont -> ControlFlow cont
-popBreak flow = flow { flowBreakConts = tailSafe $ flowBreakConts flow }
+popBreakCont :: MonadFlow m => m ()
+popBreakCont = modifyFlow $ \flow ->
+    flow { flowBreakConts = tailSafe $ flowBreakConts flow }
 
-popContinue :: ControlFlow cont -> ControlFlow cont
-popContinue flow = flow { flowContinueConts = tailSafe $ flowContinueConts flow }
+popContinueCont :: MonadFlow m => m ()
+popContinueCont = modifyFlow $ \flow ->
+    flow { flowContinueConts = tailSafe $ flowContinueConts flow }
 
-popReturn :: ControlFlow cont -> ControlFlow cont
-popReturn flow = flow { flowReturnConts = tailSafe $ flowReturnConts flow }
+popReturnCont :: MonadFlow m => m ()
+popReturnCont = modifyFlow $ \flow ->
+    flow { flowReturnConts = tailSafe $ flowReturnConts flow }
 
-pushBreak :: cont -> ControlFlow cont -> ControlFlow cont
-pushBreak cont flow = flow { flowBreakConts = cont : flowBreakConts flow }
+pushBreakCont :: MonadFlow m => (Object -> m ()) -> m ()
+pushBreakCont cont = modifyFlow $ \flow ->
+    flow { flowBreakConts = cont : flowBreakConts flow }
 
-pushContinue :: cont -> ControlFlow cont -> ControlFlow cont
-pushContinue cont flow = flow { flowContinueConts = cont : flowContinueConts flow }
+pushContinueCont :: MonadFlow m => (Object -> m ()) -> m ()
+pushContinueCont cont = modifyFlow $ \flow ->
+    flow { flowContinueConts = cont : flowContinueConts flow }
 
-pushReturn :: cont -> ControlFlow cont -> ControlFlow cont
-pushReturn cont flow = flow { flowReturnConts = cont : flowReturnConts flow }
+pushReturnCont :: MonadFlow m => (Object -> m ()) -> m ()
+pushReturnCont cont = modifyFlow $ \flow ->
+    flow { flowReturnConts = cont : flowReturnConts flow }
