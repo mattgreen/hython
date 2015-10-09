@@ -14,7 +14,7 @@ import Hython.ControlFlow
 import Hython.Environment (bind, pushEnvFrame, popEnvFrame)
 import Hython.Types
 
-call :: (MonadCont m, MonadFlow m, MonadInterpreter m, MonadIO m) => Object -> [Object] -> [(String, Object)] -> m Object
+call :: (MonadCont m, MonadInterpreter m, MonadIO m) => Object -> [Object] -> [(String, Object)] -> m Object
 call (BuiltinFn name) args _ = callBuiltin name args
 
 call cls@(Class info) args kwargs = do

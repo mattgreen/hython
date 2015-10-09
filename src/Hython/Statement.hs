@@ -20,7 +20,7 @@ import Hython.Expression (evalExpr)
 import Hython.ControlFlow
 import Hython.Types
 
-eval :: (MonadIO m, MonadCont m, MonadFlow m, MonadInterpreter m) => Statement -> m ()
+eval :: (MonadIO m, MonadCont m, MonadInterpreter m) => Statement -> m ()
 eval (Assert expr msgExpr) = do
     result  <- evalExpr expr
     msg     <- evalExpr msgExpr
@@ -63,7 +63,7 @@ eval (Assignment (Subscript targetExpr idxExpr) expr) = do
         _ -> raise "TypeError" "object does not support item assignment"
 
 eval (Break) = do
-    mcont <- getBreak
+    mcont <- getBreakCont
     case mcont of
         Just cont   -> cont None
         Nothing     -> raise "SyntaxError" "'break' outside loop"
@@ -87,7 +87,7 @@ eval (ClassDef name bases block) = do
                 return Nothing
 
 eval (Continue) = do
-    mcont <- getContinue
+    mcont <- getContinueCont
     case mcont of
         Just cont   -> cont None
         Nothing     -> raise "SyntaxError" "'continue' outside loop"
@@ -132,7 +132,7 @@ eval (Pass) = return ()
 
 eval (Return expr) = do
     obj     <- evalExpr expr
-    mcont   <- getReturn
+    mcont   <- getReturnCont
     case mcont of
         Just cont   -> cont obj
         Nothing     -> raise "SyntaxError" "'return' outside of function"

@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Hython.Types
 where
 
@@ -16,6 +18,7 @@ import Data.List (intercalate)
 
 import Language.Python (Statement)
 
+import Hython.ControlFlow
 import Hython.Name
 
 data Object = None
@@ -85,23 +88,7 @@ class MonadIO m => MonadEnv m where
         env <- getEnv
         putEnv $ action env
 
-data Flow m = Flow
-    { flowBreakConts    :: [Continuation m]
-    , flowContinueConts :: [Continuation m]
-    , flowReturnConts   :: [Continuation m]
-    }
-
-type Continuation m = Object -> m ()
-
-class Monad m => MonadFlow m where
-    getFlow         :: m (Flow m)
-    putFlow         :: Flow m -> m ()
-    modifyFlow      :: (Flow m -> Flow m) -> m ()
-    modifyFlow f = do
-        flow <- getFlow
-        putFlow $ f flow
-
-class (MonadEnv m, MonadIO m) => MonadInterpreter m where
+class (MonadEnv m, MonadFlow (Object -> m ()) m, MonadIO m) => MonadInterpreter m where
     evalBlock       :: [Statement] -> m ()
     pushEvalResult  :: Object -> m ()
     raise           :: String -> String -> m ()

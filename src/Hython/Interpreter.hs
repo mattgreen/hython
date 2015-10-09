@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, FlexibleInstances, MultiParamTypeClasses #-}
 
 module Hython.Interpreter
 where
@@ -14,6 +14,7 @@ import qualified Data.Text as T
 import Language.Python.Parser (parse)
 
 import Hython.Builtins (builtinFunctions)
+import Hython.ControlFlow (Flow, MonadFlow)
 import qualified Hython.ControlFlow as ControlFlow
 import qualified Hython.Environment as Environment
 import Hython.Types
@@ -24,15 +25,17 @@ newtype Interpreter a = Interpreter { unwrap :: ContT Object (StateT Interpreter
 
 data InterpreterState = InterpreterState
     { stateEnv          :: Env
-    , stateFlow         :: Flow Interpreter
+    , stateFlow         :: Flow Continuation
     , stateResults      :: [Object]
     }
+
+type Continuation = Object -> Interpreter ()
 
 instance MonadEnv Interpreter where
     getEnv      = Interpreter $ gets stateEnv
     putEnv env  = Interpreter $ modify $ \s -> s { stateEnv = env }
 
-instance MonadFlow Interpreter where
+instance MonadFlow Continuation Interpreter where
     getFlow     = Interpreter $ gets stateFlow
     putFlow f   = Interpreter . modify $ \s -> s { stateFlow = f }
 
