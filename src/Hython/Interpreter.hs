@@ -59,7 +59,7 @@ defaultInterpreterState = do
   where
     mkBuiltin name = do
         ref <- newIORef $ BuiltinFn name
-        return (T.pack name, ref)
+        return (name, ref)
 
 runInterpreter :: InterpreterState -> Text -> IO (Either String [Object], InterpreterState)
 runInterpreter state code = case parse code of

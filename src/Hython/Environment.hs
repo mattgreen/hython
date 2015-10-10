@@ -9,7 +9,6 @@ import Control.Monad.Trans.Maybe
 import Data.IORef (newIORef, readIORef, writeIORef)
 import qualified Data.HashMap.Strict as Map
 import Data.Maybe (mapMaybe)
-import Data.Text (unpack)
 import Safe (headDef)
 import Hython.Name
 import Hython.Types
@@ -45,7 +44,7 @@ bindNonlocal name = do
             then do
                 putEnv $ env { envFrames = Map.insert name NonlocalBinding e : es }
                 return . Right $ ()
-            else return . Left $ "no binding for nonlocal '" ++ unpack name ++ "' found"
+            else return . Left $ "no binding for nonlocal '" ++ show name ++ "' found"
         []  -> return . Left $ "nonlocal declaration not allowed at module level"
 
 lookupName :: MonadEnv m => Name -> m (Maybe Object)
@@ -97,6 +96,6 @@ unbind name = do
                 (e:es)  -> env { envFrames = Map.delete name e : es }
                 []      -> env { envModule = Map.delete name (envModule env) }
             return (Right ())
-        else return . Left $ "name '" ++ unpack name ++ "' is not defined"
+        else return . Left $ "name '" ++ show name ++ "' is not defined"
   where
     searchedFrames env = envFrames env ++ [envModule env]

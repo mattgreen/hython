@@ -34,7 +34,7 @@ data Object = None
             | Dict (IORef (IntMap (Object, Object)))
             | Set (IORef (IntMap Object))
             | Tuple [Object]
-            | BuiltinFn String
+            | BuiltinFn Text
             | Function Text [FnParam] [Statement]
             | Method Text MethodBinding [FnParam] [Statement]
             | Class ClassInfo
@@ -230,7 +230,7 @@ toStr (Dict ref) = do
         value   <- toStr v
         return $ key ++ ": " ++ value
     return $ "{" ++ intercalate ", " strItems ++ "}"
-toStr (BuiltinFn name)  = return $ "<built-in function " ++ name ++ ">"
+toStr (BuiltinFn name)  = return $ "<built-in function " ++ show name ++ ">"
 toStr (Class info) = return $ "<class '" ++ show (className info) ++ "'>"
 toStr (Object info) = return $ "<" ++ show (className (objectClass info)) ++ " object>"
 toStr (Method name (ClassBinding clsName _) _ _) = 

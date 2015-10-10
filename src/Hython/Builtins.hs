@@ -11,15 +11,21 @@ import qualified Hython.Class as Class
 import qualified Hython.Object as Object
 import Hython.Types
 
-builtinFunctions :: [String]
-builtinFunctions = ["isinstance", "print"]
+builtinFunctions :: [Text]
+builtinFunctions = map T.pack builtins
+  where
+    builtins = ["isinstance", "print"]
 
-callBuiltin :: (MonadInterpreter m) => String -> [Object] -> m Object
-callBuiltin name args = case (name, args) of
-    ("print", _) -> ignore $ print' args
-    ("isinstance", [obj, Class info]) -> newBool $ isInstance obj info
-    ("isinstance", _) -> ignore $ raise "SystemError" "isinstance() arg 2 must be a class"
-    _ -> ignore $ raise "SystemError" ("builtin '" ++ name ++ "' not implemented!")
+callBuiltin :: (MonadInterpreter m) => Text -> [Object] -> m Object
+callBuiltin name args = case (T.unpack name, args) of
+    ("print", _) ->
+        ignore $ print' args
+    ("isinstance", [obj, Class info]) ->
+        newBool $ isInstance obj info
+    ("isinstance", _) ->
+        ignore $ raise "SystemError" "isinstance() arg 2 must be a class"
+    _ ->
+        ignore $ raise "SystemError" ("builtin '" ++ show name ++ "' not implemented!")
   where
     ignore action = action >> return None
 
@@ -51,7 +57,7 @@ print' objs = do
     strs <- mapM asStr objs
     liftIO $ putStrLn $ unwords strs
   where
-    asStr (String s)    = return . T.unpack $ s
+    asStr (String s)    = return . show $ s
     asStr v@_           = toStr v
 
 setAttr :: (MonadInterpreter m) => Text -> Object -> Object -> m ()
