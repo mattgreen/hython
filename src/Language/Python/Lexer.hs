@@ -121,7 +121,7 @@ indentation = do
 
     indentValue :: Int -> Char -> Int
     indentValue 0 '\t'      = 8
-    indentValue acc '\t'    = 8 * ceiling (fromIntegral acc / 8)
+    indentValue acc '\t'    = 8 * ceiling ((fromIntegral acc / 8) :: Double)
     indentValue acc _       = acc + 1
 
     dedent level indents = do
