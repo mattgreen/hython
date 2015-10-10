@@ -1,12 +1,11 @@
 module Hython.Call (call)
 where
 
-import Control.Arrow (first)
-import Control.Monad (forM_, when, zipWithM)
+import Control.Monad (forM, forM_, when, zipWithM)
 import Control.Monad.Cont (callCC)
 import Control.Monad.Cont.Class (MonadCont)
 import Control.Monad.IO.Class (MonadIO)
-import Data.Text (pack)
+import Data.Text (Text, pack)
 import Safe (atDef)
 
 import Hython.Builtins (callBuiltin, getAttr, setAttr)
@@ -14,7 +13,7 @@ import Hython.ControlFlow
 import Hython.Environment (bind, pushEnvFrame, popEnvFrame)
 import Hython.Types
 
-call :: (MonadCont m, MonadInterpreter m, MonadIO m) => Object -> [Object] -> [(String, Object)] -> m Object
+call :: (MonadCont m, MonadInterpreter m, MonadIO m) => Object -> [Object] -> [(Text, Object)] -> m Object
 call (BuiltinFn name) args _ = callBuiltin name args
 
 call cls@(Class info) args kwargs = do
@@ -58,7 +57,10 @@ call (Function fnName params statements) args kwargs = do
         tuple <- newTuple (drop i args)
         return (name, tuple)
     getArg (DSParam name) _ = do
-        dict <- newDict $ map (first String) kwargs
+        items <- forM kwargs $ \(k,v) -> do
+            s <- newString k
+            return (s, v)
+        dict <- newDict items
         return (name, dict)
 
     isRequiredParam (NamedParam _) = True

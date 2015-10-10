@@ -26,7 +26,7 @@ data Token
     | Operator String
     | Delimiter String
     | Literal Constant
-    | StringLiteral String
+    | StringLiteral Text
     deriving Show
 
 type Tokens = [Token]
@@ -272,7 +272,7 @@ stringLiteral = try tripleQuotedString <|> singleQuotedString
 
     stringType prefix s
       | 'B' == toUpper prefix       = Literal $ ConstantBytes s
-      | otherwise                   = StringLiteral s
+      | otherwise                   = StringLiteral $ T.pack s
 
     stringChar = try escapedChar <|> anyChar
     escapedChar = do

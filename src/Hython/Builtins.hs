@@ -3,6 +3,7 @@ module Hython.Builtins where
 import Control.Monad.Trans.Maybe
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.IORef (readIORef, writeIORef)
+import qualified Data.Text as T
 
 import qualified Hython.AttributeDict as AttributeDict
 import qualified Hython.Class as Class
@@ -49,7 +50,7 @@ print' objs = do
     strs <- mapM asStr objs
     liftIO $ putStrLn $ unwords strs
   where
-    asStr (String s)    = return s
+    asStr (String s)    = return . T.unpack $ s
     asStr v@_           = toStr v
 
 setAttr :: (MonadInterpreter m) => String -> Object -> Object -> m ()

@@ -8,6 +8,7 @@ import Data.Fixed (mod')
 import qualified Data.IntMap as IntMap
 import Data.IORef (readIORef)
 import Data.Text (pack)
+import qualified Data.Text as T
 import Safe (atMay)
 
 import Language.Python
@@ -35,7 +36,7 @@ evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
     case (op, lhs, rhs) of
         (Add, Int l, Int r)         -> newInt (l + r)
         (Add, Float l, Float r)     -> newFloat (l + r)
-        (Add, String l, String r)   -> newString (l ++ r)
+        (Add, String l, String r)   -> newString $ T.append l r
         (Add, List l, List r)       -> do
             left    <- liftIO $ readIORef l
             right   <- liftIO $ readIORef r
@@ -45,7 +46,7 @@ evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
         (Sub, Float l, Float r)     -> newFloat (l - r)
         (Mul, Int l, Int r)         -> newInt (l * r)
         (Mul, Float l, Float r)     -> newFloat (l * r)
-        (Mul, Int l, String r)      -> newString (concat $ replicate (fromInteger l) r)
+        (Mul, Int l, String r)      -> newString $ T.replicate (fromInteger l) r
         (Mul, String _, Int _)      -> evalExpr (BinOp (ArithOp op) rightExpr leftExpr)
         (Mul, List l, Int r)        -> do
             items <- liftIO $ readIORef l
@@ -202,7 +203,7 @@ evalExpr (Call expr argExprs) = do
 
     evalKWArg (KeywordArg name e) = do
         obj <- evalExpr e
-        return [(name, obj)]
+        return [(T.pack name, obj)]
 
     evalKWArg (DoubleStarArg e) = do
         obj <- evalExpr e
@@ -214,7 +215,7 @@ evalExpr (Call expr argExprs) = do
                         (String s)  -> return (s, value)
                         _           -> do
                             raise "TypeError" "keyword args must be strings"
-                            return ("", None)
+                            return (T.empty, None)
 
             _           -> do
                 raise "TypeError" "argument after ** must be a mapping"
@@ -287,8 +288,8 @@ evalExpr (Subscript expr idxExpr) = do
                     raise "TypeError" "index out of range"
                     return None
 
-        (String s, Int i) -> case atMay s (fromIntegral i) of
-            Just c      -> newString [c]
+        (String s, Int i) -> case atMay (T.unpack s) (fromIntegral i) of
+            Just c      -> newString $ T.pack [c]
             Nothing     -> do
                 raise "IndexError" "index out of range"
                 return None

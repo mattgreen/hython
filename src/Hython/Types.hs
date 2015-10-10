@@ -15,6 +15,8 @@ import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap as IntMap
 import Data.IORef (IORef, newIORef, readIORef)
 import Data.List (intercalate)
+import Data.Text (Text)
+import qualified Data.Text as T
 
 import Language.Python (Statement)
 
@@ -27,7 +29,7 @@ data Object = None
             | Float Double
             | Imaginary (Complex Double)
             | Int Integer
-            | String String
+            | String Text
             | List (IORef [Object])
             | Dict (IORef (IntMap (Object, Object)))
             | Set (IORef (IntMap Object))
@@ -174,7 +176,7 @@ newSet objs = do
     ref <- liftIO $ newIORef (IntMap.fromList items)
     return $ Set ref
 
-newString :: MonadInterpreter m => String -> m Object
+newString :: MonadInterpreter m => Text -> m Object
 newString s = return $ String s
 
 newTuple :: MonadInterpreter m => [Object] -> m Object
@@ -189,7 +191,7 @@ isTruthy (None) = return False
 isTruthy (Bool False) = return False
 isTruthy (Int 0) = return False
 isTruthy (Float 0.0) = return False
-isTruthy (String "") = return False
+isTruthy (String s) = return . not . T.null $ s
 isTruthy (Bytes b) = return $ not (B.null b)
 isTruthy (List ref) = do
     l <- liftIO $ readIORef ref
@@ -207,7 +209,7 @@ toStr (Imaginary i)
     | realPart i == 0   = return $ show i
     | otherwise         = return $ show i
 toStr (Int i) = return $ show i
-toStr (String s) = return $ "'" ++ s ++ "'"
+toStr (String s) = return $ "'" ++ T.unpack s ++ "'"
 toStr (List ref) = do
     l <- liftIO $ readIORef ref
     strItems <- mapM toStr l

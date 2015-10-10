@@ -5,6 +5,7 @@ import Data.Either
 import Data.List
 import Data.Maybe
 import Data.Text (Text)
+import qualified Data.Text as T
 
 import Language.Python
 import qualified Language.Python.Lexer as L
@@ -558,7 +559,7 @@ atom
     | '{' opt(dictorsetmaker) '}'   { maybe (DictDef []) (\e -> e) $2 }
     | identifier                    { Name $1 }
     | literal                       { Constant $1 }
-    | many1(string)                 { Constant $ ConstantString (foldl' (++) "" $1) }
+    | many1(string)                 { Constant $ ConstantString (foldl' T.append T.empty $1) }
     | NONE                          { Constant ConstantNone }
     | TRUE                          { Constant $ ConstantBool True }
     | FALSE                         { Constant $ ConstantBool False }

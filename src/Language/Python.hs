@@ -1,6 +1,7 @@
 module Language.Python where
 
 import Data.Complex
+import Data.Text (Text)
 
 data Statement
     = Assignment Expression Expression
@@ -80,7 +81,7 @@ data Expression
 
 data Constant
     = ConstantInt Integer
-    | ConstantString String
+    | ConstantString Text
     | ConstantBytes String
     | ConstantFloat Double
     | ConstantImag (Complex Double)
