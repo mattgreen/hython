@@ -9,7 +9,6 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.IntMap as IntMap
 import Data.IORef (modifyIORef, readIORef, writeIORef)
 import Data.Maybe (catMaybes)
-import Data.Text (pack, unpack)
 import Safe (atMay)
 
 import Language.Python

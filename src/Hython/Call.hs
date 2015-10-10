@@ -7,7 +7,7 @@ import Control.Monad (forM, forM_, when, zipWithM)
 import Control.Monad.Cont (callCC)
 import Control.Monad.Cont.Class (MonadCont)
 import Control.Monad.IO.Class (MonadIO)
-import Data.Text (Text, pack)
+import Data.Text (Text)
 import Safe (atDef)
 
 import Hython.Builtins (callBuiltin, getAttr, setAttr)

@@ -7,7 +7,6 @@ import Data.Bits ((.&.), (.|.), complement, shiftL, shiftR, xor)
 import Data.Fixed (mod')
 import qualified Data.IntMap as IntMap
 import Data.IORef (readIORef)
-import Data.Text (pack)
 import qualified Data.Text as T
 import Safe (atMay)
 
