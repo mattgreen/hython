@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Hython.Call (call)
 where
 
@@ -30,15 +32,14 @@ call cls@(Class info) args kwargs = do
 call (Function fnName params statements) args kwargs = do
     requiredParams <- pure $ takeWhile isRequiredParam params
     when (length args < length requiredParams) $
-        raise "TypeError" ("not enough arguments passed to '" ++ fnName ++ "'")
+        raise "TypeError" ("not enough arguments passed to '" ++ show fnName ++ "'")
     when (length requiredParams == length params && length args > length requiredParams) $
-        raise "TypeError" ("too many args passed to '" ++ fnName ++ "'")
+        raise "TypeError" ("too many args passed to '" ++ show fnName ++ "'")
 
     result <- callCC $ \returnCont -> do
         pushEnvFrame
         bindings <- zipWithM getArg params [0..]
-        forM_ bindings $ \(name, obj) ->
-            bind (pack name) obj
+        forM_ bindings $ uncurry bind
 
         pushReturnCont returnCont
 

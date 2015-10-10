@@ -192,17 +192,17 @@ decorated
 
 -- funcdef: 'def' NAME parameters ['->' test] ':' suite
 funcdef
-    : DEF identifier parameters ':' suite { FuncDef $2 $3 $5 }
+    : DEF identifier parameters ':' suite { FuncDef (T.pack $2) $3 $5 }
 
 -- parameters: '(' [typedargslist] ')'
 parameters
     : '(' sepBy0(parameter, ',') ')' { $2 }
 
 parameter
-    : identifier                { FormalParam $1 }
-    | identifier '=' test       { DefaultParam $1 $3 }
-    | '*' identifier            { SplatParam $2 }
-    | '**' identifier           { DoubleSplatParam $2 }
+    : identifier                { FormalParam (T.pack $1) }
+    | identifier '=' test       { DefaultParam (T.pack $1) $3 }
+    | '*' identifier            { SplatParam (T.pack $2) }
+    | '**' identifier           { DoubleSplatParam (T.pack $2) }
 
 -- typedargslist: (tfpdef ['=' test] (',' tfpdef ['=' test])* [','
 --        ['*' [tfpdef] (',' tfpdef ['=' test])* [',' '**' tfpdef] | '**' tfpdef]]
@@ -335,13 +335,13 @@ from_import_items
 
 -- import_as_name: NAME ['as' NAME]
 import_as_name
-    : identifier                    { Name $1 }
-    | identifier AS identifier      { As (Name $1) (Name $3) }
+    : identifier                    { mkName $1 }
+    | identifier AS identifier      { As (mkName $1) (mkName $3) }
 
 -- dotted_as_name: dotted_name ['as' NAME]
 dotted_as_name
     : dotted_name                   { $1 }
-    | dotted_name AS identifier     { As $1 (Name $3) }
+    | dotted_name AS identifier     { As $1 (mkName $3) }
 
 -- import_as_names: import_as_name (',' import_as_name)* [',']
 import_as_names
@@ -353,15 +353,15 @@ dotted_as_names
 
 -- dotted_name: NAME ('.' NAME)*
 dotted_name
-    : sepBy(identifier, '.')        { Name $ (intercalate "." $1) }
+    : sepBy(identifier, '.')        { mkName $ (intercalate "." $1) }
 
 -- global_stmt: 'global' NAME (',' NAME)*
 global_stmt
-    : GLOBAL sepBy(identifier, ',') { Global $2 }
+    : GLOBAL sepBy(identifier, ',') { Global $ map T.pack $2 }
 
 -- nonlocal_stmt: 'nonlocal' NAME (',' NAME)*
 nonlocal_stmt
-    : NONLOCAL sepBy(identifier, ',')   { Nonlocal $2 }
+    : NONLOCAL sepBy(identifier, ',')   { Nonlocal $ map T.pack $2 }
 
 -- assert_stmt: 'assert' test [',' test]
 assert_stmt
@@ -422,15 +422,15 @@ with_stmt
 
 -- with_item: test ['as' expr]
 with_item
-    : test                  { WithExpression $1 "" }
-    | test AS identifier    { WithExpression $1 $3 }
+    : test                  { WithExpression $1 T.empty }
+    | test AS identifier    { WithExpression $1 (T.pack $3) }
 
 -- # NB compile.c makes sure that the default except clause is last
 -- except_clause: 'except' [test ['as' NAME]]
 except_clause
-    : EXCEPT                    { ExceptClause (Name "BaseException") "" }
-    | EXCEPT test               { ExceptClause $2 "" }
-    | EXCEPT test AS identifier { ExceptClause $2 $4 }
+    : EXCEPT                    { ExceptClause (mkName "BaseException") T.empty }
+    | EXCEPT test               { ExceptClause $2 T.empty }
+    | EXCEPT test AS identifier { ExceptClause $2 (T.pack $4) }
 
 -- suite: simple_stmt | NEWLINE INDENT stmt+ DEDENT
 suite
@@ -557,7 +557,7 @@ atom
     : '(' opt(or(yield_expr, testlist_comp)) ')'    { maybe (TupleDef []) id $2 }
     | '[' opt(testlist_comp) ']'    { maybe (ListDef []) (\e -> ListDef $ expressionsOf e) $2 }
     | '{' opt(dictorsetmaker) '}'   { maybe (DictDef []) (\e -> e) $2 }
-    | identifier                    { Name $1 }
+    | identifier                    { mkName $1 }
     | literal                       { Constant $1 }
     | many1(string)                 { Constant $ ConstantString (foldl' T.append T.empty $1) }
     | NONE                          { Constant ConstantNone }
@@ -610,11 +610,11 @@ dict_item
 
 -- classdef: 'class' NAME ['(' [arglist] ')'] ':' suite
 classdef
-    : CLASS identifier base_classes ':' suite { ClassDef $2 $3 $5 }
+    : CLASS identifier base_classes ':' suite { ClassDef (T.pack $2) $3 $5 }
 
 base_classes
-    :                               { [] }
-    | '(' sepBy0(identifier, ',') ')'    { $2 }
+    :                                       { [] }
+    | '(' sepBy0(identifier, ',') ')'       { map T.pack $2 }
 
 -- arglist: (argument ',')* (argument [',']
 --                          |'*' test (',' argument)* [',' '**' test] 
@@ -632,7 +632,7 @@ argitem
 -- argument: test [comp_for] | test '=' test  # Really [keyword '='] test
 argument
     : test opt(comp_for)    { Arg $1 }
-    | identifier '=' test   { KeywordArg $1 $3 }
+    | identifier '=' test   { KeywordArg (T.pack $1) $3 }
 
 -- comp_iter: comp_for | comp_if
 comp_iter
@@ -682,11 +682,11 @@ handleSlice start stop stride = SliceDef (unwrap start) (unwrap stop) (unwrap st
 handleTrailers expr trailers = foldl' handleTrailer expr trailers
   where
     handleTrailer expr (TrailerCall args)   = Call expr args
-    handleTrailer expr (TrailerAttr name)   = Attribute expr name
+    handleTrailer expr (TrailerAttr name)   = Attribute expr (T.pack name)
     handleTrailer expr (TrailerSub sub)     = Subscript expr sub
 
-names :: [String] -> [Expression]
-names xs = map Name xs
+mkName :: String -> Expression
+mkName s = Name . T.pack $ s
 
 parse :: Text -> Either String [Statement]
 parse code = do

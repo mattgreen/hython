@@ -3,6 +3,7 @@ module Hython.Builtins where
 import Control.Monad.Trans.Maybe
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.IORef (readIORef, writeIORef)
+import Data.Text (Text)
 import qualified Data.Text as T
 
 import qualified Hython.AttributeDict as AttributeDict
@@ -22,7 +23,7 @@ callBuiltin name args = case (name, args) of
   where
     ignore action = action >> return None
 
-getAttr :: (MonadInterpreter m) => String -> Object -> m (Maybe Object)
+getAttr :: (MonadInterpreter m) => Text -> Object -> m (Maybe Object)
 getAttr attr target = runMaybeT $ do
     obj <- MaybeT $ case target of
         (Class info)    -> Class.lookup attr info
@@ -53,7 +54,7 @@ print' objs = do
     asStr (String s)    = return . T.unpack $ s
     asStr v@_           = toStr v
 
-setAttr :: (MonadInterpreter m) => String -> Object -> Object -> m ()
+setAttr :: (MonadInterpreter m) => Text -> Object -> Object -> m ()
 setAttr attr obj target = case getObjAttrs target of
         Just ref -> do
             dict    <- liftIO $ readIORef ref

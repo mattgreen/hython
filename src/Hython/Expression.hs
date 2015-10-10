@@ -28,7 +28,7 @@ evalExpr (Attribute expr attr) = do
     case mobj of
         Just obj    -> return obj
         Nothing     -> do
-            raise "TypeError" ("object has no attribute '" ++ attr ++ "'")
+            raise "TypeError" ("object has no attribute '" ++ show attr ++ "'")
             return None
 
 evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
@@ -203,7 +203,7 @@ evalExpr (Call expr argExprs) = do
 
     evalKWArg (KeywordArg name e) = do
         obj <- evalExpr e
-        return [(T.pack name, obj)]
+        return [(name, obj)]
 
     evalKWArg (DoubleStarArg e) = do
         obj <- evalExpr e
@@ -250,11 +250,11 @@ evalExpr (ListDef exprs) = do
     newList objs
 
 evalExpr (Name name) = do
-    result <- lookupName (pack name)
+    result <- lookupName name
     case result of
         Just obj    -> return obj
         Nothing     -> do
-            raise "NameError" ("name '" ++ name ++ "' not defined")
+            raise "NameError" ("name '" ++ show name ++ "' not defined")
             return None
 
 evalExpr (RelativeImport {}) = unimplemented "relative import"

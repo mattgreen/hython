@@ -7,7 +7,7 @@ data Statement
     = Assignment Expression Expression
     | Expression Expression
     | If [IfClause] [Statement]
-    | FuncDef String [Param] [Statement]
+    | FuncDef Name [Param] [Statement]
     | Del Expression
     | For Expression Expression Statements Statements
     | Raise Expression Expression
@@ -20,23 +20,23 @@ data Statement
     | Continue
     | Pass
     | Assert Expression Expression
-    | Global [String]
-    | Nonlocal [String]
-    | ClassDef String [String] Statements
+    | Global [Name]
+    | Nonlocal [Name]
+    | ClassDef Name [Name] Statements
     | Import [Expression]
     | ImportFrom Expression [Expression]
     deriving(Eq, Show)
 
 data Param
-    = FormalParam String
-    | DefaultParam String Expression
-    | SplatParam String
-    | DoubleSplatParam String
+    = FormalParam Name
+    | DefaultParam Name Expression
+    | SplatParam Name
+    | DoubleSplatParam Name
     deriving (Eq, Show)
 
 data Arg
     = Arg Expression
-    | KeywordArg String Expression
+    | KeywordArg Name Expression
     | StarArg Expression
     | DoubleStarArg Expression
     deriving (Eq, Show)
@@ -44,13 +44,14 @@ data Arg
 data IfClause = IfClause Expression [Statement] deriving (Eq, Show)
 
 data ExceptClause
-    = ExceptClause Expression String Statements
+    = ExceptClause Expression Name Statements
     deriving (Eq, Show)
 
 data WithExpression
-    = WithExpression Expression String
+    = WithExpression Expression Name
     deriving (Eq, Show)
 
+type Name           = Text
 type Statements     = [Statement]
 type IfClauses      = [IfClause]
 type ExceptClauses  = [ExceptClause]
@@ -59,8 +60,8 @@ type Expressions = [Expression]
 
 data Expression
     = Call Expression [Arg]
-    | Attribute Expression String
-    | Name String
+    | Attribute Expression Name
+    | Name Name
     | Constant Constant
     | Subscript Expression Expression
     | As Expression Expression

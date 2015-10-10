@@ -75,7 +75,7 @@ new builtins = Env { envBuiltins = Map.fromList refs, envFrames = [], envModule 
 pushEnvFrame :: (MonadEnv m) => m ()
 pushEnvFrame = modifyEnv $ \env -> env { envFrames = Map.empty : envFrames env }
 
-popEnvFrame :: (MonadEnv m) => m [(String, ObjectRef)]
+popEnvFrame :: (MonadEnv m) => m [(Name, ObjectRef)]
 popEnvFrame = do
     env <- getEnv
     case envFrames env of
@@ -86,7 +86,7 @@ popEnvFrame = do
   where
     getLocals f = flip mapMaybe (Map.toList f) $ \(name, binding) -> do
         ref <- getLocalRef binding
-        return (unpack name, ref)
+        return (name, ref)
 
 unbind :: MonadEnv m => Name -> m (Either String ())
 unbind name = do

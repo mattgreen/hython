@@ -9,7 +9,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.IntMap as IntMap
 import Data.IORef (modifyIORef, readIORef, writeIORef)
 import Data.Maybe (catMaybes)
-import Data.Text (pack)
+import Data.Text (pack, unpack)
 import Safe (atMay)
 
 import Language.Python
@@ -40,7 +40,7 @@ eval (Assignment (Attribute targetExpr attr) expr) = do
 
 eval (Assignment (Name name) expr) = do
     value <- evalExpr expr
-    bind (pack name) value
+    bind name value
 
 eval (Assignment (Subscript targetExpr idxExpr) expr) = do
     target  <- evalExpr targetExpr
@@ -76,7 +76,7 @@ eval (ClassDef name bases block) = do
     dict <- popEnvFrame
 
     cls <- newClass name baseClasses dict
-    bind (pack name) cls
+    bind name cls
   where
     evalBase baseName = do
         obj <- evalExpr $ Name baseName
@@ -93,7 +93,7 @@ eval (Continue) = do
         Nothing     -> raise "SyntaxError" "'continue' outside loop"
 
 eval (Del (Name name)) = do
-    result <- unbind (pack name)
+    result <- unbind name
     case result of
         Left msg    -> raise "SyntaxError" msg
         Right _     -> return ()
@@ -107,7 +107,7 @@ eval (Expression e) = do
 eval (FuncDef name params block) = do
     params' <- mapM evalParam params
     fn      <- newFunction name params' block
-    bind (pack name) fn
+    bind name fn
   where
     evalParam (FormalParam param) = return $ NamedParam param
     evalParam (DefaultParam param expr) = do
@@ -116,7 +116,7 @@ eval (FuncDef name params block) = do
     evalParam (SplatParam param) = return $ SParam param
     evalParam (DoubleSplatParam param) = return $ DSParam param
 
-eval (Global names) = mapM_ (bindGlobal . pack) names
+eval (Global names) = mapM_ bindGlobal names
 
 eval (If clauses elseBlock) = case clauses of
     (IfClause condition block : rest) -> do
@@ -126,7 +126,7 @@ eval (If clauses elseBlock) = case clauses of
             else eval (If rest elseBlock)
     [] -> evalBlock elseBlock
 
-eval (Nonlocal names) = mapM_ (bindNonlocal . pack) names
+eval (Nonlocal names) = mapM_ bindNonlocal names
 
 eval (Pass) = return ()
 

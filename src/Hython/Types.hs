@@ -35,23 +35,23 @@ data Object = None
             | Set (IORef (IntMap Object))
             | Tuple [Object]
             | BuiltinFn String
-            | Function String [FnParam] [Statement]
-            | Method String MethodBinding [FnParam] [Statement]
+            | Function Text [FnParam] [Statement]
+            | Method Text MethodBinding [FnParam] [Statement]
             | Class ClassInfo
             | Object ObjectInfo
 
 type ObjectRef = IORef Object
 
-data MethodBinding = ClassBinding String Object
-                   | InstanceBinding String Object
+data MethodBinding = ClassBinding Text Object
+                   | InstanceBinding Text Object
 
-data FnParam = NamedParam String
-             | DefParam String Object
-             | SParam String
-             | DSParam String
+data FnParam = NamedParam Text
+             | DefParam Text Object
+             | SParam Text
+             | DSParam Text
 
 data ClassInfo = ClassInfo
-               { className  :: String
+               { className  :: Text
                , classBases :: [ClassInfo]
                , classDict  :: IORef AttributeDict
                } deriving (Eq)
@@ -61,7 +61,7 @@ data ObjectInfo = ObjectInfo
                 , objectDict :: IORef AttributeDict
                 }
 
-type AttributeDict = HashMap String (IORef Object)
+type AttributeDict = HashMap Text (IORef Object)
 
 data Env = Env
     { envModule     :: HashMap Name Binding
@@ -121,7 +121,7 @@ newBool b = return $ Bool b
 newBytes :: MonadInterpreter m => String -> m Object
 newBytes b = return $ Bytes (B.pack b)
 
-newClass :: (MonadIO m) => String -> [ClassInfo] -> [(String, ObjectRef)] -> m Object
+newClass :: (MonadIO m) => Text -> [ClassInfo] -> [(Text, ObjectRef)] -> m Object
 newClass name bases dict = do
     ref <- liftIO $ newIORef $ HashMap.fromList dict
     classInfo <- pure ClassInfo {
@@ -143,7 +143,7 @@ newDict objs = do
 newFloat :: MonadInterpreter m => Double -> m Object
 newFloat d = return $ Float d
 
-newFunction :: MonadInterpreter m => String -> [FnParam] -> [Statement] -> m Object
+newFunction :: MonadInterpreter m => Text -> [FnParam] -> [Statement] -> m Object
 newFunction name params block = return $ Function name params block
 
 newImag :: MonadInterpreter m => Complex Double -> m Object
@@ -204,7 +204,7 @@ toStr (None) = return "None"
 toStr (Bool b) = return $ if b then "True" else "False"
 toStr (Bytes _b) = return "b'??'"
 toStr (Float f) = return $ show f
-toStr (Function name _ _) = return name
+toStr (Function name _ _) = return . T.unpack $ name
 toStr (Imaginary i)
     | realPart i == 0   = return $ show i
     | otherwise         = return $ show i
@@ -231,10 +231,10 @@ toStr (Dict ref) = do
         return $ key ++ ": " ++ value
     return $ "{" ++ intercalate ", " strItems ++ "}"
 toStr (BuiltinFn name)  = return $ "<built-in function " ++ name ++ ">"
-toStr (Class info) = return $ "<class '" ++ className info ++ "'>"
-toStr (Object info) = return $ "<" ++ className (objectClass info) ++ " object>"
+toStr (Class info) = return $ "<class '" ++ show (className info) ++ "'>"
+toStr (Object info) = return $ "<" ++ show (className (objectClass info)) ++ " object>"
 toStr (Method name (ClassBinding clsName _) _ _) = 
-    return $ "<method '" ++ name ++ "' of '" ++ clsName ++ "' objects>"
+    return $ "<method '" ++ show name ++ "' of '" ++ show clsName ++ "' objects>"
 toStr (Method name (InstanceBinding clsName obj) _ _) = do
     s <- toStr obj
-    return $ "<bound method " ++ clsName ++ "." ++ name ++ " of " ++ s ++ ">"
+    return $ "<bound method " ++ show clsName ++ "." ++ show name ++ " of " ++ s ++ ">"
