@@ -54,7 +54,10 @@ data ClassInfo = ClassInfo
                { className  :: Text
                , classBases :: [ClassInfo]
                , classDict  :: IORef AttributeDict
-               } deriving (Eq)
+               }
+
+instance Eq ClassInfo where
+    l == r = className l == className r
 
 data ObjectInfo = ObjectInfo
                 { objectClass :: ClassInfo
@@ -74,6 +77,8 @@ data Binding
     | NonlocalBinding
     | GlobalBinding
 
+data ExceptionHandler = ExceptionHandler Name ClassInfo [Statement]
+
 class HasAttributes a where
     getObjAttrs :: a -> Maybe (IORef AttributeDict)
 
@@ -90,7 +95,7 @@ class MonadIO m => MonadEnv m where
         env <- getEnv
         putEnv $ action env
 
-class (MonadEnv m, MonadFlow (Object -> m ()) m, MonadIO m) => MonadInterpreter m where
+class (MonadEnv m, MonadFlow Object (Object -> m ()) m, MonadIO m) => MonadInterpreter m where
     evalBlock       :: [Statement] -> m ()
     pushEvalResult  :: Object -> m ()
     raise           :: String -> String -> m ()
@@ -124,13 +129,12 @@ newBytes b = return $ Bytes (B.pack b)
 newClass :: (MonadIO m) => Text -> [ClassInfo] -> [(Text, ObjectRef)] -> m Object
 newClass name bases dict = do
     ref <- liftIO $ newIORef $ HashMap.fromList dict
-    classInfo <- pure ClassInfo {
+
+    return . Class $ ClassInfo {
         className = name,
         classBases = bases,
         classDict = ref
     }
-
-    return $ Class classInfo
 
 newDict :: (MonadInterpreter m, MonadIO m) => [(Object, Object)] -> m Object
 newDict objs = do

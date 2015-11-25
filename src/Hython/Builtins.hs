@@ -47,8 +47,8 @@ getAttr attr target = runMaybeT $ do
         _               -> return obj
 
 isInstance :: Object -> ClassInfo -> Bool
-isInstance (Object info) cls = objectClass info == cls
-isInstance (Class info) cls = info == cls
+isInstance (Object info) cls = objectClass info == cls || cls `elem` (classBases . objectClass $ info)
+isInstance (Class info) cls = info == cls || cls `elem` classBases info
 isInstance _ _ = False
 
 print' :: MonadIO m => [Object] -> m ()
@@ -57,7 +57,7 @@ print' objs = do
     strs <- mapM asStr objs
     liftIO $ putStrLn $ unwords strs
   where
-    asStr (String s)    = return . show $ s
+    asStr (String s)    = return . T.unpack $ s
     asStr v@_           = toStr v
 
 setAttr :: (MonadInterpreter m) => Text -> Object -> Object -> m ()

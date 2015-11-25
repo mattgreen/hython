@@ -1,4 +1,4 @@
-module Hython.Class (lookup)
+module Hython.Class (isSubClass, lookup)
 where
 
 import Prelude hiding (lookup)
@@ -29,6 +29,9 @@ basesOf c = c : c3Merge (parentLinearizations ++ [bases])
   where
     bases = classBases c
     parentLinearizations = map basesOf bases
+
+isSubClass :: ClassInfo -> ClassInfo -> Bool
+isSubClass derived base = base `elem` basesOf derived
 
 c3Merge :: [[ClassInfo]] -> [ClassInfo]
 c3Merge [[]] = []

@@ -3,6 +3,15 @@ while i != 0:
     print(i)
     i = i - 1
 
+i = 8
+while i != 0:
+    print(i)
+    i = i - 1
+
+    if i < 2:
+        continue
+    print("skip")
+
 i = 10
 while i != 0:
     print(i)

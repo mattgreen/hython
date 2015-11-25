@@ -8,8 +8,10 @@ import Control.Monad.Cont (ContT, runContT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (StateT, gets, modify, runStateT)
 import Data.IORef
+import Data.Maybe (mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
+import System.Exit (exitFailure)
 
 import Language.Python.Parser (parse)
 
@@ -25,7 +27,7 @@ newtype Interpreter a = Interpreter { unwrap :: ContT Object (StateT Interpreter
 
 data InterpreterState = InterpreterState
     { stateEnv          :: Env
-    , stateFlow         :: Flow Continuation
+    , stateFlow         :: Flow Object Continuation
     , stateResults      :: [Object]
     }
 
@@ -35,7 +37,7 @@ instance MonadEnv Interpreter where
     getEnv      = Interpreter $ gets stateEnv
     putEnv env  = Interpreter $ modify $ \s -> s { stateEnv = env }
 
-instance MonadFlow Continuation Interpreter where
+instance MonadFlow Object Continuation Interpreter where
     getFlow     = Interpreter $ gets stateFlow
     putFlow f   = Interpreter . modify $ \s -> s { stateFlow = f }
 
@@ -46,20 +48,54 @@ instance MonadInterpreter Interpreter where
 
 defaultInterpreterState :: IO InterpreterState
 defaultInterpreterState = do
-    builtinFns  <- mapM mkBuiltin builtinFunctions
+    builtinFns      <- mapM mkBuiltin builtinFunctions
 
-    objClass    <- liftIO $ newIORef =<< newClass "object" [] []
-    builtins    <- pure $ builtinFns ++ [(T.pack "object", objClass)]
+    object          <- defClass "object" []
+    baseException   <- defClass "BaseException" [object]
+    exception       <- defClass "Exception" [baseException]
+    typeError       <- defClass "TypeError" [exception]
+    nameError       <- defClass "NameError" [exception]
+
+    objRef          <- mkBuiltinClass "object" object
+    beRef           <- mkBuiltinClass "BaseException" baseException
+    exRef           <- mkBuiltinClass "Exception" exception
+    teRef           <- mkBuiltinClass "TypeError" typeError
+    neRef           <- mkBuiltinClass "NameError" nameError
+
+    builtins        <- pure $ builtinFns ++ [objRef, beRef, exRef, teRef, neRef]
 
     return InterpreterState {
         stateEnv = Environment.new builtins,
-        stateFlow = ControlFlow.new,
+        stateFlow = ControlFlow.new defaultBreakHandler defaultContinueHandler defaultReturnHandler defaultExceptionHandler,
         stateResults = []
     }
   where
+    classOf (Class info)    = Just info
+    classOf _               = Nothing
+
+    defClass name bases = newClass name (mapMaybe classOf bases) []
+
     mkBuiltin name = do
         ref <- newIORef $ BuiltinFn name
         return (name, ref)
+
+    mkBuiltinClass name cls = do
+        ref <- liftIO $ newIORef cls
+        return (T.pack name, ref)
+
+defaultBreakHandler :: Object -> Interpreter ()
+defaultBreakHandler _ = raise "SyntaxError" "'break' outside loop"
+
+defaultContinueHandler :: Object -> Interpreter ()
+defaultContinueHandler _ = raise "SyntaxError" "'continue' not properly in loop"
+
+defaultExceptionHandler :: Object -> Interpreter ()
+defaultExceptionHandler _ = liftIO $ do
+    putStrLn "Exception raised!"
+    exitFailure
+
+defaultReturnHandler :: Object -> Interpreter ()
+defaultReturnHandler _ = raise "SyntaxError" "'return' outside function"
 
 runInterpreter :: InterpreterState -> Text -> IO (Either String [Object], InterpreterState)
 runInterpreter state code = case parse code of

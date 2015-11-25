@@ -3,58 +3,110 @@
 module Hython.ControlFlow
 where
 
-import Safe (headMay, tailSafe)
+import Safe (tailSafe)
 
-class Monad m => MonadFlow cont m | m -> cont where
-    getFlow         :: m (Flow cont)
-    putFlow         :: Flow cont -> m ()
-    modifyFlow      :: (Flow cont -> Flow cont) -> m ()
+class Monad m => MonadFlow obj cont m | m -> obj cont where
+    getFlow         :: m (Flow obj cont)
+    putFlow         :: Flow obj cont -> m ()
+    modifyFlow      :: (Flow obj cont -> Flow obj cont) -> m ()
     modifyFlow f = do
         flow <- getFlow
         putFlow $ f flow
 
-data Flow cont = Flow
-    { flowBreakConts    :: [cont]
-    , flowContinueConts :: [cont]
-    , flowReturnConts   :: [cont]
+data Flow obj cont = Flow
+    { flowDefaultBreak      :: cont
+    , flowDefaultContinue   :: cont
+    , flowDefaultReturn     :: cont
+    , flowDefaultExcept     :: cont
+    , flowCurrentException  :: Maybe obj
+    , flowFrames            :: [Frame cont]
+    , flowExcept            :: cont
     }
 
-new :: Flow cont
-new = Flow {
-    flowBreakConts = [],
-    flowContinueConts = [],
-    flowReturnConts = []
-}
+data Frame cont = Frame
+    { frameBreak        :: cont
+    , frameContinue     :: cont
+    , frameReturn       :: cont
+    }
 
-getBreakCont :: MonadFlow cont m => m (Maybe cont)
-getBreakCont = headMay . flowBreakConts <$> getFlow
+new :: cont -> cont -> cont -> cont -> Flow obj cont
+new defaultBreak defaultContinue defaultReturn defaultExcept = Flow
+    { flowDefaultBreak = defaultBreak
+    , flowDefaultContinue = defaultContinue
+    , flowDefaultReturn = defaultReturn
+    , flowDefaultExcept = defaultExcept
+    , flowCurrentException = Nothing
+    , flowFrames = [newFrame defaultBreak defaultContinue defaultReturn]
+    , flowExcept = defaultExcept
+    }
 
-getContinueCont :: MonadFlow cont m => m (Maybe cont)
-getContinueCont = headMay . flowContinueConts <$> getFlow
+newFrame :: cont -> cont -> cont -> Frame cont
+newFrame brk cont rtn = Frame
+     { frameBreak = brk
+     , frameContinue = cont
+     , frameReturn = rtn
+     }
 
-getReturnCont :: MonadFlow cont m => m (Maybe cont)
-getReturnCont = headMay . flowReturnConts <$> getFlow
+currentFrame :: MonadFlow obj cont m => m (Frame cont)
+currentFrame = head . flowFrames <$> getFlow
 
-popBreakCont :: MonadFlow cont m => m ()
-popBreakCont = modifyFlow $ \flow ->
-    flow { flowBreakConts = tailSafe $ flowBreakConts flow }
+modifyCurrentFrame :: MonadFlow obj cont m => (Frame cont -> Frame cont) -> m ()
+modifyCurrentFrame action = do
+    frame <- currentFrame
+    modifyFlow $ \f -> f { flowFrames = action frame : tailSafe (flowFrames f) }
 
-popContinueCont :: MonadFlow cont m => m ()
-popContinueCont = modifyFlow $ \flow ->
-    flow { flowContinueConts = tailSafe $ flowContinueConts flow }
+clearCurrentException :: MonadFlow obj cont m => obj -> m ()
+clearCurrentException e = modifyFlow $ \f ->
+    f { flowCurrentException = Nothing }
 
-popReturnCont :: MonadFlow cont m => m ()
-popReturnCont = modifyFlow $ \flow ->
-    flow { flowReturnConts = tailSafe $ flowReturnConts flow }
+popFrame :: MonadFlow obj cont m => m ()
+popFrame = modifyFlow $ \f -> f { flowFrames = tailSafe $ flowFrames f }
 
-pushBreakCont :: MonadFlow cont m => cont -> m ()
-pushBreakCont cont = modifyFlow $ \flow ->
-    flow { flowBreakConts = cont : flowBreakConts flow }
+popFramesTo :: MonadFlow obj cont m => Int -> m ()
+popFramesTo depth = modifyFlow $ \flow ->
+    flow { flowFrames = unwind $ flowFrames flow }
+  where
+    unwind frames
+      | length frames > depth = unwind $ tail frames
+      | otherwise = frames
 
-pushContinueCont :: MonadFlow cont m => cont -> m ()
-pushContinueCont cont = modifyFlow $ \flow ->
-    flow { flowContinueConts = cont : flowContinueConts flow }
+pushFrame :: MonadFlow obj cont m => cont -> m ()
+pushFrame rtn = do
+    flow    <- getFlow
+    frame   <- pure $ newFrame (flowDefaultBreak flow) (flowDefaultContinue flow) rtn
+    modifyFlow $ \f -> f { flowFrames = frame : flowFrames f }
 
-pushReturnCont :: MonadFlow cont m => cont -> m ()
-pushReturnCont cont = modifyFlow $ \flow ->
-    flow { flowReturnConts = cont : flowReturnConts flow }
+getBreakHandler :: MonadFlow obj cont m => m cont
+getBreakHandler = frameBreak <$> currentFrame
+
+getContinueHandler :: MonadFlow obj cont m => m cont
+getContinueHandler = frameContinue <$> currentFrame
+
+getCurrentException :: MonadFlow obj cont m => m (Maybe obj)
+getCurrentException = flowCurrentException <$> getFlow
+
+getExceptHandler :: MonadFlow obj cont m => m cont
+getExceptHandler = flowExcept <$> getFlow
+
+getReturnHandler :: MonadFlow obj cont m => m cont
+getReturnHandler = frameReturn <$> currentFrame
+
+setBreakHandler :: MonadFlow obj cont m => cont -> m ()
+setBreakHandler handler = modifyCurrentFrame $ \f ->
+    f { frameBreak = handler }
+
+setContinueHandler :: MonadFlow obj cont m => cont -> m ()
+setContinueHandler handler = modifyCurrentFrame $ \f ->
+    f { frameContinue = handler }
+
+setCurrentException :: MonadFlow obj cont m => obj -> m ()
+setCurrentException e = modifyFlow $ \f ->
+    f { flowCurrentException = Just e }
+
+setExceptHandler :: MonadFlow obj cont m => cont -> m ()
+setExceptHandler handler = modifyFlow $ \f ->
+    f { flowExcept = handler }
+
+setReturnHandler :: MonadFlow obj cont m => cont -> m ()
+setReturnHandler handler = modifyCurrentFrame $ \f ->
+    f { frameReturn = handler }

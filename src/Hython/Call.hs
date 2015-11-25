@@ -3,7 +3,7 @@
 module Hython.Call (call)
 where
 
-import Control.Monad (forM, forM_, when, zipWithM)
+import Control.Monad (forM, when, zipWithM)
 import Control.Monad.Cont (callCC)
 import Control.Monad.Cont.Class (MonadCont)
 import Control.Monad.IO.Class (MonadIO)
@@ -12,7 +12,7 @@ import Safe (atDef)
 
 import Hython.Builtins (callBuiltin, getAttr, setAttr)
 import Hython.ControlFlow
-import Hython.Environment (bind, pushEnvFrame, popEnvFrame)
+import Hython.Environment (pushEnvFrame, popEnvFrame)
 import Hython.Types
 
 call :: (MonadCont m, MonadInterpreter m, MonadIO m) => Object -> [Object] -> [(Text, Object)] -> m Object
@@ -37,17 +37,16 @@ call (Function fnName params statements) args kwargs = do
         raise "TypeError" ("too many args passed to '" ++ show fnName ++ "'")
 
     result <- callCC $ \returnCont -> do
-        pushEnvFrame
         bindings <- zipWithM getArg params [0..]
-        forM_ bindings $ uncurry bind
+        pushEnvFrame bindings
 
-        pushReturnCont returnCont
+        pushFrame returnCont
 
         evalBlock statements
         return None
 
     _ <- popEnvFrame
-    popReturnCont
+    popFrame
 
     return result
 
