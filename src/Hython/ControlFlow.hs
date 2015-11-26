@@ -55,9 +55,24 @@ modifyCurrentFrame action = do
     frame <- currentFrame
     modifyFlow $ \f -> f { flowFrames = action frame : tailSafe (flowFrames f) }
 
-clearCurrentException :: MonadFlow obj cont m => obj -> m ()
-clearCurrentException e = modifyFlow $ \f ->
+clearCurrentException :: MonadFlow obj cont m => m ()
+clearCurrentException = modifyFlow $ \f ->
     f { flowCurrentException = Nothing }
+
+getBreakHandler :: MonadFlow obj cont m => m cont
+getBreakHandler = frameBreak <$> currentFrame
+
+getContinueHandler :: MonadFlow obj cont m => m cont
+getContinueHandler = frameContinue <$> currentFrame
+
+getCurrentException :: MonadFlow obj cont m => m (Maybe obj)
+getCurrentException = flowCurrentException <$> getFlow
+
+getExceptionHandler :: MonadFlow obj cont m => m cont
+getExceptionHandler = flowExcept <$> getFlow
+
+getReturnHandler :: MonadFlow obj cont m => m cont
+getReturnHandler = frameReturn <$> currentFrame
 
 popFrame :: MonadFlow obj cont m => m ()
 popFrame = modifyFlow $ \f -> f { flowFrames = tailSafe $ flowFrames f }
@@ -76,21 +91,6 @@ pushFrame rtn = do
     frame   <- pure $ newFrame (flowDefaultBreak flow) (flowDefaultContinue flow) rtn
     modifyFlow $ \f -> f { flowFrames = frame : flowFrames f }
 
-getBreakHandler :: MonadFlow obj cont m => m cont
-getBreakHandler = frameBreak <$> currentFrame
-
-getContinueHandler :: MonadFlow obj cont m => m cont
-getContinueHandler = frameContinue <$> currentFrame
-
-getCurrentException :: MonadFlow obj cont m => m (Maybe obj)
-getCurrentException = flowCurrentException <$> getFlow
-
-getExceptHandler :: MonadFlow obj cont m => m cont
-getExceptHandler = flowExcept <$> getFlow
-
-getReturnHandler :: MonadFlow obj cont m => m cont
-getReturnHandler = frameReturn <$> currentFrame
-
 setBreakHandler :: MonadFlow obj cont m => cont -> m ()
 setBreakHandler handler = modifyCurrentFrame $ \f ->
     f { frameBreak = handler }
@@ -103,8 +103,8 @@ setCurrentException :: MonadFlow obj cont m => obj -> m ()
 setCurrentException e = modifyFlow $ \f ->
     f { flowCurrentException = Just e }
 
-setExceptHandler :: MonadFlow obj cont m => cont -> m ()
-setExceptHandler handler = modifyFlow $ \f ->
+setExceptionHandler :: MonadFlow obj cont m => cont -> m ()
+setExceptionHandler handler = modifyFlow $ \f ->
     f { flowExcept = handler }
 
 setReturnHandler :: MonadFlow obj cont m => cont -> m ()

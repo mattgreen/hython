@@ -129,14 +129,14 @@ eval (Pass) = return ()
 
 eval (Raise expr _from) = do
     exception   <- evalExpr expr
-    handler     <- getExceptHandler
+    handler     <- getExceptionHandler
 
     setCurrentException exception
     handler exception
 
 eval (Reraise) = do
     mexception  <- getCurrentException
-    handler     <- getExceptHandler
+    handler     <- getExceptionHandler
 
     case mexception of
         Just exception  -> handler exception
@@ -153,7 +153,7 @@ eval (Try clauses block elseBlock finallyBlock) = do
     breakHandler    <- getBreakHandler
     continueHandler <- getContinueHandler
     returnHandler   <- getReturnHandler
-    exceptHandler   <- getExceptHandler
+    exceptHandler   <- getExceptionHandler
     frameDepth      <- getFrameDepth
 
     -- Evaluate exception handler clauses
@@ -167,7 +167,7 @@ eval (Try clauses block elseBlock finallyBlock) = do
 
     --
     exception <- callCC $ \handler -> do
-        setExceptHandler handler
+        setExceptionHandler handler
 
         -- Install control flow handlers. They're responsible for:
         -- 1. Uninstalling themselves (they are one-shot)
@@ -176,19 +176,19 @@ eval (Try clauses block elseBlock finallyBlock) = do
         -- 4. Calling the original handler
         setBreakHandler $ \obj -> do
             setBreakHandler breakHandler
-            setExceptHandler exceptHandler
+            setExceptionHandler exceptHandler
             evalBlock finallyBlock
             breakHandler obj
 
         setContinueHandler $ \obj -> do
             setContinueHandler continueHandler
-            setExceptHandler exceptHandler
+            setExceptionHandler exceptHandler
             evalBlock finallyBlock
             continueHandler obj
 
         setReturnHandler $ \obj -> do
             setReturnHandler returnHandler
-            setExceptHandler exceptHandler
+            setExceptionHandler exceptHandler
             evalBlock finallyBlock
             returnHandler obj
 
@@ -197,13 +197,12 @@ eval (Try clauses block elseBlock finallyBlock) = do
 
     -- Between the try block and the except blocks here
     -- Revert all control flow state to be as it was when we started
-    setExceptHandler exceptHandler
+    setExceptionHandler exceptHandler
     setBreakHandler breakHandler
     setContinueHandler continueHandler
     setReturnHandler returnHandler
 
     -- Unwind the stack to this try block's depth
-    {-liftIO . print $ frameDepth-}
     unwindTo frameDepth
     popFramesTo frameDepth
 
@@ -218,39 +217,40 @@ eval (Try clauses block elseBlock finallyBlock) = do
                     unless (T.null name) $
                         bind name exception
 
-                    setExceptHandler $ \obj -> do
-                        setExceptHandler exceptHandler
+                    setExceptionHandler $ \obj -> do
+                        setExceptionHandler exceptHandler
                         evalBlock finallyBlock
                         exceptHandler obj
 
                     evalBlock handlerBlock
 
-                    setExceptHandler exceptHandler
+                    setExceptionHandler exceptHandler
 
                     return True
                 Nothing -> return False
 
     evalBlock finallyBlock
 
-    unless handled $
-        exceptHandler exception
+    if handled
+        then clearCurrentException
+        else exceptHandler exception
   where
     clauseMatches obj (ExceptionHandler _ info _) = isInstance obj info
 
 eval (While condition block elseBlock) = do
     breakHandler    <- getBreakHandler
     continueHandler <- getContinueHandler
-    exceptHandler   <- getExceptHandler
+    exceptHandler   <- getExceptionHandler
 
     _ <- callCC $ \brk ->
         fix $ \loop -> do
             _ <- callCC $ \continue -> do
                 setBreakHandler $ \obj -> do
-                    setExceptHandler exceptHandler
+                    setExceptionHandler exceptHandler
                     brk obj
 
                 setContinueHandler $ \obj -> do
-                    setExceptHandler exceptHandler
+                    setExceptionHandler exceptHandler
                     continue obj
 
                 truthy <- isTruthy =<< evalExpr condition
