@@ -234,11 +234,11 @@ toStr (Dict ref) = do
         value   <- toStr v
         return $ key ++ ": " ++ value
     return $ "{" ++ intercalate ", " strItems ++ "}"
-toStr (BuiltinFn name)  = return $ "<built-in function " ++ show name ++ ">"
-toStr (Class info) = return $ "<class '" ++ show (className info) ++ "'>"
-toStr (Object info) = return $ "<" ++ show (className (objectClass info)) ++ " object>"
+toStr (BuiltinFn name)  = return $ "<built-in function " ++ T.unpack name ++ ">"
+toStr (Class info) = return $ "<class '" ++ T.unpack (className info) ++ "'>"
+toStr (Object info) = return $ "<" ++ T.unpack (className (objectClass info)) ++ " object>"
 toStr (Method name (ClassBinding clsName _) _ _) = 
-    return $ "<method '" ++ show name ++ "' of '" ++ show clsName ++ "' objects>"
+    return $ "<method '" ++ T.unpack name ++ "' of '" ++ T.unpack clsName ++ "' objects>"
 toStr (Method name (InstanceBinding clsName obj) _ _) = do
     s <- toStr obj
-    return $ "<bound method " ++ show clsName ++ "." ++ show name ++ " of " ++ s ++ ">"
+    return $ "<bound method " ++ T.unpack clsName ++ "." ++ T.unpack name ++ " of " ++ s ++ ">"
