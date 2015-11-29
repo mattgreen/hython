@@ -38,7 +38,7 @@ bind name obj = do
 
         mbinding <- pure $ if depth == 0
             then Map.lookup name (envModule env)
-            else Map.lookup name (head . envFrames $ env)
+            else Map.lookup name (headDef Map.empty (envFrames env))
 
         case mbinding of
             Just binding    -> return $ getLocalRef binding

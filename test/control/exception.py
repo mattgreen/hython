@@ -307,3 +307,24 @@ try:
 
 except Exception:
     print("Caught again")
+
+# Test break contained in try
+try:
+    while True:
+        print("About to break")
+        break
+finally:
+    print("OK!")
+
+
+# Test continue contained in try
+try:
+    i = 0
+    while i < 3:
+        i += 1
+        print("Loop")
+        if i == 2:
+            print("2!")
+            continue
+finally:
+    print("OK!")

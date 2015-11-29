@@ -19,6 +19,7 @@ import Hython.Builtins (builtinFunctions)
 import Hython.ControlFlow (Flow, MonadFlow)
 import qualified Hython.ControlFlow as ControlFlow
 import qualified Hython.Environment as Environment
+import qualified Hython.ExceptionHandling as ExceptionHandling
 import Hython.Types
 import qualified Hython.Statement as Statement
 
@@ -44,7 +45,7 @@ instance MonadFlow Object Continuation Interpreter where
 instance MonadInterpreter Interpreter where
     evalBlock statements = mapM_ Statement.eval statements
     pushEvalResult obj = Interpreter $ modify $ \s -> s { stateResults = stateResults s ++ [obj] }
-    raise exceptionType msg = error (exceptionType ++ ": " ++ msg)
+    raise clsName desc = ExceptionHandling.raiseInternal (T.pack clsName) (T.pack desc)
 
 defaultInterpreterState :: IO InterpreterState
 defaultInterpreterState = do
@@ -90,9 +91,13 @@ defaultContinueHandler :: Object -> Interpreter ()
 defaultContinueHandler _ = raise "SyntaxError" "'continue' not properly in loop"
 
 defaultExceptionHandler :: Object -> Interpreter ()
-defaultExceptionHandler _ = liftIO $ do
-    putStrLn "Exception raised!"
-    exitFailure
+defaultExceptionHandler ex = do
+    case ex of
+        (Object obj) -> do
+            liftIO . putStrLn . T.unpack $ className (objectClass obj)
+        _ -> liftIO $ putStrLn "o_O: raised a non-object exception"
+
+    liftIO exitFailure
 
 defaultReturnHandler :: Object -> Interpreter ()
 defaultReturnHandler _ = raise "SyntaxError" "'return' outside function"

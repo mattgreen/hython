@@ -18,6 +18,7 @@ import Language.Python
 import Hython.Builtins (isInstance, setAttr)
 import Hython.ControlFlow
 import Hython.Environment (bind, bindGlobal, bindNonlocal, getFrameDepth, pushEnvFrame, popEnvFrame, unbind, unwindTo)
+import qualified Hython.ExceptionHandling as EH
 import Hython.Expression (evalExpr)
 import Hython.Types
 
@@ -127,12 +128,7 @@ eval (Nonlocal names) = mapM_ bindNonlocal names
 
 eval (Pass) = return ()
 
-eval (Raise expr _from) = do
-    exception   <- evalExpr expr
-    handler     <- getExceptionHandler
-
-    setCurrentException exception
-    handler exception
+eval (Raise expr _from) = EH.raise =<< evalExpr expr
 
 eval (Reraise) = do
     mexception  <- getCurrentException

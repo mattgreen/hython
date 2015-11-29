@@ -3,6 +3,7 @@
 module Hython.ControlFlow
 where
 
+import Control.Monad (when)
 import Safe (tailSafe)
 
 class Monad m => MonadFlow obj cont m | m -> obj cont where
@@ -75,15 +76,18 @@ getReturnHandler :: MonadFlow obj cont m => m cont
 getReturnHandler = frameReturn <$> currentFrame
 
 popFrame :: MonadFlow obj cont m => m ()
-popFrame = modifyFlow $ \f -> f { flowFrames = tailSafe $ flowFrames f }
+popFrame = do
+    flow <- getFlow
+    case flowFrames flow of
+        (_:f:fs)    -> putFlow $ flow { flowFrames = f:fs }
+        _           -> return ()
 
 popFramesTo :: MonadFlow obj cont m => Int -> m ()
-popFramesTo depth = modifyFlow $ \flow ->
-    flow { flowFrames = unwind $ flowFrames flow }
-  where
-    unwind frames
-      | length frames > depth = unwind $ tail frames
-      | otherwise = frames
+popFramesTo depth = do
+    flow <- getFlow
+    when (depth > (length . flowFrames $ flow)) $ do
+        popFrame
+        popFramesTo (depth - 1)
 
 pushFrame :: MonadFlow obj cont m => cont -> m ()
 pushFrame rtn = do
