@@ -328,3 +328,16 @@ try:
             continue
 finally:
     print("OK!")
+
+# Test return with while in try
+def test_return_in_while():
+    try:
+        while True:
+            return 42
+    finally:
+        print("Inner finally")
+
+try:
+    print(test_return_in_while())
+finally:
+    print("OK!")
