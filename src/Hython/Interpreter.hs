@@ -5,7 +5,7 @@ where
 
 import Prelude hiding (readFile)
 
-import Control.Monad (forM_, when)
+import Control.Monad (filterM, forM_, when)
 import Control.Monad.Cont.Class (MonadCont)
 import Control.Monad.Cont (ContT, runContT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -14,7 +14,7 @@ import Data.IORef
 import Data.Text (Text)
 import Data.Text.IO (readFile)
 import qualified Data.Text as T
-import System.Directory (canonicalizePath, getDirectoryContents)
+import System.Directory (canonicalizePath, doesFileExist, getDirectoryContents)
 import System.Exit (exitFailure)
 import System.Environment.Executable (splitExecutablePath)
 import System.FilePath
@@ -96,17 +96,20 @@ defaultReturnHandler _ = raise "SyntaxError" "'return' outside function"
 
 loadBuiltinModules :: Interpreter ()
 loadBuiltinModules = do
-    path            <- fst <$> liftIO splitExecutablePath
-    dirFilenames    <- liftIO . getDirectoryContents $ path </> "lib"
-    moduleFilenames <- pure $ filter (\f -> takeExtension f == ".py") dirFilenames
+    modulePaths <- liftIO getModulePaths
 
-    forM_ moduleFilenames $ \modFilename -> do
-        modulePath <- liftIO . canonicalizePath $ path </> "lib" </> modFilename
-        code <- liftIO $ readFile modulePath
-
+    forM_ modulePaths $ \path -> do
+        code <- liftIO . readFile $ path
         case parse code of
             Left err    -> raise "SyntaxError" err
             Right stmts -> evalBlock stmts
+  where
+    getModulePaths = do
+        exeDir      <- fst <$> splitExecutablePath
+        libDir      <- canonicalizePath $ exeDir </> "lib"
+        entries     <- getDirectoryContents libDir
+
+        filterM doesFileExist $ map (libDir </>) entries
 
 runInterpreter :: InterpreterState -> Text -> IO (Either String [Object], InterpreterState)
 runInterpreter state code = case parse code of
