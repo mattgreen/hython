@@ -3,15 +3,21 @@
 module Hython.Interpreter
 where
 
+import Prelude hiding (readFile)
+
+import Control.Monad (forM_, when)
 import Control.Monad.Cont.Class (MonadCont)
 import Control.Monad.Cont (ContT, runContT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (StateT, gets, modify, runStateT)
 import Data.IORef
-import Data.Maybe (mapMaybe)
 import Data.Text (Text)
+import Data.Text.IO (readFile)
 import qualified Data.Text as T
+import System.Directory (canonicalizePath, getDirectoryContents)
 import System.Exit (exitFailure)
+import System.Environment.Executable (splitExecutablePath)
+import System.FilePath
 
 import Language.Python.Parser (parse)
 
@@ -29,6 +35,7 @@ newtype Interpreter a = Interpreter { unwrap :: ContT Object (StateT Interpreter
 data InterpreterState = InterpreterState
     { stateEnv          :: Env
     , stateFlow         :: Flow Object Continuation
+    , stateNew          :: Bool
     , stateResults      :: [Object]
     }
 
@@ -51,31 +58,17 @@ defaultInterpreterState :: IO InterpreterState
 defaultInterpreterState = do
     builtinFns      <- mapM mkBuiltin builtinFunctions
 
-    object          <- defClass "object" []
-    baseException   <- defClass "BaseException" [object]
-    exception       <- defClass "Exception" [baseException]
-    typeError       <- defClass "TypeError" [exception]
-    nameError       <- defClass "NameError" [exception]
-
-    objRef          <- mkBuiltinClass "object" object
-    beRef           <- mkBuiltinClass "BaseException" baseException
-    exRef           <- mkBuiltinClass "Exception" exception
-    teRef           <- mkBuiltinClass "TypeError" typeError
-    neRef           <- mkBuiltinClass "NameError" nameError
-
-    builtins        <- pure $ builtinFns ++ [objRef, beRef, exRef, teRef, neRef]
+    objCls          <- newClass "object" [] []
+    objRef          <- mkBuiltinClass "object" objCls
+    builtins        <- pure $ builtinFns ++ [objRef]
 
     return InterpreterState {
         stateEnv = Environment.new builtins,
         stateFlow = ControlFlow.new defaultBreakHandler defaultContinueHandler defaultReturnHandler defaultExceptionHandler,
+        stateNew = True,
         stateResults = []
     }
   where
-    classOf (Class info)    = Just info
-    classOf _               = Nothing
-
-    defClass name bases = newClass name (mapMaybe classOf bases) []
-
     mkBuiltin name = do
         ref <- newIORef $ BuiltinFn name
         return (name, ref)
@@ -93,8 +86,7 @@ defaultContinueHandler _ = raise "SyntaxError" "'continue' not properly in loop"
 defaultExceptionHandler :: Object -> Interpreter ()
 defaultExceptionHandler ex = do
     case ex of
-        (Object obj) -> do
-            liftIO . putStrLn . T.unpack $ className (objectClass obj)
+        (Object obj) -> liftIO . putStrLn . T.unpack $ className (objectClass obj)
         _ -> liftIO $ putStrLn "o_O: raised a non-object exception"
 
     liftIO exitFailure
@@ -102,14 +94,33 @@ defaultExceptionHandler ex = do
 defaultReturnHandler :: Object -> Interpreter ()
 defaultReturnHandler _ = raise "SyntaxError" "'return' outside function"
 
+loadBuiltinModules :: Interpreter ()
+loadBuiltinModules = do
+    path            <- fst <$> liftIO splitExecutablePath
+    dirFilenames    <- liftIO . getDirectoryContents $ path </> "lib"
+    moduleFilenames <- pure $ filter (\f -> takeExtension f == ".py") dirFilenames
+
+    forM_ moduleFilenames $ \modFilename -> do
+        modulePath <- liftIO . canonicalizePath $ path </> "lib" </> modFilename
+        code <- liftIO $ readFile modulePath
+
+        case parse code of
+            Left err    -> raise "SyntaxError" err
+            Right stmts -> evalBlock stmts
+
 runInterpreter :: InterpreterState -> Text -> IO (Either String [Object], InterpreterState)
 runInterpreter state code = case parse code of
     Left msg    -> return (Left msg, state)
     Right stmts -> do
-        (_, newState) <- runStateT (runContT (unwrap $ run stmts) return) state
+        let new = stateNew state
+
+        (_, newState) <- runStateT (runContT (unwrap $ run new stmts) return) state
         let objs = stateResults newState
-        return (Right objs, newState { stateResults = [] })
+        return (Right objs, newState { stateNew = False, stateResults = [] })
   where
-    run stmts = do
+    run new stmts = do
+        when new
+            loadBuiltinModules
+
         evalBlock stmts
         return None

@@ -1,5 +1,3 @@
-from exceptions import *
-
 class NoneType(object):
     def __bool__(self):
         return False
@@ -47,8 +45,8 @@ class basic_iterator(object):
         self._index += 1
         return o
 
-def print(*args):
-    __hython_primitive__("print", *args)
+#def print(*args):
+    #__hython_primitive__("print", *args)
 
 class dict(object):
     def __init__(self):
