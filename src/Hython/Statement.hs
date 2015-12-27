@@ -6,6 +6,7 @@ import Control.Monad.Cont (callCC)
 import Control.Monad.Fix (fix)
 import Control.Monad.Cont.Class (MonadCont)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import qualified Data.Hashable as H
 import qualified Data.IntMap as IntMap
 import Data.IORef (modifyIORef, readIORef, writeIORef)
 import Data.List (find)
@@ -101,6 +102,15 @@ eval (Del _) = raise "SystemError" "invalid del statement"
 eval (Expression e) = do
     result <- evalExpr e
     pushEvalResult result
+
+eval s@(For target iterableExpr block elseBlock) = eval (Try clauses tryBody [] [])
+  where
+    tryBody = [iteratorCreate, whileStmt]
+    iteratorCreate = Assignment iteratorName (Call (Name (T.pack "iter")) [Arg iterableExpr])
+    whileStmt = While (Constant $ ConstantBool True) (Assignment target iteratorNextCall : block) []
+    iteratorNextCall = Call (Attribute iteratorName (T.pack "__next__")) []
+    iteratorName = Name . T.pack $ "__iterator_" ++ show (abs $ H.hash (show s))
+    clauses = [ExceptClause (Name $ T.pack "StopIteration") T.empty elseBlock]
 
 eval (FuncDef name params block) = do
     params' <- mapM evalParam params

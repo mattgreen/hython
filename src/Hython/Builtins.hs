@@ -2,7 +2,9 @@ module Hython.Builtins where
 
 import Control.Monad.Trans.Maybe
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import qualified Data.ByteString as BS
 import Data.IORef (readIORef, writeIORef)
+import qualified Data.IntMap.Strict as IM
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -14,10 +16,26 @@ import Hython.Types
 builtinFunctions :: [Text]
 builtinFunctions = map T.pack builtins
   where
-    builtins = ["isinstance", "print"]
+    builtins = ["isinstance", "len", "print"]
 
 callBuiltin :: (MonadInterpreter m) => Text -> [Object] -> m Object
 callBuiltin name args = case (T.unpack name, args) of
+    ("len", [obj]) -> case obj of
+        (String s)  -> newInt . toInteger $ T.length s
+        (Bytes b)   -> newInt . toInteger $ BS.length b
+        (Tuple t)   -> newInt . toInteger $ length t
+        (List ref)  -> do
+            l <- liftIO . readIORef $ ref
+            newInt . toInteger . length $ l
+        (Dict ref)  -> do
+            d <- liftIO . readIORef $ ref
+            newInt . toInteger . IM.size $ d
+        (Set ref)  -> do
+            s <- liftIO . readIORef $ ref
+            newInt . toInteger . IM.size $ s
+        _ -> ignore $ raise "SystemError" "object has no __len__"
+    ("len", _) ->
+        ignore $ raise "SystemError" "len() takes only one arg"
     ("print", _) ->
         ignore $ print' args
     ("isinstance", [obj, Class info]) ->
