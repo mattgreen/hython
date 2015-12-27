@@ -56,9 +56,10 @@ print' [] = liftIO $ putStrLn ""
 print' objs = do
     strs <- mapM asStr objs
     liftIO $ putStrLn $ unwords strs
-  where
-    asStr (String s)    = return . T.unpack $ s
-    asStr v@_           = toStr v
+
+asStr :: MonadIO m => Object -> m String
+asStr (String s)    = return . T.unpack $ s
+asStr o@_           = toStr o
 
 setAttr :: (MonadInterpreter m) => Text -> Object -> Object -> m ()
 setAttr attr obj target = case getObjAttrs target of

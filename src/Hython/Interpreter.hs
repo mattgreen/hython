@@ -21,7 +21,8 @@ import System.FilePath
 
 import Language.Python.Parser (parse)
 
-import Hython.Builtins (builtinFunctions)
+import Hython.Builtins (asStr, builtinFunctions, getAttr)
+import Hython.Call (call)
 import Hython.ControlFlow (Flow, MonadFlow)
 import qualified Hython.ControlFlow as ControlFlow
 import qualified Hython.Environment as Environment
@@ -86,7 +87,16 @@ defaultContinueHandler _ = raise "SyntaxError" "'continue' not properly in loop"
 defaultExceptionHandler :: Object -> Interpreter ()
 defaultExceptionHandler ex = do
     case ex of
-        (Object obj) -> liftIO . putStrLn . T.unpack $ className (objectClass obj)
+        obj@(Object info) -> do
+            mstr <- getAttr "__str__" obj
+            msg  <- case mstr of
+                Just method -> call method [] []
+                Nothing     -> newString "object does not define __str__"
+
+            liftIO $ do
+                putStr . T.unpack . className . objectClass $ info
+                putStr ": "
+                putStrLn =<< asStr msg
         _ -> liftIO $ putStrLn "o_O: raised a non-object exception"
 
     liftIO exitFailure

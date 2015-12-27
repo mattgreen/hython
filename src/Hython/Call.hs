@@ -74,5 +74,3 @@ call (Method name receiver params statements) args kwargs =
 call _ _ _ = do
     raise "TypeError" "object is not callable"
     return None
-
-

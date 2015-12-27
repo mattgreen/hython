@@ -253,7 +253,7 @@ evalExpr (Name name) = do
     case result of
         Just obj    -> return obj
         Nothing     -> do
-            raise "NameError" ("name '" ++ show name ++ "' not defined")
+            raise "NameError" ("name '" ++ T.unpack name ++ "' not defined")
             return None
 
 evalExpr (RelativeImport {}) = unimplemented "relative import"
