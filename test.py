@@ -25,32 +25,57 @@ else:
     testcases.append(test_path)
 
 testcases.sort()
+
+errors = []
 failures = []
 
 for testcase in testcases:
-    #print("Testing %s..." % testcase.replace("test/", ""))
+    try:
+        #print("Testing %s..." % testcase.replace("test/", ""))
 
-    python_cmdline = ["python3", testcase]
-    python_output = output_of(python_cmdline)
+        python_cmdline = ["python3", testcase]
+        python_output = output_of(python_cmdline)
 
-    hython_cmdline = ["./hython", testcase]
-    hython_output = output_of(hython_cmdline)
+        hython_cmdline = ["./hython", testcase]
+        hython_output = output_of(hython_cmdline)
 
-    if python_output == hython_output:
-        sys.stdout.write(".")
+        if python_output == hython_output:
+            sys.stdout.write(".")
+            sys.stdout.flush()
+        else:
+            sys.stdout.write("F")
+            sys.stdout.flush()
+
+            diff = difflib.unified_diff(python_output, hython_output, lineterm='', 
+                    fromfile=" ".join(python_cmdline), tofile=" ".join(hython_cmdline))
+            failures.append(diff)
+
+    except subprocess.CalledProcessError as e:
+        #print(dir(e))
+        #print(e.stderr)
+        #sys.exit(1)
+        
+        sys.stdout.write("E")
         sys.stdout.flush()
-    else:
-        sys.stdout.write("F")
-        sys.stdout.flush()
 
-        diff = difflib.unified_diff(python_output, hython_output, lineterm='', 
-                fromfile=" ".join(python_cmdline), tofile=" ".join(hython_cmdline))
-        failures.append(diff)
+        errors.append(testcase)
 
 print('')
 
 if failures:
-    for failure in failures:
-        print()
-        print("\n".join(failure))
+    print()
+    print("Failures:")
+
+for failure in failures:
+    print("\n".join(failure))
+    print()
+
+if errors:
+    print("Errors:")
+
+for error in errors:
+    print(error)
+
+if errors or failures:
     sys.exit(1)
+
