@@ -5,9 +5,7 @@ import Prelude hiding (lookup)
 
 import Control.Applicative ((<|>))
 import Control.Monad (forM_)
-import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Maybe
-import Data.IORef (newIORef, readIORef, writeIORef)
 import qualified Data.HashMap.Strict as Map
 import Data.Maybe (mapMaybe)
 import Safe (headDef)
@@ -18,9 +16,9 @@ bind :: MonadEnv m => Name -> Object -> m ()
 bind name obj = do
     mref <- lookupByScope
     case mref of
-        Just ref    -> liftIO $ writeIORef ref obj
+        Just ref    -> writeRef ref obj
         Nothing     -> do
-            ref <- liftIO . newIORef $ obj
+            ref <- newRef obj
             modifyEnv $ insertRef ref
   where
     insertRef ref env = case envFrames env of
@@ -63,7 +61,7 @@ bindNonlocal name = do
 lookupName :: MonadEnv m => Name -> m (Maybe Object)
 lookupName name = runMaybeT $ do
     ref <- MaybeT $ lookupRef name
-    liftIO $ readIORef ref
+    readRef ref
 
 lookupRef :: MonadEnv m => Name -> m (Maybe ObjectRef)
 lookupRef name = do

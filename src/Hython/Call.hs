@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Hython.Call (call)
+module Hython.Call (call, invoke)
 where
 
 import Control.Monad (forM, when, zipWithM)
@@ -8,6 +8,7 @@ import Control.Monad.Cont (callCC)
 import Control.Monad.Cont.Class (MonadCont)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Safe (atDef)
 
 import Hython.Builtins (callBuiltin, getAttr, setAttr)
@@ -74,3 +75,13 @@ call (Method name receiver params statements) args kwargs =
 call _ _ _ = do
     raise "TypeError" "object is not callable"
     return None
+
+invoke :: (MonadCont m, MonadInterpreter m) => Object -> String -> [Object] -> [(Text, Object)] -> m Object
+invoke target methodName args kwargs = do
+    mmethod <- getAttr (T.pack methodName) target
+
+    case mmethod of
+        Just method -> call method args kwargs
+        Nothing     -> do
+            raise "AttributeError" ("object has no attribute '" ++ methodName ++ "'")
+            return None

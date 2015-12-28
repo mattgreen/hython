@@ -10,7 +10,6 @@ import Control.Monad.Cont.Class (MonadCont)
 import Control.Monad.Cont (ContT, runContT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (StateT, gets, modify, runStateT)
-import Data.IORef
 import Data.Text (Text)
 import Data.Text.IO (readFile)
 import qualified Data.Text as T
@@ -71,11 +70,11 @@ defaultInterpreterState = do
     }
   where
     mkBuiltin name = do
-        ref <- newIORef $ BuiltinFn name
+        ref <- newRef $ BuiltinFn name
         return (name, ref)
 
     mkBuiltinClass name cls = do
-        ref <- liftIO $ newIORef cls
+        ref <- newRef cls
         return (T.pack name, ref)
 
 defaultBreakHandler :: Object -> Interpreter ()

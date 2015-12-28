@@ -13,7 +13,7 @@ import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap as IntMap
-import Data.IORef (IORef, newIORef, readIORef)
+import Data.IORef (IORef, modifyIORef', newIORef, readIORef, writeIORef)
 import Data.List (intercalate)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -63,6 +63,8 @@ data ObjectInfo = ObjectInfo
                 { objectClass :: ClassInfo
                 , objectDict :: IORef AttributeDict
                 }
+
+type DictRef = IORef (IntMap (Object, Object))
 
 type AttributeDict = HashMap Text (IORef Object)
 
@@ -163,8 +165,8 @@ newList l = do
 
 newObject :: (MonadIO m) => ClassInfo -> m Object
 newObject cls = do
-    clsDict <- liftIO $ readIORef (classDict cls)
-    dict <- liftIO $ newIORef clsDict
+    clsDict <- readRef . classDict $ cls
+    dict <- newRef clsDict
     info <- pure ObjectInfo {
         objectClass = cls,
         objectDict = dict
@@ -198,7 +200,7 @@ isTruthy (Float 0.0) = return False
 isTruthy (String s) = return . not . T.null $ s
 isTruthy (Bytes b) = return $ not (B.null b)
 isTruthy (List ref) = do
-    l <- liftIO $ readIORef ref
+    l <- readRef ref
     return $ not (null l)
 isTruthy (Tuple objs) = return $ not $ null objs
 isTruthy _ = return True
@@ -215,7 +217,7 @@ toStr (Imaginary i)
 toStr (Int i) = return $ show i
 toStr (String s) = return $ "'" ++ T.unpack s ++ "'"
 toStr (List ref) = do
-    l <- liftIO $ readIORef ref
+    l <- readRef ref
     strItems <- mapM toStr l
     return $ "[" ++ intercalate ", " strItems ++ "]"
 toStr (Tuple objs) = do
@@ -224,11 +226,11 @@ toStr (Tuple objs) = do
         [str]   -> return $ "(" ++ str ++ ",)"
         _       -> return $ "(" ++ intercalate ", " strItems ++ ")"
 toStr (Set ref) = do
-    items <- liftIO $ readIORef ref
+    items <- readRef ref
     strItems <- mapM toStr $ IntMap.elems items
     return $ "{" ++ intercalate ", " strItems ++ "}"
 toStr (Dict ref) = do
-    items <- liftIO $ readIORef ref
+    items <- readRef ref
     strItems <- forM (IntMap.elems items) $ \(k, v) -> do
         key     <- toStr k
         value   <- toStr v
@@ -242,3 +244,15 @@ toStr (Method name (ClassBinding clsName _) _ _) =
 toStr (Method name (InstanceBinding clsName obj) _ _) = do
     s <- toStr obj
     return $ "<bound method " ++ T.unpack clsName ++ "." ++ T.unpack name ++ " of " ++ s ++ ">"
+
+newRef :: MonadIO m => a -> m (IORef a)
+newRef obj = liftIO $ newIORef obj
+
+readRef :: MonadIO m => IORef a -> m a
+readRef ref = liftIO $ readIORef ref
+
+modifyRef :: MonadIO m => IORef a -> (a -> a) -> m ()
+modifyRef ref action = liftIO $ modifyIORef' ref action
+
+writeRef :: MonadIO m => IORef a -> a -> m ()
+writeRef ref obj = liftIO $ writeIORef ref obj

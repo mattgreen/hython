@@ -22,11 +22,11 @@ class NotImplementedType(object):
 
 NotImplemented = NotImplementedType()
 
-def isinstance(o, cls):
-    return issubclass(o.__class__, cls)
+#def isinstance(o, cls):
+    #return issubclass(o.__class__, cls)
 
-def issubclass(cls, clsInfo):
-    return __hython_primitive__("issubclass", cls, clsInfo)
+#def issubclass(cls, clsInfo):
+    #return __hython_primitive__("issubclass", cls, clsInfo)
 
 def iter(x):
     return basic_iterator(x)
@@ -71,7 +71,7 @@ class dict(object):
         self._dict = __hython_primitive__("dict-set", self._dict, key, value)
 
     def clear(self):
-        self._dict = __hython_primitive__("dict-clear", self._dict)
+        __hython_primitive__("dict-clear", self._dict)
 
     def get(self, key, default=None):
         if self.__contains__(key):

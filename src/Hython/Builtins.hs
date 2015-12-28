@@ -3,7 +3,6 @@ module Hython.Builtins where
 import Control.Monad.Trans.Maybe
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.ByteString as BS
-import Data.IORef (readIORef, writeIORef)
 import qualified Data.IntMap.Strict as IM
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -11,27 +10,32 @@ import qualified Data.Text as T
 import qualified Hython.AttributeDict as AttributeDict
 import qualified Hython.Class as Class
 import qualified Hython.Object as Object
+import Hython.Primitive (callPrimitive)
 import Hython.Types
 
 builtinFunctions :: [Text]
 builtinFunctions = map T.pack builtins
   where
-    builtins = ["isinstance", "len", "print"]
+    builtins = ["__hython_primitive__", "isinstance", "len", "print"]
 
 callBuiltin :: (MonadInterpreter m) => Text -> [Object] -> m Object
 callBuiltin name args = case (T.unpack name, args) of
+    ("__hython_primitive__", primArg : remaining) -> case primArg of
+            (String prim)   -> callPrimitive (T.unpack prim) remaining
+            _               -> ignore $ raise "SystemError" "arg 1 must be string"
+    ("__hython_primitive__", []) -> ignore $ raise "SystemError" "__hython_primitive__ requires at least one arg"
     ("len", [obj]) -> case obj of
         (String s)  -> newInt . toInteger $ T.length s
         (Bytes b)   -> newInt . toInteger $ BS.length b
         (Tuple t)   -> newInt . toInteger $ length t
         (List ref)  -> do
-            l <- liftIO . readIORef $ ref
+            l <- readRef ref
             newInt . toInteger . length $ l
         (Dict ref)  -> do
-            d <- liftIO . readIORef $ ref
+            d <- readRef ref
             newInt . toInteger . IM.size $ d
         (Set ref)  -> do
-            s <- liftIO . readIORef $ ref
+            s <- readRef ref
             newInt . toInteger . IM.size $ s
         _ -> ignore $ raise "SystemError" "object has no __len__"
     ("len", _) ->
@@ -82,7 +86,7 @@ asStr o@_           = toStr o
 setAttr :: (MonadInterpreter m) => Text -> Object -> Object -> m ()
 setAttr attr obj target = case getObjAttrs target of
         Just ref -> do
-            dict    <- liftIO $ readIORef ref
+            dict    <- readRef ref
             dict'   <- AttributeDict.set attr obj dict
-            liftIO $ writeIORef ref dict'
+            writeRef ref dict'
         Nothing -> raise "TypeError" "object does not have attributes"

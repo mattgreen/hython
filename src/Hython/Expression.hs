@@ -1,19 +1,18 @@
 module Hython.Expression (evalExpr) where
 
-import Control.Monad (forM, zipWithM)
+import Control.Monad (forM, forM_, zipWithM)
 import Control.Monad.Cont.Class (MonadCont)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.IO.Class (MonadIO)
 import Data.Bits ((.&.), (.|.), complement, shiftL, shiftR, xor)
 import Data.Fixed (mod')
 import qualified Data.IntMap as IntMap
-import Data.IORef (readIORef)
 import qualified Data.Text as T
 import Safe (atMay)
 
 import Language.Python
 
 import Hython.Builtins (getAttr)
-import Hython.Call (call)
+import Hython.Call (call, invoke)
 import Hython.Environment (lookupName)
 import Hython.Types
 
@@ -37,8 +36,8 @@ evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
         (Add, Float l, Float r)     -> newFloat (l + r)
         (Add, String l, String r)   -> newString $ T.append l r
         (Add, List l, List r)       -> do
-            left    <- liftIO $ readIORef l
-            right   <- liftIO $ readIORef r
+            left    <- readRef l
+            right   <- readRef r
             newList (left ++ right)
         (Add, Tuple l, Tuple r)     -> newTuple (l ++ r)
         (Sub, Int l, Int r)         -> newInt (l - r)
@@ -48,7 +47,7 @@ evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
         (Mul, Int l, String r)      -> newString $ T.replicate (fromInteger l) r
         (Mul, String _, Int _)      -> evalExpr (BinOp (ArithOp op) rightExpr leftExpr)
         (Mul, List l, Int r)        -> do
-            items <- liftIO $ readIORef l
+            items <- readRef l
             newList $ concat $ replicate (fromInteger r) items
         (Mul, Int _, List _)        -> evalExpr (BinOp (ArithOp op) rightExpr leftExpr)
         (Mul, Tuple l, Int r)       -> newTuple $ concat $ replicate (fromInteger r) l
@@ -120,15 +119,15 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
         (_, Int l, Float _)                 -> evalExpr (BinOp (CompOp op) (constantF l) rightExpr)
         (In, l, Dict ref)                   -> do
             h <- hash l
-            items <- liftIO $ readIORef ref
+            items <- readRef ref
             newBool $ IntMap.member h items
         (In, l, List ref)                   -> do
-            items <- liftIO $ readIORef ref
+            items <- readRef ref
             results <- mapM (equal l) items
             newBool $ True `elem` results
         (In, l, Set ref)                    -> do
             key <- hash l
-            items <- liftIO $ readIORef ref
+            items <- readRef ref
             newBool $ key `IntMap.member` items
         (In, l, Tuple items)                -> do
             results <- mapM (equal l) items
@@ -156,16 +155,16 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
                 results <- zipWithM equal l r
                 return $ all (== True) results
     equal (List l) (List r) = do
-        left    <- liftIO $ readIORef l
-        right   <- liftIO $ readIORef r
+        left    <- readRef l
+        right   <- readRef r
         equal (Tuple left) (Tuple right)
     equal (Set l) (Set r) = do
-        left    <- liftIO $ readIORef l
-        right   <- liftIO $ readIORef r
+        left    <- readRef l
+        right   <- readRef r
         equal (Tuple $ IntMap.elems left) (Tuple $ IntMap.elems right)
     equal (Dict l) (Dict r) = do
-        left    <- liftIO $ readIORef l
-        right   <- liftIO $ readIORef r
+        left    <- readRef l
+        right   <- readRef r
         if IntMap.size left /= IntMap.size right
             then return False
             else do
@@ -193,7 +192,7 @@ evalExpr (Call expr argExprs) = do
         obj <- evalExpr e
         case obj of
             (Tuple objs)    -> return objs
-            (List ref)      -> liftIO $ readIORef ref
+            (List ref)      -> readRef ref
             _               -> do
                 raise "TypeError" "argument after * must be a sequence"
                 return []
@@ -208,7 +207,7 @@ evalExpr (Call expr argExprs) = do
         obj <- evalExpr e
         case obj of
             (Dict ref)  -> do
-                dict <- liftIO $ readIORef ref
+                dict <- readRef ref
                 forM (IntMap.elems dict) $ \(key, value) ->
                     case key of
                         (String s)  -> return (s, value)
@@ -232,11 +231,15 @@ evalExpr (Constant c) = case c of
     ConstantString s    -> newString s
 
 evalExpr (DictDef exprs) = do
-    objs <- forM exprs $ \(keyExpr, valueExpr) -> do
-        key <- evalExpr keyExpr
-        value <- evalExpr valueExpr
-        return (key, value)
-    newDict objs
+    dictClass   <- evalExpr (Name $ T.pack "dict")
+    dict        <- call dictClass [] []
+
+    forM_ exprs $ \(keyExpr, valueExpr) -> do
+        key     <- evalExpr keyExpr
+        value   <- evalExpr valueExpr
+        invoke dict "__setitem__" [key, value] []
+
+    return dict
 
 evalExpr (From {}) = unimplemented "from"
 
@@ -269,7 +272,7 @@ evalExpr (Subscript expr idxExpr) = do
     index   <- evalExpr idxExpr
     case (target, index) of
         (Dict ref, key) -> do
-            items <- liftIO $ readIORef ref
+            items <- readRef ref
             h <- hash key
 
             case IntMap.lookup h items of
@@ -280,7 +283,7 @@ evalExpr (Subscript expr idxExpr) = do
                     return None
 
         (List ref, Int i) -> do
-            items <- liftIO $ readIORef ref
+            items <- readRef ref
             case atMay items (fromIntegral i) of
                 Just obj    -> return obj
                 Nothing     -> do

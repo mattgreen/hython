@@ -5,10 +5,9 @@ import Control.Monad (forM, unless)
 import Control.Monad.Cont (callCC)
 import Control.Monad.Fix (fix)
 import Control.Monad.Cont.Class (MonadCont)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.IO.Class (MonadIO)
 import qualified Data.Hashable as H
 import qualified Data.IntMap as IntMap
-import Data.IORef (modifyIORef, readIORef, writeIORef)
 import Data.List (find)
 import Data.Maybe (catMaybes)
 import qualified Data.Text as T
@@ -53,14 +52,14 @@ eval (Assignment (Subscript targetExpr idxExpr) expr) = do
     case (target, index) of
         (Dict ref, key) -> do
             h <- hash key
-            liftIO $ modifyIORef ref $ IntMap.insert h (key, value)
+            modifyRef ref $ IntMap.insert h (key, value)
 
         (List ref, Int i) -> do
-            items <- liftIO $ readIORef ref
+            items <- readRef ref
             case atMay items (fromIntegral i) of
                 Just _ -> do
                     (left, right) <- pure $ splitAt (fromIntegral i) items
-                    liftIO $ writeIORef ref (left ++ [value] ++ tail right)
+                    writeRef ref (left ++ [value] ++ tail right)
                 Nothing -> raise "IndexError" "index is out of range"
 
         _ -> raise "TypeError" "object does not support item assignment"

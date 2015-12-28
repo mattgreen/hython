@@ -2,8 +2,7 @@ module Hython.Class (isSubClass, lookup)
 where
 
 import Prelude hiding (lookup)
-import Control.Monad.IO.Class (liftIO, MonadIO)
-import Data.IORef (readIORef)
+import Control.Monad.IO.Class (MonadIO)
 import Data.List (find)
 import Data.Text (Text)
 import Safe (tailDef)
@@ -13,7 +12,7 @@ import Hython.Types
 
 lookup :: (MonadIO m) => Text -> ClassInfo -> m (Maybe Object)
 lookup attr cls = do
-    dicts <- mapM ((liftIO . readIORef) . classDict) (basesOf cls)
+    dicts <- mapM (readRef . classDict) (basesOf cls)
     lookupAttr dicts
   where
     lookupAttr :: (MonadIO m) => [AttributeDict] -> m (Maybe Object)
