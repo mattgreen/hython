@@ -269,8 +269,14 @@ evalExpr (Name name) = do
 evalExpr (RelativeImport {}) = unimplemented "relative import"
 
 evalExpr (SetDef exprs) = do
-    objs <- mapM evalExpr exprs
-    newSet objs
+    setClass    <- evalExpr (Name $ T.pack "set")
+    set         <- call setClass [] []
+
+    forM_ exprs $ \expr -> do
+        item    <- evalExpr expr
+        invoke set "add" [item]
+
+    return set
 
 evalExpr (SliceDef {}) = unimplemented "slices"
 
