@@ -3,6 +3,7 @@ where
 
 import Safe (atMay)
 
+import Hython.Ref
 import Hython.Types
 
 listAppend :: MonadInterpreter m => ListRef -> Object -> m Object

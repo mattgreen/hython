@@ -14,6 +14,7 @@ import Language.Python
 import Hython.Builtins (getAttr)
 import Hython.Call (call)
 import Hython.Environment (lookupName)
+import Hython.Ref
 import Hython.Types
 
 evalExpr :: (MonadCont m, MonadEnv m, MonadIO m, MonadInterpreter m) => Expression -> m Object

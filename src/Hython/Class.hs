@@ -8,6 +8,7 @@ import Data.Text (Text)
 import Safe (tailDef)
 
 import qualified Hython.AttributeDict as AttributeDict
+import Hython.Ref
 import Hython.Types
 
 lookup :: (MonadIO m) => Text -> ClassInfo -> m (Maybe Object)

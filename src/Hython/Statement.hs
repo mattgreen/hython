@@ -20,6 +20,7 @@ import Hython.ControlFlow
 import Hython.Environment (bind, bindGlobal, bindNonlocal, getFrameDepth, pushEnvFrame, popEnvFrame, unbind, unwindTo)
 import qualified Hython.ExceptionHandling as EH
 import Hython.Expression (evalExpr)
+import Hython.Ref
 import Hython.Types
 
 eval :: (MonadIO m, MonadCont m, MonadInterpreter m) => Statement -> m ()

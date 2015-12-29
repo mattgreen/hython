@@ -3,6 +3,7 @@ where
 
 import qualified Data.IntMap as IntMap
 
+import Hython.Ref
 import Hython.Types
 
 dictNew :: MonadInterpreter m => m Object

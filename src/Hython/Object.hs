@@ -7,6 +7,7 @@ import Data.Text (Text)
 
 import qualified Hython.AttributeDict as AttributeDict
 import qualified Hython.Class as Class
+import Hython.Ref
 import Hython.Types
 
 lookup :: (MonadIO m) => Text -> ObjectInfo -> m (Maybe Object)

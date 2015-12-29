@@ -9,7 +9,9 @@ import Control.Monad.Trans.Maybe
 import qualified Data.HashMap.Strict as Map
 import Data.Maybe (mapMaybe)
 import Safe (headDef)
+
 import Hython.Name
+import Hython.Ref
 import Hython.Types
 
 bind :: MonadEnv m => Name -> Object -> m ()

@@ -4,7 +4,7 @@ module Hython.Types
 where
 
 import Control.Monad (forM)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.IO.Class (MonadIO)
 import Data.ByteString (ByteString)
 import qualified Data.Hashable as H
 import qualified Data.ByteString.Char8 as B
@@ -13,7 +13,6 @@ import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap as IntMap
-import Data.IORef (IORef, modifyIORef', newIORef, readIORef, writeIORef)
 import Data.List (intercalate)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -22,6 +21,7 @@ import Language.Python (Statement)
 
 import Hython.ControlFlow
 import Hython.Name
+import Hython.Ref
 
 data Object = None
             | Bool Bool
@@ -40,7 +40,7 @@ data Object = None
             | Class ClassInfo
             | Object ObjectInfo
 
-type ObjectRef = IORef Object
+type ObjectRef = Ref Object
 
 data MethodBinding = ClassBinding Text Object
                    | InstanceBinding Text Object
@@ -53,7 +53,7 @@ data FnParam = NamedParam Text
 data ClassInfo = ClassInfo
                { className  :: Text
                , classBases :: [ClassInfo]
-               , classDict  :: IORef AttributeDict
+               , classDict  :: Ref AttributeDict
                }
 
 instance Eq ClassInfo where
@@ -61,14 +61,14 @@ instance Eq ClassInfo where
 
 data ObjectInfo = ObjectInfo
                 { objectClass :: ClassInfo
-                , objectDict :: IORef AttributeDict
+                , objectDict :: Ref AttributeDict
                 }
 
-type DictRef    = IORef (IntMap (Object, Object))
-type ListRef    = IORef [Object]
-type SetRef     = IORef (IntMap Object)
+type DictRef    = Ref (IntMap (Object, Object))
+type ListRef    = Ref [Object]
+type SetRef     = Ref (IntMap Object)
 
-type AttributeDict = HashMap Text (IORef Object)
+type AttributeDict = HashMap Text (Ref Object)
 
 data Env = Env
     { envModule     :: HashMap Name Binding
@@ -84,7 +84,7 @@ data Binding
 data ExceptionHandler = ExceptionHandler Name ClassInfo [Statement]
 
 class HasAttributes a where
-    getObjAttrs :: a -> Maybe (IORef AttributeDict)
+    getObjAttrs :: a -> Maybe (Ref AttributeDict)
 
 instance HasAttributes Object where
     getObjAttrs (Object info) = Just $ objectDict info
@@ -252,15 +252,3 @@ toStr (Method name (ClassBinding clsName _) _ _) =
 toStr (Method name (InstanceBinding clsName obj) _ _) = do
     s <- toStr obj
     return $ "<bound method " ++ T.unpack clsName ++ "." ++ T.unpack name ++ " of " ++ s ++ ">"
-
-newRef :: MonadIO m => a -> m (IORef a)
-newRef obj = liftIO $ newIORef obj
-
-readRef :: MonadIO m => IORef a -> m a
-readRef ref = liftIO $ readIORef ref
-
-modifyRef :: MonadIO m => IORef a -> (a -> a) -> m ()
-modifyRef ref action = liftIO $ modifyIORef' ref action
-
-writeRef :: MonadIO m => IORef a -> a -> m ()
-writeRef ref obj = liftIO $ writeIORef ref obj

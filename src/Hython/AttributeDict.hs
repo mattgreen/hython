@@ -5,6 +5,7 @@ import Control.Monad.IO.Class (MonadIO)
 import qualified Data.HashMap.Strict as HashMap
 import Data.Text (Text)
 
+import Hython.Ref
 import Hython.Types
 
 lookup :: (MonadIO m) => Text -> AttributeDict -> m (Maybe Object)

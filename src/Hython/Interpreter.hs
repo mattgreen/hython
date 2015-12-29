@@ -26,6 +26,7 @@ import Hython.ControlFlow (Flow, MonadFlow)
 import qualified Hython.ControlFlow as ControlFlow
 import qualified Hython.Environment as Environment
 import qualified Hython.ExceptionHandling as ExceptionHandling
+import Hython.Ref
 import Hython.Types
 import qualified Hython.Statement as Statement
 

@@ -11,6 +11,7 @@ import qualified Hython.AttributeDict as AttributeDict
 import qualified Hython.Class as Class
 import qualified Hython.Object as Object
 import Hython.Primitive (callPrimitive)
+import Hython.Ref
 import Hython.Types
 
 builtinFunctions :: [Text]
