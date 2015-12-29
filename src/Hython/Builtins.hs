@@ -16,15 +16,20 @@ import Hython.Types
 builtinFunctions :: [Text]
 builtinFunctions = map T.pack builtins
   where
-    builtins = ["__hython_primitive__", "isinstance", "len", "print"]
+    builtins = ["__hython_primitive__", "isinstance", "len"]
 
 callBuiltin :: (MonadInterpreter m) => Text -> [Object] -> m Object
 callBuiltin name args = case (T.unpack name, args) of
-    ("__hython_primitive__", primArg : remaining) -> case primArg of
+    ("__hython_primitive__", primArg : remaining) ->
+        case primArg of
             (String prim)   -> callPrimitive (T.unpack prim) remaining
             _               -> ignore $ raise "SystemError" "arg 1 must be string"
-    ("__hython_primitive__", []) -> ignore $ raise "SystemError" "__hython_primitive__ requires at least one arg"
+
+    ("__hython_primitive__", []) ->
+        ignore $ raise "SystemError" "__hython_primitive__ requires at least one arg"
+
     ("len", [obj]) -> case obj of
+        Object {}   -> invoke obj "__len__" []
         (String s)  -> newInt . toInteger $ T.length s
         (Bytes b)   -> newInt . toInteger $ BS.length b
         (Tuple t)   -> newInt . toInteger $ length t
@@ -40,8 +45,6 @@ callBuiltin name args = case (T.unpack name, args) of
         _ -> ignore $ raise "SystemError" "object has no __len__"
     ("len", _) ->
         ignore $ raise "SystemError" "len() takes only one arg"
-    ("print", _) ->
-        ignore $ print' args
     ("isinstance", [obj, Class info]) ->
         newBool $ isInstance obj info
     ("isinstance", _) ->
@@ -73,13 +76,7 @@ isInstance (Object info) cls = objectClass info == cls || cls `elem` (classBases
 isInstance (Class info) cls = info == cls || cls `elem` classBases info
 isInstance _ _ = False
 
-print' :: MonadIO m => [Object] -> m ()
-print' [] = liftIO $ putStrLn ""
-print' objs = do
-    strs <- mapM asStr objs
-    liftIO $ putStrLn $ unwords strs
-
-asStr :: MonadIO m => Object -> m String
+asStr :: MonadInterpreter m => Object -> m String
 asStr (String s)    = return . T.unpack $ s
 asStr o@_           = toStr o
 

@@ -6,7 +6,7 @@ cabal-version:    >= 1.2
 executable        hython
   build-depends:  base, containers, mtl, array, utf8-string, regex-base, regex-compat, transformers, unordered-containers, filepath, safe, directory, monad-loops, executable-path, hashable, parsec, hlint, text, bytestring, haskeline
   build-tools:    happy
-  other-modules:  Language.Python.Lexer, Language.Python.Parser, Hython.Interpreter, Hython.Statement, Hython.Environment, Hython.Types, Hython.Expression, Hython.Builtins, Hython.ControlFlow, Hython.Call, REPL, Hython.AttributeDict, Hython.Class, Hython.Object, Hython.Primitive, Hython.BuiltinTypes.Dict
+  other-modules:  Language.Python.Lexer, Language.Python.Parser, Hython.Interpreter, Hython.Statement, Hython.Environment, Hython.Types, Hython.Expression, Hython.Builtins, Hython.ControlFlow, Hython.Call, REPL, Hython.AttributeDict, Hython.Class, Hython.Object, Hython.Primitive, Hython.BuiltinTypes.Dict, Hython.BuiltinTypes.List
   hs-source-dirs: src
   main-is:        Main.hs
   ghc-options:    -Wall -debug -O2

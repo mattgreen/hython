@@ -20,8 +20,8 @@ import System.FilePath
 
 import Language.Python.Parser (parse)
 
-import Hython.Builtins (asStr, builtinFunctions, getAttr)
-import Hython.Call (call)
+import Hython.Builtins (asStr, builtinFunctions)
+import qualified Hython.Call as Call
 import Hython.ControlFlow (Flow, MonadFlow)
 import qualified Hython.ControlFlow as ControlFlow
 import qualified Hython.Environment as Environment
@@ -36,7 +36,7 @@ data InterpreterState = InterpreterState
     { stateEnv          :: Env
     , stateFlow         :: Flow Object Continuation
     , stateNew          :: Bool
-    , stateResults      :: [Object]
+    , stateResults      :: [String]
     }
 
 type Continuation = Object -> Interpreter ()
@@ -51,7 +51,8 @@ instance MonadFlow Object Continuation Interpreter where
 
 instance MonadInterpreter Interpreter where
     evalBlock statements = mapM_ Statement.eval statements
-    pushEvalResult obj = Interpreter $ modify $ \s -> s { stateResults = stateResults s ++ [obj] }
+    pushEvalResult str = Interpreter $ modify $ \s -> s { stateResults = stateResults s ++ [str] }
+    invoke obj method args = Call.invoke obj method args []
     raise clsName desc = ExceptionHandling.raiseInternal (T.pack clsName) (T.pack desc)
 
 defaultInterpreterState :: IO InterpreterState
@@ -86,16 +87,13 @@ defaultContinueHandler _ = raise "SyntaxError" "'continue' not properly in loop"
 defaultExceptionHandler :: Object -> Interpreter ()
 defaultExceptionHandler ex = do
     case ex of
-        obj@(Object info) -> do
-            mstr <- getAttr "__str__" obj
-            msg  <- case mstr of
-                Just method -> call method [] []
-                Nothing     -> newString "object does not define __str__"
+        Object info -> do
+            msg <- asStr =<< invoke ex "__str__" []
 
             liftIO $ do
                 putStr . T.unpack . className . objectClass $ info
                 putStr ": "
-                putStrLn =<< asStr msg
+                putStrLn msg
         _ -> liftIO $ putStrLn "o_O: raised a non-object exception"
 
     liftIO exitFailure
@@ -120,15 +118,15 @@ loadBuiltinModules = do
 
         filterM doesFileExist $ map (libDir </>) entries
 
-runInterpreter :: InterpreterState -> Text -> IO (Either String [Object], InterpreterState)
+runInterpreter :: InterpreterState -> Text -> IO (Either String [String], InterpreterState)
 runInterpreter state code = case parse code of
     Left msg    -> return (Left msg, state)
     Right stmts -> do
         let new = stateNew state
 
         (_, newState) <- runStateT (runContT (unwrap $ run new stmts) return) state
-        let objs = stateResults newState
-        return (Right objs, newState { stateNew = False, stateResults = [] })
+        let results = stateResults newState
+        return (Right results, newState { stateNew = False, stateResults = [] })
   where
     run new stmts = do
         when new

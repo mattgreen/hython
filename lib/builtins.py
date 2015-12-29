@@ -45,8 +45,8 @@ class basic_iterator(object):
         self._index += 1
         return o
 
-#def print(*args):
-    #__hython_primitive__("print", *args)
+def print(*args):
+    __hython_primitive__("print", *args)
 
 class dict(object):
     def __init__(self):
@@ -56,7 +56,7 @@ class dict(object):
         return __hython_primitive__("dict-contains", self._dict, key)
 
     def __delitem__(self, key):
-        self._dict = __hython_primitive__("dict-del", self._dict, key)
+        __hython_primitive__("dict-del", self._dict, key)
 
     def __getitem__(self, key):
         if self.__contains__(key): # not quite optimal
@@ -68,7 +68,10 @@ class dict(object):
         return __hython_primitive__("dict-length", self._dict)
 
     def __setitem__(self, key, value):
-        self._dict = __hython_primitive__("dict-set", self._dict, key, value)
+        __hython_primitive__("dict-set", self._dict, key, value)
+
+    def __str__(self):
+        return __hython_primitive__("str", self._dict)
 
     def clear(self):
         __hython_primitive__("dict-clear", self._dict)
@@ -116,8 +119,17 @@ class list(object):
     def __init__(self):
         self._list = __hython_primitive__("list-new")
 
+    def __contains__(self, item):
+        return __hython_primitive__("list-contains", self._list, item)
+
+    def __getitem__(self, index):
+        return __hython_primitive__("list-get", self._list, index)
+
     def __len__(self):
         return __hython_primitive__("list-length", self._list)
+
+    def __str__(self):
+        return __hython_primitive__("str", self._list)
 
     def append(self, obj):
         __hython_primitive__("list-append", self._list, obj)

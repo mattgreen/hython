@@ -14,7 +14,7 @@ import Safe (atDef)
 import Hython.Builtins (callBuiltin, getAttr, setAttr)
 import Hython.ControlFlow
 import Hython.Environment (pushEnvFrame, popEnvFrame)
-import Hython.Types
+import Hython.Types hiding (invoke)
 
 call :: (MonadCont m, MonadInterpreter m, MonadIO m) => Object -> [Object] -> [(Text, Object)] -> m Object
 call (BuiltinFn name) args _ = callBuiltin name args

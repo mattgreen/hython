@@ -30,9 +30,9 @@ data Object = None
             | Imaginary (Complex Double)
             | Int Integer
             | String Text
-            | List (IORef [Object])
-            | Dict (IORef (IntMap (Object, Object)))
-            | Set (IORef (IntMap Object))
+            | List ListRef
+            | Dict DictRef
+            | Set SetRef
             | Tuple [Object]
             | BuiltinFn Text
             | Function Text [FnParam] [Statement]
@@ -64,7 +64,9 @@ data ObjectInfo = ObjectInfo
                 , objectDict :: IORef AttributeDict
                 }
 
-type DictRef = IORef (IntMap (Object, Object))
+type DictRef    = IORef (IntMap (Object, Object))
+type ListRef    = IORef [Object]
+type SetRef     = IORef (IntMap Object)
 
 type AttributeDict = HashMap Text (IORef Object)
 
@@ -99,7 +101,8 @@ class MonadIO m => MonadEnv m where
 
 class (MonadEnv m, MonadFlow Object (Object -> m ()) m, MonadIO m) => MonadInterpreter m where
     evalBlock       :: [Statement] -> m ()
-    pushEvalResult  :: Object -> m ()
+    invoke          :: Object -> String -> [Object] -> m Object
+    pushEvalResult  :: String -> m ()
     raise           :: String -> String -> m ()
 
 hash :: (MonadInterpreter m, MonadIO m) => Object -> m Int
@@ -130,7 +133,7 @@ newBytes b = return $ Bytes (B.pack b)
 
 newClass :: (MonadIO m) => Text -> [ClassInfo] -> [(Text, ObjectRef)] -> m Object
 newClass name bases dict = do
-    ref <- liftIO $ newIORef $ HashMap.fromList dict
+    ref <- newRef $ HashMap.fromList dict
 
     return . Class $ ClassInfo {
         className = name,
@@ -143,7 +146,7 @@ newDict objs = do
     items <- forM objs $ \p@(key, _) -> do
         h <- hash key
         return (h, p)
-    ref <- liftIO $ newIORef (IntMap.fromList items)
+    ref <- newRef $ IntMap.fromList items
     return $ Dict ref
 
 newFloat :: MonadInterpreter m => Double -> m Object
@@ -160,7 +163,7 @@ newInt i = return $ Int i
 
 newList :: (MonadInterpreter m, MonadIO m) => [Object] -> m Object
 newList l = do
-    ref <- liftIO $ newIORef l
+    ref <- newRef l
     return $ List ref
 
 newObject :: (MonadIO m) => ClassInfo -> m Object
@@ -179,7 +182,7 @@ newSet objs = do
     items <- forM objs $ \obj -> do
         key <- hash obj
         return (key, obj)
-    ref <- liftIO $ newIORef (IntMap.fromList items)
+    ref <- newRef $ IntMap.fromList items
     return $ Set ref
 
 newString :: MonadInterpreter m => Text -> m Object
@@ -205,7 +208,7 @@ isTruthy (List ref) = do
 isTruthy (Tuple objs) = return $ not $ null objs
 isTruthy _ = return True
 
-toStr :: MonadIO m => Object -> m String
+toStr :: MonadInterpreter m => Object -> m String
 toStr (None) = return "None"
 toStr (Bool b) = return $ if b then "True" else "False"
 toStr (Bytes _b) = return "b'??'"
@@ -238,7 +241,12 @@ toStr (Dict ref) = do
     return $ "{" ++ intercalate ", " strItems ++ "}"
 toStr (BuiltinFn name)  = return $ "<built-in function " ++ T.unpack name ++ ">"
 toStr (Class info) = return $ "<class '" ++ T.unpack (className info) ++ "'>"
-toStr (Object info) = return $ "<" ++ T.unpack (className (objectClass info)) ++ " object>"
+toStr obj@(Object info) = do
+    str <- invoke obj "__str__" []
+    case str of
+        String s    -> return . T.unpack $ s
+        _           -> toStr str
+    {-return $ "<" ++ T.unpack (className (objectClass info)) ++ " object>"-}
 toStr (Method name (ClassBinding clsName _) _ _) = 
     return $ "<method '" ++ T.unpack name ++ "' of '" ++ T.unpack clsName ++ "' objects>"
 toStr (Method name (InstanceBinding clsName obj) _ _) = do

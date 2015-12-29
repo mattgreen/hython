@@ -6,7 +6,6 @@ import Data.Text (pack)
 import System.Console.Haskeline
 
 import Hython.Interpreter (defaultInterpreterState, runInterpreter)
-import Hython.Types (isNone, toStr)
 
 runREPL :: IO ()
 runREPL = do
@@ -22,9 +21,7 @@ runREPL = do
                 (result, newState) <- liftIO $ runInterpreter state (pack line)
                 case result of
                     Left s      -> outputStrLn s
-                    Right objs  -> do
-                        strs <- mapM toStr (filter (not . isNone) objs)
-                        mapM_ outputStrLn strs
+                    Right strs  -> mapM_ outputStrLn strs
 
                 loop newState
 

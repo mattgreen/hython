@@ -12,7 +12,7 @@ import Safe (atMay)
 import Language.Python
 
 import Hython.Builtins (getAttr)
-import Hython.Call (call, invoke)
+import Hython.Call (call)
 import Hython.Environment (lookupName)
 import Hython.Types
 
@@ -26,7 +26,7 @@ evalExpr (Attribute expr attr) = do
     case mobj of
         Just obj    -> return obj
         Nothing     -> do
-            raise "TypeError" ("object has no attribute '" ++ show attr ++ "'")
+            raise "TypeError" ("object has no attribute '" ++ T.unpack attr ++ "'")
             return None
 
 evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
@@ -237,7 +237,7 @@ evalExpr (DictDef exprs) = do
     forM_ exprs $ \(keyExpr, valueExpr) -> do
         key     <- evalExpr keyExpr
         value   <- evalExpr valueExpr
-        invoke dict "__setitem__" [key, value] []
+        invoke dict "__setitem__" [key, value]
 
     return dict
 
@@ -248,8 +248,14 @@ evalExpr (Glob {}) = unimplemented "glob"
 evalExpr (LambdaExpr {}) = unimplemented "lambda"
 
 evalExpr (ListDef exprs) = do
-    objs <- mapM evalExpr exprs
-    newList objs
+    listClass   <- evalExpr (Name $ T.pack "list")
+    list        <- call listClass [] []
+
+    forM_ exprs $ \expr -> do
+        item    <- evalExpr expr
+        invoke list "append" [item]
+
+    return list
 
 evalExpr (Name name) = do
     result <- lookupName name
@@ -301,6 +307,8 @@ evalExpr (Subscript expr idxExpr) = do
             Nothing     -> do
                 raise "IndexErrror" "index out of range"
                 return None
+
+        (obj@(Object {}), key) -> invoke obj "__getitem__" [key]
 
         _ -> do
             raise "TypeError" "object is not subscriptable"

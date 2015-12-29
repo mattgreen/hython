@@ -1,7 +1,7 @@
 module Hython.Statement (eval)
 where
 
-import Control.Monad (forM, unless)
+import Control.Monad (forM, unless, void)
 import Control.Monad.Cont (callCC)
 import Control.Monad.Fix (fix)
 import Control.Monad.Cont.Class (MonadCont)
@@ -61,6 +61,7 @@ eval (Assignment (Subscript targetExpr idxExpr) expr) = do
                     (left, right) <- pure $ splitAt (fromIntegral i) items
                     writeRef ref (left ++ [value] ++ tail right)
                 Nothing -> raise "IndexError" "index is out of range"
+        (obj@(Object {}), key) -> void $ invoke obj "__setitem__" [key, value]
 
         _ -> raise "TypeError" "object does not support item assignment"
 
@@ -96,11 +97,17 @@ eval (Del (Name name)) = do
         Left msg    -> raise "SyntaxError" msg
         Right _     -> return ()
 
+eval (Del (Subscript expr idxExpr)) = do
+    target  <- evalExpr expr
+    index   <- evalExpr idxExpr
+
+    void $ invoke target "__delitem__" [index]
+
 eval (Del _) = raise "SystemError" "invalid del statement"
 
 eval (Expression e) = do
     result <- evalExpr e
-    pushEvalResult result
+    pushEvalResult =<< toStr result
 
 eval s@(For target iterableExpr block elseBlock) = eval (Try clauses tryBody [] [])
   where

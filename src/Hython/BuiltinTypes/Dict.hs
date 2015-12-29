@@ -36,6 +36,14 @@ dictGet ref obj = do
             raise "KeyError" "key not found"
             return None
 
+dictItems :: MonadInterpreter m => DictRef -> m Object
+dictItems ref = do
+    dict    <- readRef ref
+    items   <- mapM unwrap (IntMap.elems dict)
+    newList items
+  where
+    unwrap (key, value) = newTuple [key, value]
+
 dictLength :: MonadInterpreter m => DictRef -> m Object
 dictLength ref = newInt . fromIntegral . IntMap.size =<< readRef ref
 
