@@ -114,7 +114,7 @@ loadBuiltinModules = do
   where
     getModulePaths = do
         exeDir      <- fst <$> splitExecutablePath
-        libDir      <- canonicalizePath $ exeDir </> "lib"
+        libDir      <- canonicalizePath $ exeDir </> "lib" </> "builtins"
         entries     <- getDirectoryContents libDir
 
         filterM doesFileExist $ map (libDir </>) entries

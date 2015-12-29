@@ -1,3 +1,7 @@
+class object:
+    def __str__(self):
+        return "<object>"
+
 class NoneType(object):
     def __bool__(self):
         return False
