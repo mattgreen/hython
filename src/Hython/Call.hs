@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Hython.Call (call, invoke)
+module Hython.Call (call, invoke, new)
 where
 
 import Control.Monad (forM, when, zipWithM)
@@ -12,9 +12,9 @@ import qualified Data.Text as T
 import Safe (atDef)
 
 import Hython.Builtins (callBuiltin, getAttr, setAttr)
-import Hython.ControlFlow
-import Hython.Environment (pushEnvFrame, popEnvFrame)
-import Hython.Types hiding (invoke)
+import qualified Hython.ControlFlow as ControlFlow
+import Hython.Environment (lookupName, pushEnvFrame, popEnvFrame)
+import Hython.Types hiding (invoke, new)
 
 call :: (MonadCont m, MonadInterpreter m, MonadIO m) => Object -> [Object] -> [(Text, Object)] -> m Object
 call (BuiltinFn name) args _ = callBuiltin name args
@@ -41,13 +41,13 @@ call (Function fnName params statements) args kwargs = do
         bindings <- zipWithM getArg params [0..]
         pushEnvFrame bindings
 
-        pushFrame returnCont
+        ControlFlow.pushFrame returnCont
 
         evalBlock statements
         return None
 
     _ <- popEnvFrame
-    popFrame
+    ControlFlow.popFrame
 
     return result
 
@@ -84,4 +84,13 @@ invoke target methodName args kwargs = do
         Just method -> call method args kwargs
         Nothing     -> do
             raise "AttributeError" ("object has no attribute '" ++ methodName ++ "'")
+            return None
+
+new :: (MonadCont m, MonadInterpreter m) => String -> [Object] -> m Object
+new clsName args = do
+    mcls <- lookupName $ T.pack clsName
+    case mcls of
+        Just cls    -> call cls args []
+        Nothing     -> do
+            raise "SystemError" (clsName ++ " not found!")
             return None

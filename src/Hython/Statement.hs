@@ -7,11 +7,9 @@ import Control.Monad.Fix (fix)
 import Control.Monad.Cont.Class (MonadCont)
 import Control.Monad.IO.Class (MonadIO)
 import qualified Data.Hashable as H
-import qualified Data.IntMap as IntMap
 import Data.List (find)
 import Data.Maybe (catMaybes)
 import qualified Data.Text as T
-import Safe (atMay)
 
 import Language.Python
 
@@ -20,7 +18,6 @@ import Hython.ControlFlow
 import Hython.Environment (bind, bindGlobal, bindNonlocal, getFrameDepth, pushEnvFrame, popEnvFrame, unbind, unwindTo)
 import qualified Hython.ExceptionHandling as EH
 import Hython.Expression (evalExpr)
-import Hython.Ref
 import Hython.Types
 
 eval :: (MonadIO m, MonadCont m, MonadInterpreter m) => Statement -> m ()
@@ -45,26 +42,12 @@ eval (Assignment (Name name) expr) = do
     value <- evalExpr expr
     bind name value
 
-eval (Assignment (Subscript targetExpr idxExpr) expr) = do
+eval (Assignment (Subscript targetExpr keyExpr) expr) = do
     target  <- evalExpr targetExpr
-    index   <- evalExpr idxExpr
+    key     <- evalExpr keyExpr
     value   <- evalExpr expr
 
-    case (target, index) of
-        (Dict ref, key) -> do
-            h <- hash key
-            modifyRef ref $ IntMap.insert h (key, value)
-
-        (List ref, Int i) -> do
-            items <- readRef ref
-            case atMay items (fromIntegral i) of
-                Just _ -> do
-                    (left, right) <- pure $ splitAt (fromIntegral i) items
-                    writeRef ref (left ++ [value] ++ tail right)
-                Nothing -> raise "IndexError" "index is out of range"
-        (obj@(Object {}), key) -> void $ invoke obj "__setitem__" [key, value]
-
-        _ -> raise "TypeError" "object does not support item assignment"
+    void $ invoke target "__setitem__" [key, value]
 
 eval (Break) = do
     handler <- getBreakHandler

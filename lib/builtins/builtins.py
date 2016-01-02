@@ -179,7 +179,7 @@ class set(object):
             self.add(i)
 
     def __contains__(self, key):
-        return self.__contains__(key)
+        return self._set.__contains__(key)
 
     def __len__(self):
         return self._set.__len__()

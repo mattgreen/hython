@@ -1,7 +1,6 @@
 module Hython.Builtins where
 
 import Control.Monad.Trans.Maybe
-import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.ByteString as BS
 import qualified Data.IntMap.Strict as IM
 import Data.Text (Text)

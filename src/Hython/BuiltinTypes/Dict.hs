@@ -7,7 +7,9 @@ import Hython.Ref
 import Hython.Types
 
 dictNew :: MonadInterpreter m => m Object
-dictNew = newDict []
+dictNew = do
+    r <- newRef IntMap.empty
+    return $ Dict r
 
 dictClear :: MonadInterpreter m => DictRef -> m Object
 dictClear ref = do

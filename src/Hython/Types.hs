@@ -3,7 +3,7 @@
 module Hython.Types
 where
 
-import Control.Monad (forM)
+import Control.Monad (forM, forM_)
 import Control.Monad.IO.Class (MonadIO)
 import Data.ByteString (ByteString)
 import qualified Data.Hashable as H
@@ -19,7 +19,7 @@ import qualified Data.Text as T
 
 import Language.Python (Statement)
 
-import Hython.ControlFlow
+import Hython.ControlFlow (MonadFlow)
 import Hython.Name
 import Hython.Ref
 
@@ -102,10 +102,11 @@ class MonadIO m => MonadEnv m where
 class (MonadEnv m, MonadFlow Object (Object -> m ()) m, MonadIO m) => MonadInterpreter m where
     evalBlock       :: [Statement] -> m ()
     invoke          :: Object -> String -> [Object] -> m Object
+    new             :: String -> [Object] -> m Object
     pushEvalResult  :: String -> m ()
     raise           :: String -> String -> m ()
 
-hash :: (MonadInterpreter m, MonadIO m) => Object -> m Int
+hash :: MonadInterpreter m => Object -> m Int
 hash obj = case obj of
     (None)          -> return 0
     (Bool b)        -> return $ H.hash b
@@ -141,13 +142,12 @@ newClass name bases dict = do
         classDict = ref
     }
 
-newDict :: (MonadInterpreter m, MonadIO m) => [(Object, Object)] -> m Object
-newDict objs = do
-    items <- forM objs $ \p@(key, _) -> do
-        h <- hash key
-        return (h, p)
-    ref <- newRef $ IntMap.fromList items
-    return $ Dict ref
+newDict :: MonadInterpreter m => [(Object, Object)] -> m Object
+newDict items = do
+    dict <- new "dict" []
+    forM_ items $ \(key, value) ->
+        invoke dict "__setitem__" [key, value]
+    return dict
 
 newFloat :: MonadInterpreter m => Double -> m Object
 newFloat d = return $ Float d
@@ -162,9 +162,10 @@ newInt :: MonadInterpreter m => Integer -> m Object
 newInt i = return $ Int i
 
 newList :: (MonadInterpreter m, MonadIO m) => [Object] -> m Object
-newList l = do
-    ref <- newRef l
-    return $ List ref
+newList items = do
+    list <- new "list" []
+    mapM_ (\item -> invoke list "append" [item]) items
+    return list
 
 newObject :: (MonadIO m) => ClassInfo -> m Object
 newObject cls = do
@@ -177,13 +178,11 @@ newObject cls = do
 
     return $ Object info
 
-newSet :: (MonadInterpreter m, MonadIO m) => [Object] -> m Object
-newSet objs = do
-    items <- forM objs $ \obj -> do
-        key <- hash obj
-        return (key, obj)
-    ref <- newRef $ IntMap.fromList items
-    return $ Set ref
+newSet :: MonadInterpreter m => [Object] -> m Object
+newSet items = do
+    set <- new "set" []
+    mapM_ (\item -> invoke set "add" [item]) items
+    return set
 
 newString :: MonadInterpreter m => Text -> m Object
 newString s = return $ String s
@@ -241,12 +240,11 @@ toStr (Dict ref) = do
     return $ "{" ++ intercalate ", " strItems ++ "}"
 toStr (BuiltinFn name)  = return $ "<built-in function " ++ T.unpack name ++ ">"
 toStr (Class info) = return $ "<class '" ++ T.unpack (className info) ++ "'>"
-toStr obj@(Object info) = do
+toStr obj@(Object {}) = do
     str <- invoke obj "__str__" []
     case str of
         String s    -> return . T.unpack $ s
         _           -> toStr str
-    {-return $ "<" ++ T.unpack (className (objectClass info)) ++ " object>"-}
 toStr (Method name (ClassBinding clsName _) _ _) = 
     return $ "<method '" ++ T.unpack name ++ "' of '" ++ T.unpack clsName ++ "' objects>"
 toStr (Method name (InstanceBinding clsName obj) _ _) = do

@@ -41,4 +41,6 @@ listLength ref = do
     newInt . fromIntegral . length $ l
 
 listNew :: MonadInterpreter m => m Object
-listNew = newList []
+listNew = do
+    r <- newRef []
+    return $ List r

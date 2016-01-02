@@ -1,6 +1,6 @@
 module Hython.Expression (evalExpr) where
 
-import Control.Monad (forM, forM_, zipWithM)
+import Control.Monad (forM, zipWithM)
 import Control.Monad.Cont.Class (MonadCont)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Bits ((.&.), (.|.), complement, shiftL, shiftR, xor)
@@ -232,15 +232,12 @@ evalExpr (Constant c) = case c of
     ConstantString s    -> newString s
 
 evalExpr (DictDef exprs) = do
-    dictClass   <- evalExpr (Name $ T.pack "dict")
-    dict        <- call dictClass [] []
-
-    forM_ exprs $ \(keyExpr, valueExpr) -> do
+    items <- forM exprs $ \(keyExpr, valueExpr) -> do
         key     <- evalExpr keyExpr
         value   <- evalExpr valueExpr
-        invoke dict "__setitem__" [key, value]
+        return (key, value)
 
-    return dict
+    newDict items
 
 evalExpr (From {}) = unimplemented "from"
 
@@ -249,14 +246,8 @@ evalExpr (Glob {}) = unimplemented "glob"
 evalExpr (LambdaExpr {}) = unimplemented "lambda"
 
 evalExpr (ListDef exprs) = do
-    listClass   <- evalExpr (Name $ T.pack "list")
-    list        <- call listClass [] []
-
-    forM_ exprs $ \expr -> do
-        item    <- evalExpr expr
-        invoke list "append" [item]
-
-    return list
+    items <- mapM evalExpr exprs
+    newList items
 
 evalExpr (Name name) = do
     result <- lookupName name
@@ -269,14 +260,8 @@ evalExpr (Name name) = do
 evalExpr (RelativeImport {}) = unimplemented "relative import"
 
 evalExpr (SetDef exprs) = do
-    setClass    <- evalExpr (Name $ T.pack "set")
-    set         <- call setClass [] []
-
-    forM_ exprs $ \expr -> do
-        item    <- evalExpr expr
-        invoke set "add" [item]
-
-    return set
+    items <- mapM evalExpr exprs
+    newSet items
 
 evalExpr (SliceDef {}) = unimplemented "slices"
 
@@ -284,25 +269,6 @@ evalExpr (Subscript expr idxExpr) = do
     target  <- evalExpr expr
     index   <- evalExpr idxExpr
     case (target, index) of
-        (Dict ref, key) -> do
-            items <- readRef ref
-            h <- hash key
-
-            case IntMap.lookup h items of
-                Just (_, value) -> return value
-                Nothing -> do
-                    s <- toStr key
-                    raise "KeyError" s
-                    return None
-
-        (List ref, Int i) -> do
-            items <- readRef ref
-            case atMay items (fromIntegral i) of
-                Just obj    -> return obj
-                Nothing     -> do
-                    raise "TypeError" "index out of range"
-                    return None
-
         (String s, Int i) -> case atMay (T.unpack s) (fromIntegral i) of
             Just c      -> newString $ T.pack [c]
             Nothing     -> do

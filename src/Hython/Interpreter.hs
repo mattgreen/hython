@@ -54,6 +54,7 @@ instance MonadInterpreter Interpreter where
     evalBlock statements = mapM_ Statement.eval statements
     pushEvalResult str = Interpreter $ modify $ \s -> s { stateResults = stateResults s ++ [str] }
     invoke obj method args = Call.invoke obj method args []
+    new clsName args = Call.new clsName args
     raise clsName desc = ExceptionHandling.raiseInternal (T.pack clsName) (T.pack desc)
 
 defaultInterpreterState :: IO InterpreterState
@@ -123,14 +124,14 @@ runInterpreter :: InterpreterState -> Text -> IO (Either String [String], Interp
 runInterpreter state code = case parse code of
     Left msg    -> return (Left msg, state)
     Right stmts -> do
-        let new = stateNew state
+        let firstTime = stateNew state
 
-        (_, newState) <- runStateT (runContT (unwrap $ run new stmts) return) state
+        (_, newState) <- runStateT (runContT (unwrap $ run firstTime stmts) return) state
         let results = stateResults newState
         return (Right results, newState { stateNew = False, stateResults = [] })
   where
-    run new stmts = do
-        when new
+    run firstTime stmts = do
+        when firstTime
             loadBuiltinModules
 
         evalBlock stmts
