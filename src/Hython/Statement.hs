@@ -1,7 +1,7 @@
 module Hython.Statement (eval)
 where
 
-import Control.Monad (forM, unless, void)
+import Control.Monad (forM, unless, when, void, zipWithM_)
 import Control.Monad.Cont (callCC)
 import Control.Monad.Fix (fix)
 import Control.Monad.Cont.Class (MonadCont)
@@ -13,7 +13,7 @@ import qualified Data.Text as T
 
 import Language.Python
 
-import Hython.Builtins (isInstance, setAttr)
+import Hython.Builtins (isInstance, len, setAttr)
 import Hython.ControlFlow
 import Hython.Environment (bind, bindGlobal, bindNonlocal, getFrameDepth, pushEnvFrame, popEnvFrame, unbind, unwindTo)
 import qualified Hython.ExceptionHandling as EH
@@ -41,6 +41,22 @@ eval (Assignment (Attribute targetExpr attr) expr) = do
 eval (Assignment (Name name) expr) = do
     value <- evalExpr expr
     bind name value
+
+eval (Assignment (TupleDef targetExprs) expr) = do
+    source      <- evalExpr expr
+    sourceLen   <- len source
+
+    when (sourceLen > targetLen) $
+        raise "ValueError" "too many values to unpack"
+    when (targetLen > sourceLen) $
+        raise "ValueError" "not enough values to unpack"
+
+    zipWithM_ bindName targetExprs [0 .. ]
+  where
+    bindName targetExpr idx = eval $ Assignment targetExpr (subscript idx)
+    subscript idx = Subscript expr (Constant $ ConstantInt idx)
+
+    targetLen = length targetExprs
 
 eval (Assignment (Subscript targetExpr keyExpr) expr) = do
     target  <- evalExpr targetExpr

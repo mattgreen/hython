@@ -28,21 +28,7 @@ callBuiltin name args = case (T.unpack name, args) of
     ("__hython_primitive__", []) ->
         ignore $ raise "SystemError" "__hython_primitive__ requires at least one arg"
 
-    ("len", [obj]) -> case obj of
-        Object {}   -> invoke obj "__len__" []
-        (String s)  -> newInt . toInteger $ T.length s
-        (Bytes b)   -> newInt . toInteger $ BS.length b
-        (Tuple t)   -> newInt . toInteger $ length t
-        (List ref)  -> do
-            l <- readRef ref
-            newInt . toInteger . length $ l
-        (Dict ref)  -> do
-            d <- readRef ref
-            newInt . toInteger . IM.size $ d
-        (Set ref)  -> do
-            s <- readRef ref
-            newInt . toInteger . IM.size $ s
-        _ -> ignore $ raise "SystemError" "object has no __len__"
+    ("len", [obj]) -> newInt . toInteger =<< len obj
     ("len", _) ->
         ignore $ raise "SystemError" "len() takes only one arg"
     ("isinstance", [obj, Class info]) ->
@@ -75,6 +61,32 @@ isInstance :: Object -> ClassInfo -> Bool
 isInstance (Object info) cls = objectClass info == cls || cls `elem` (classBases . objectClass $ info)
 isInstance (Class info) cls = info == cls || cls `elem` classBases info
 isInstance _ _ = False
+
+len :: MonadInterpreter m => Object -> m Int
+len obj@(Object {}) = do
+    r <- invoke obj "__len__" []
+    case r of
+        (Int i) -> return $ fromIntegral i
+        _       -> do
+            raise "SystemError" "returned non-int from __len__ method"
+            return 0
+
+len (String s)  = return $ T.length s
+len (Bytes b)   = return $ BS.length b
+len (Tuple t)   = return $ length t
+len (List ref)  = do
+    l <- readRef ref
+    return $ length l
+len (Dict ref)  = do
+    d <- readRef ref
+    return $ IM.size d
+len (Set ref)  = do
+    s <- readRef ref
+    return $ IM.size s
+len _ = do
+    raise "SystemError" "object has no __len__"
+    return 0
+
 
 setAttr :: (MonadInterpreter m) => Text -> Object -> Object -> m ()
 setAttr attr obj target = case getObjAttrs target of

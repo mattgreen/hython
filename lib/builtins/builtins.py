@@ -140,6 +140,11 @@ class list(object):
         return __hython_primitive__("list-contains", self._list, item)
 
     def __getitem__(self, index):
+        if index < 0:
+            index = self.__len__() - index
+        if index >= self.__len__():
+            raise IndexError("list index out of range")
+
         return __hython_primitive__("list-get", self._list, index)
 
     def __len__(self):
