@@ -3,7 +3,7 @@
 module Hython.Types
 where
 
-import Control.Monad (forM, forM_)
+import Control.Monad (forM, forM_, zipWithM)
 import Control.Monad.IO.Class (MonadIO)
 import Data.ByteString (ByteString)
 import qualified Data.Hashable as H
@@ -193,6 +193,43 @@ newTuple l = return $ Tuple l
 isNone :: Object -> Bool
 isNone (None) = True
 isNone _ = False
+
+equal :: MonadInterpreter m => Object -> Object -> m Bool
+equal (Bool l) (Bool r)             = return $ l == r
+equal (Bytes l) (Bytes r)           = return $ l == r
+equal (Float l) (Float r)           = return $ l == r
+equal (Imaginary l) (Imaginary r)   = return $ l == r
+equal (Int l) (Int r)               = return $ l == r
+equal (String l) (String r)         = return $ l == r
+equal (BuiltinFn l) (BuiltinFn r)   = return $ l == r
+equal (Tuple l) (Tuple r)           =
+    if length l /= length r
+        then return False
+        else do
+            results <- zipWithM equal l r
+            return $ all (== True) results
+equal (List l) (List r) = do
+    left    <- readRef l
+    right   <- readRef r
+    equal (Tuple left) (Tuple right)
+equal (Set l) (Set r) = do
+    left    <- readRef l
+    right   <- readRef r
+    equal (Tuple $ IntMap.elems left) (Tuple $ IntMap.elems right)
+equal (Dict l) (Dict r) = do
+    left    <- readRef l
+    right   <- readRef r
+    if IntMap.size left /= IntMap.size right
+        then return False
+        else do
+            results <- zipWithM pairEqual (IntMap.elems left) (IntMap.elems right)
+            return $ all (== True) results
+  where
+    pairEqual (lk, lv) (rk, rv) = do
+        k <- equal lk rk
+        v <- equal lv rv
+        return $ k && v
+equal _ _                           = return False
 
 isTruthy :: MonadInterpreter m => Object -> m Bool
 isTruthy (None) = return False

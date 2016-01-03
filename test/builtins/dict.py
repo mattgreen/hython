@@ -3,6 +3,11 @@ blank = {}
 
 d = { "key": "value", "key2": 98123 }
 
+print("key" in d)
+print("key2" in d)
+print("not-in" in d)
+print("not-in" not in d)
+
 try:
     d["asdf"]
 except KeyError:

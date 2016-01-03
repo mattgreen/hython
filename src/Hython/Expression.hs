@@ -1,6 +1,6 @@
 module Hython.Expression (evalExpr) where
 
-import Control.Monad (forM, zipWithM)
+import Control.Monad (forM)
 import Control.Monad.Cont.Class (MonadCont)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Bits ((.&.), (.|.), complement, shiftL, shiftR, xor)
@@ -113,18 +113,7 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
         (GreaterThanEq, Float l, Float r)   -> newBool (l >= r)
         (_, Float _, Int r)                 -> evalExpr (BinOp (CompOp op) leftExpr (constantF r))
         (_, Int l, Float _)                 -> evalExpr (BinOp (CompOp op) (constantF l) rightExpr)
-        (In, l, Dict ref)                   -> do
-            h <- hash l
-            items <- readRef ref
-            newBool $ IntMap.member h items
-        (In, l, List ref)                   -> do
-            items <- readRef ref
-            results <- mapM (equal l) items
-            newBool $ True `elem` results
-        (In, l, Set ref)                    -> do
-            key <- hash l
-            items <- readRef ref
-            newBool $ key `IntMap.member` items
+        (In, l, r@(Object {}))              -> invoke r "__contains__" [l]
         (In, l, Tuple items)                -> do
             results <- mapM (equal l) items
             newBool $ True `elem` results
@@ -136,42 +125,6 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
             return None
   where
     constantF i = Constant $ ConstantFloat $ fromIntegral i
-
-    equal (Bool l) (Bool r)             = return $ l == r
-    equal (Bytes l) (Bytes r)           = return $ l == r
-    equal (Float l) (Float r)           = return $ l == r
-    equal (Imaginary l) (Imaginary r)   = return $ l == r
-    equal (Int l) (Int r)               = return $ l == r
-    equal (String l) (String r)         = return $ l == r
-    equal (BuiltinFn l) (BuiltinFn r)   = return $ l == r
-    equal (Tuple l) (Tuple r)           =
-        if length l /= length r
-            then return False
-            else do
-                results <- zipWithM equal l r
-                return $ all (== True) results
-    equal (List l) (List r) = do
-        left    <- readRef l
-        right   <- readRef r
-        equal (Tuple left) (Tuple right)
-    equal (Set l) (Set r) = do
-        left    <- readRef l
-        right   <- readRef r
-        equal (Tuple $ IntMap.elems left) (Tuple $ IntMap.elems right)
-    equal (Dict l) (Dict r) = do
-        left    <- readRef l
-        right   <- readRef r
-        if IntMap.size left /= IntMap.size right
-            then return False
-            else do
-                results <- zipWithM pairEqual (IntMap.elems left) (IntMap.elems right)
-                return $ all (== True) results
-    equal _ _                           = return False
-
-    pairEqual (lk, lv) (rk, rv) = do
-        k <- equal lk rk
-        v <- equal lv rv
-        return $ k && v
 
 evalExpr (Call expr argExprs) = do
     target      <- evalExpr expr

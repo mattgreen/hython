@@ -21,6 +21,7 @@ callPrimitive prim args = case (prim, args) of
     ("list-append", [List ref, obj])    -> listAppend ref obj
     ("list-clear", [List ref])          -> listClear ref
     ("list-concat", [List l, List r])   -> listConcat l r
+    ("list-contains", [List l, obj])    -> listContains l obj
     ("list-get", [List l, obj])         -> listGet l obj
     ("list-length", [List l])           -> listLength l
     ("list-new", [])                    -> listNew

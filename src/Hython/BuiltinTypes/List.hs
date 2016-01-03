@@ -16,6 +16,12 @@ listClear ref = do
     writeRef ref []
     return None
 
+listContains :: MonadInterpreter m => ListRef -> Object -> m Object
+listContains ref obj = do
+    l <- readRef ref
+    results <- mapM (equal obj) l
+    newBool $ True `elem` results
+
 listConcat :: MonadInterpreter m => ListRef -> ListRef -> m Object
 listConcat left right = do
     r <- readRef right

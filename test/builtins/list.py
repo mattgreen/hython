@@ -21,3 +21,8 @@ print(l.__len__())
 
 l.clear()
 print(l.__len__())
+
+l = [1,5,10]
+print(1 in l)
+print(8 in l)
+print(8 not in l)
