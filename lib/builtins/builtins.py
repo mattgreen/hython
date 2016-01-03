@@ -127,6 +127,12 @@ class list(object):
     def __init__(self):
         self._list = __hython_primitive__("list-new")
 
+    def __add__(self, r):
+        result = list()
+        result.extend(self)
+        result.extend(r)
+        return result
+
     def __bool__(self):
         return self.__len__() > 0
 
@@ -138,6 +144,13 @@ class list(object):
 
     def __len__(self):
         return __hython_primitive__("list-length", self._list)
+
+    def __mul__(self, n):
+        result = list()
+        while n > 0:
+            result.extend(self)
+            n -= 1
+        return result
 
     def __str__(self):
         return __hython_primitive__("str", self._list)

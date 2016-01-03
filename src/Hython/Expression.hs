@@ -36,10 +36,7 @@ evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
         (Add, Int l, Int r)         -> newInt (l + r)
         (Add, Float l, Float r)     -> newFloat (l + r)
         (Add, String l, String r)   -> newString $ T.append l r
-        (Add, List l, List r)       -> do
-            left    <- readRef l
-            right   <- readRef r
-            newList (left ++ right)
+        (Add, l@(Object {}), r)     -> invoke l "__add__" [r]
         (Add, Tuple l, Tuple r)     -> newTuple (l ++ r)
         (Sub, Int l, Int r)         -> newInt (l - r)
         (Sub, Float l, Float r)     -> newFloat (l - r)
@@ -47,12 +44,10 @@ evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
         (Mul, Float l, Float r)     -> newFloat (l * r)
         (Mul, Int l, String r)      -> newString $ T.replicate (fromInteger l) r
         (Mul, String _, Int _)      -> evalExpr (BinOp (ArithOp op) rightExpr leftExpr)
-        (Mul, List l, Int r)        -> do
-            items <- readRef l
-            newList $ concat $ replicate (fromInteger r) items
         (Mul, Int _, List _)        -> evalExpr (BinOp (ArithOp op) rightExpr leftExpr)
         (Mul, Tuple l, Int r)       -> newTuple $ concat $ replicate (fromInteger r) l
         (Mul, Int _, Tuple _)       -> evalExpr (BinOp (ArithOp op) rightExpr leftExpr)
+        (Mul, l@(Object {}), r)     -> invoke l "__mul__" [r]
         (Div, Int l, Int r)         -> newFloat (fromInteger l / fromInteger r)
         (Div, Float l, Float r)     -> newFloat (l / r)
         (Mod, Int l, Int r)         -> newInt (l `mod` r)
