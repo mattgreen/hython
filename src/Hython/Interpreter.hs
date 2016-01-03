@@ -20,7 +20,7 @@ import System.FilePath
 
 import Language.Python.Parser (parse)
 
-import Hython.Builtins (asStr, builtinFunctions)
+import Hython.Builtins (builtinFunctions)
 import qualified Hython.Call as Call
 import Hython.ControlFlow (Flow, MonadFlow)
 import qualified Hython.ControlFlow as ControlFlow
@@ -90,7 +90,7 @@ defaultExceptionHandler :: Object -> Interpreter ()
 defaultExceptionHandler ex = do
     case ex of
         Object info -> do
-            msg <- asStr =<< invoke ex "__str__" []
+            msg <- toStr =<< invoke ex "__str__" []
 
             liftIO $ do
                 putStr . T.unpack . className . objectClass $ info

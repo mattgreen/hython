@@ -76,10 +76,6 @@ isInstance (Object info) cls = objectClass info == cls || cls `elem` (classBases
 isInstance (Class info) cls = info == cls || cls `elem` classBases info
 isInstance _ _ = False
 
-asStr :: MonadInterpreter m => Object -> m String
-asStr (String s)    = return . T.unpack $ s
-asStr o@_           = toStr o
-
 setAttr :: (MonadInterpreter m) => Text -> Object -> Object -> m ()
 setAttr attr obj target = case getObjAttrs target of
         Just ref -> do

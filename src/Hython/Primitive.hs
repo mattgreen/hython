@@ -25,7 +25,7 @@ callPrimitive prim args = case (prim, args) of
     ("list-length", [List l])           -> listLength l
     ("list-new", [])                    -> listNew
     ("print", _)                        -> do
-        strs <- mapM asStr args
+        strs <- mapM toStr args
         liftIO . putStrLn . unwords $ strs
         return None
 
@@ -35,8 +35,4 @@ callPrimitive prim args = case (prim, args) of
     _ -> do
         raise "SystemError" ("invalid primitive: " ++ prim)
         return None
-
-asStr :: MonadInterpreter m => Object -> m String
-asStr (String s)    = return . T.unpack $ s
-asStr o@_           = toStr o
 

@@ -218,7 +218,7 @@ toStr (Imaginary i)
     | realPart i == 0   = return $ show i
     | otherwise         = return $ show i
 toStr (Int i) = return $ show i
-toStr (String s) = return $ "'" ++ T.unpack s ++ "'"
+toStr (String s) = return $ T.unpack s
 toStr (List ref) = do
     l <- readRef ref
     strItems <- mapM toStr l
