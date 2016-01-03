@@ -194,7 +194,7 @@ isNone :: Object -> Bool
 isNone (None) = True
 isNone _ = False
 
-isTruthy :: MonadIO m => Object -> m Bool
+isTruthy :: MonadInterpreter m => Object -> m Bool
 isTruthy (None) = return False
 isTruthy (Bool False) = return False
 isTruthy (Int 0) = return False
@@ -204,6 +204,7 @@ isTruthy (Bytes b) = return $ not (B.null b)
 isTruthy (List ref) = do
     l <- readRef ref
     return $ not (null l)
+isTruthy obj@(Object {}) = isTruthy =<< invoke obj "__bool__" []
 isTruthy (Tuple objs) = return $ not $ null objs
 isTruthy _ = return True
 

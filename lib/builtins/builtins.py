@@ -1,4 +1,7 @@
 class object:
+    def __bool__(self):
+        return True
+
     def __str__(self):
         return "<object>"
 
@@ -10,8 +13,6 @@ class NoneType(object):
         return "None"
 
 class ellipsis(object):
-    def __bool__(self):
-        return True
     def __str__(self):
         return "Ellipsis"
 
@@ -55,6 +56,9 @@ def print(*args):
 class dict(object):
     def __init__(self):
         self._dict = __hython_primitive__("dict-new")
+
+    def __bool__(self):
+        return self.__len__() > 0
 
     def __contains__(self, key):
         return __hython_primitive__("dict-contains", self._dict, key)
@@ -122,6 +126,9 @@ class dict(object):
 class list(object):
     def __init__(self):
         self._list = __hython_primitive__("list-new")
+
+    def __bool__(self):
+        return self.__len__() > 0
 
     def __contains__(self, item):
         return __hython_primitive__("list-contains", self._list, item)
