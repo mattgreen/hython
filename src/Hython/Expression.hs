@@ -37,7 +37,6 @@ evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
         (Add, Float l, Float r)     -> newFloat (l + r)
         (Add, String l, String r)   -> newString $ T.append l r
         (Add, l@(Object {}), r)     -> invoke l "__add__" [r]
-        (Add, Tuple l, Tuple r)     -> newTuple (l ++ r)
         (Sub, Int l, Int r)         -> newInt (l - r)
         (Sub, Float l, Float r)     -> newFloat (l - r)
         (Mul, Int l, Int r)         -> newInt (l * r)
@@ -45,9 +44,8 @@ evalExpr (BinOp (ArithOp op) leftExpr rightExpr) = do
         (Mul, Int l, String r)      -> newString $ T.replicate (fromInteger l) r
         (Mul, String _, Int _)      -> evalExpr (BinOp (ArithOp op) rightExpr leftExpr)
         (Mul, Int _, List _)        -> evalExpr (BinOp (ArithOp op) rightExpr leftExpr)
-        (Mul, Tuple l, Int r)       -> newTuple $ concat $ replicate (fromInteger r) l
-        (Mul, Int _, Tuple _)       -> evalExpr (BinOp (ArithOp op) rightExpr leftExpr)
         (Mul, l@(Object {}), r)     -> invoke l "__mul__" [r]
+        (Mul, l, r@(Object {}))     -> invoke r "__mul__" [l]
         (Div, Int l, Int r)         -> newFloat (fromInteger l / fromInteger r)
         (Div, Float l, Float r)     -> newFloat (l / r)
         (Mod, Int l, Int r)         -> newInt (l `mod` r)
@@ -114,9 +112,6 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
         (_, Float _, Int r)                 -> evalExpr (BinOp (CompOp op) leftExpr (constantF r))
         (_, Int l, Float _)                 -> evalExpr (BinOp (CompOp op) (constantF l) rightExpr)
         (In, l, r@(Object {}))              -> invoke r "__contains__" [l]
-        (In, l, Tuple items)                -> do
-            results <- mapM (equal l) items
-            newBool $ True `elem` results
         (NotIn, _, _)                       -> do
             (Bool b) <- evalExpr (BinOp (CompOp In) leftExpr rightExpr)
             newBool (not b)
@@ -140,9 +135,10 @@ evalExpr (Call expr argExprs) = do
     evalArg (StarArg e) = do
         obj <- evalExpr e
         case obj of
-            (Tuple objs)    -> return objs
-            (List ref)      -> readRef ref
-            _               -> do
+            Object {}   -> do
+                (List ref) <- invoke obj "__rawitems__" []
+                readRef ref
+            _           -> do
                 raise "TypeError" "argument after * must be a sequence"
                 return []
 
@@ -223,12 +219,6 @@ evalExpr (Subscript expr idxExpr) = do
                 raise "IndexError" "index out of range"
                 return None
 
-        (Tuple objs, Int i) -> case atMay objs (fromIntegral i) of
-            Just obj    -> return obj
-            Nothing     -> do
-                raise "IndexErrror" "index out of range"
-                return None
-
         (obj@(Object {}), key) -> invoke obj "__getitem__" [key]
 
         _ -> do
@@ -241,8 +231,8 @@ evalExpr (TernOp condExpr thenExpr elseExpr) = do
     evalExpr expr
 
 evalExpr (TupleDef exprs) = do
-    objs <- mapM evalExpr exprs
-    return $ Tuple objs
+    items <- mapM evalExpr exprs
+    newTuple items
 
 evalExpr (UnaryOp op expr) = do
     obj <- evalExpr expr

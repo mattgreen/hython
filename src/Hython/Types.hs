@@ -33,7 +33,6 @@ data Object = None
             | List ListRef
             | Dict DictRef
             | Set SetRef
-            | Tuple [Object]
             | BuiltinFn Text
             | Function Text [FnParam] [Statement]
             | Method Text MethodBinding [FnParam] [Statement]
@@ -116,9 +115,13 @@ hash obj = case obj of
     (Imaginary i)   -> return $ H.hash (realPart i) + H.hash (imagPart i)
     (Int i)         -> return $ H.hash i
     (String s)      -> return $ H.hash s
-    (Tuple items)   -> do
-        hashes <- mapM hash items
-        return $ sum hashes
+    (Object {}) -> do
+        result <- invoke obj "__hash__" []
+        case result of
+            (Int i) -> return $ fromInteger i
+            _       -> do
+                raise "SystemError" "non-int returned from __hash__"
+                return 0
     _               -> do
         raise "TypeError" "unhashable type"
         return 0
@@ -188,7 +191,9 @@ newString :: MonadInterpreter m => Text -> m Object
 newString s = return $ String s
 
 newTuple :: MonadInterpreter m => [Object] -> m Object
-newTuple l = return $ Tuple l
+newTuple items = do
+    args    <- newList items
+    new "tuple" [args]
 
 isNone :: Object -> Bool
 isNone (None) = True
@@ -202,20 +207,6 @@ equal (Imaginary l) (Imaginary r)   = return $ l == r
 equal (Int l) (Int r)               = return $ l == r
 equal (String l) (String r)         = return $ l == r
 equal (BuiltinFn l) (BuiltinFn r)   = return $ l == r
-equal (Tuple l) (Tuple r)           =
-    if length l /= length r
-        then return False
-        else do
-            results <- zipWithM equal l r
-            return $ all (== True) results
-equal (List l) (List r) = do
-    left    <- readRef l
-    right   <- readRef r
-    equal (Tuple left) (Tuple right)
-equal (Set l) (Set r) = do
-    left    <- readRef l
-    right   <- readRef r
-    equal (Tuple $ IntMap.elems left) (Tuple $ IntMap.elems right)
 equal (Dict l) (Dict r) = do
     left    <- readRef l
     right   <- readRef r
@@ -242,7 +233,6 @@ isTruthy (List ref) = do
     l <- readRef ref
     return $ not (null l)
 isTruthy obj@(Object {}) = isTruthy =<< invoke obj "__bool__" []
-isTruthy (Tuple objs) = return $ not $ null objs
 isTruthy _ = return True
 
 toStr :: MonadInterpreter m => Object -> m String
@@ -256,25 +246,9 @@ toStr (Imaginary i)
     | otherwise         = return $ show i
 toStr (Int i) = return $ show i
 toStr (String s) = return $ T.unpack s
-toStr (List ref) = do
-    l <- readRef ref
-    strItems <- mapM toStr l
-    return $ "[" ++ intercalate ", " strItems ++ "]"
-toStr (Tuple objs) = do
-    strItems <- mapM toStr objs
-    case strItems of
-        [str]   -> return $ "(" ++ str ++ ",)"
-        _       -> return $ "(" ++ intercalate ", " strItems ++ ")"
 toStr (Set ref) = do
     items <- readRef ref
     strItems <- mapM toStr $ IntMap.elems items
-    return $ "{" ++ intercalate ", " strItems ++ "}"
-toStr (Dict ref) = do
-    items <- readRef ref
-    strItems <- forM (IntMap.elems items) $ \(k, v) -> do
-        key     <- toStr k
-        value   <- toStr v
-        return $ key ++ ": " ++ value
     return $ "{" ++ intercalate ", " strItems ++ "}"
 toStr (BuiltinFn name)  = return $ "<built-in function " ++ T.unpack name ++ ">"
 toStr (Class info) = return $ "<class '" ++ T.unpack (className info) ++ "'>"

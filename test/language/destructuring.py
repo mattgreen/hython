@@ -8,6 +8,6 @@ print(a)
 print(b)
 print(c)
 
-#d = { 1: "hi", 2: "bye" }
-#for k, v in d.items():
-    #print(k)
+d = { 1: "hi", 2: "bye" }
+for k, v in d.items():
+    print(k)

@@ -51,10 +51,14 @@ eval (Assignment (TupleDef targetExprs) expr) = do
     when (targetLen > sourceLen) $
         raise "ValueError" "not enough values to unpack"
 
-    zipWithM_ bindName targetExprs [0 .. ]
+    zipWithM_ (bindName source) targetExprs [0 .. ]
   where
-    bindName targetExpr idx = eval $ Assignment targetExpr (subscript idx)
-    subscript idx = Subscript expr (Constant $ ConstantInt idx)
+    bindName source target idx = case target of
+        Name name -> do
+            index <- newInt idx
+            value <- invoke source "__getitem__" [index]
+            bind name value
+        _ -> raise "SyntaxError" "can only destructure to names"
 
     targetLen = length targetExprs
 

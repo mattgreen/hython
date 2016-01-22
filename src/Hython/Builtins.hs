@@ -73,7 +73,6 @@ len obj@(Object {}) = do
 
 len (String s)  = return $ T.length s
 len (Bytes b)   = return $ BS.length b
-len (Tuple t)   = return $ length t
 len (List ref)  = do
     l <- readRef ref
     return $ length l
@@ -86,7 +85,6 @@ len (Set ref)  = do
 len _ = do
     raise "SystemError" "object has no __len__"
     return 0
-
 
 setAttr :: (MonadInterpreter m) => Text -> Object -> Object -> m ()
 setAttr attr obj target = case getObjAttrs target of

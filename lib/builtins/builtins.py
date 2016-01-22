@@ -48,10 +48,14 @@ class basic_iterator(object):
 
         o = self._obj[self._index]
         self._index += 1
+
         return o
 
 def print(*args):
     __hython_primitive__("print", *args)
+
+def str(obj):
+    return __hython_primitive__("str", obj)
 
 class dict(object):
     def __init__(self):
@@ -79,7 +83,17 @@ class dict(object):
         __hython_primitive__("dict-set", self._dict, key, value)
 
     def __str__(self):
-        return __hython_primitive__("str", self._dict)
+        s = "{"
+
+        i = 0
+        for key, value in self.items():
+            if i > 0:
+                s += ", "
+            s += str(key) + ": " + str(value)
+            i += 1
+
+        s += "}"
+        return s
 
     def clear(self):
         __hython_primitive__("dict-clear", self._dict)
@@ -139,6 +153,18 @@ class list(object):
     def __contains__(self, item):
         return __hython_primitive__("list-contains", self._list, item)
 
+    def __eq__(self, rhs):
+        if len(self) != len(rhs):
+            return False
+
+        i = 0
+        while i < len(self):
+            if self[i] != rhs[i]:
+                return False
+            i += 1
+
+        return True
+
     def __getitem__(self, index):
         if index < 0:
             index = self.__len__() - index
@@ -157,8 +183,21 @@ class list(object):
             n -= 1
         return result
 
+    def __rawitems__(self):
+        return self._list
+
     def __str__(self):
-        return __hython_primitive__("str", self._list)
+        s = "["
+
+        i = 0
+        while i < len(self):
+            if i > 0:
+                s += ", "
+            s += str(self[i])
+            i += 1
+
+        s += "]"
+        return s
 
     def append(self, obj):
         __hython_primitive__("list-append", self._list, obj)
@@ -217,6 +256,58 @@ class set(object):
 
     def remove(self, o):
         del self._set[o]
+
+class tuple(object):
+    def __init__(self, iterable = None):
+        self._items = []
+        if iterable:
+            self._items.extend(iterable)
+
+    def __add__(self, iterable):
+        return tuple(self._items.__add__(iterable))
+
+    def __bool__(self):
+        return self._items.__bool__()
+
+    def __contains__(self, obj):
+        return self._items.__contains__(obj)
+
+    def __eq__(self, obj):
+        return self._items.__eq__(obj)
+
+    def __getitem__(self, i):
+        return self._items.__getitem__(i)
+
+    def __hash__(self):
+        h = 0
+        for i in self:
+            h += hash(i)
+        return h
+
+    def __mul__(self, iterable):
+        return tuple(self._items.__mul__(iterable))
+
+    def __len__(self):
+        return self._items.__len__()
+
+    def __rawitems__(self):
+        return self._items.__rawitems__()
+
+    def __str__(self):
+        s = "("
+
+        i = 0
+        while i < self.__len__():
+            if i != 0:
+                s += ", "
+            s += str(self[i])
+            i += 1
+
+        if len(self) == 1:
+            s += ","
+        s += ")"
+
+        return s
 
 class traceback(object):
     pass

@@ -1,6 +1,7 @@
 module Hython.BuiltinTypes.List
 where
 
+import qualified Data.Text as T
 import Safe (atMay)
 
 import Hython.Ref
