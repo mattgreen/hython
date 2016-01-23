@@ -51,10 +51,10 @@ instance MonadFlow Object Continuation Interpreter where
     putFlow f   = Interpreter . modify $ \s -> s { stateFlow = f }
 
 instance MonadInterpreter Interpreter where
-    evalBlock statements = mapM_ Statement.eval statements
+    evalBlock = mapM_ Statement.eval
     pushEvalResult str = Interpreter $ modify $ \s -> s { stateResults = stateResults s ++ [str] }
     invoke obj method args = Call.invoke obj method args []
-    new clsName args = Call.new clsName args
+    new = Call.new
     raise clsName desc = ExceptionHandling.raiseInternal (T.pack clsName) (T.pack desc)
 
 defaultInterpreterState :: IO InterpreterState

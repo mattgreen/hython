@@ -117,7 +117,7 @@ indentation = do
                 return $ replicate (length removed) Dedent
         []      -> unexpected "indent stack should never be empty"
   where
-    calculateIndent s = foldl indentValue 0 s
+    calculateIndent = foldl indentValue 0
 
     indentValue :: Int -> Char -> Int
     indentValue 0 '\t'      = 8
@@ -287,7 +287,7 @@ stringLiteral = try tripleQuotedString <|> singleQuotedString
                        ('v', '\v')]
 
 readBin :: Num b => String -> b
-readBin s = foldl' (\acc x -> acc * 2 + digitToInt x) 0 s
+readBin = foldl' (\acc x -> acc * 2 + digitToInt x) 0
   where
     digitToInt x = if x == '0' then 0 else 1
 
