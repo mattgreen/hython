@@ -42,7 +42,7 @@ data InterpreterState = InterpreterState
 
 type Continuation = Object -> Interpreter ()
 
-instance MonadEnv Interpreter where
+instance Environment.MonadEnv Object Interpreter where
     getEnv      = Interpreter $ gets stateEnv
     putEnv env  = Interpreter $ modify $ \s -> s { stateEnv = env }
 

@@ -20,6 +20,7 @@ import qualified Data.Text as T
 import Language.Python (Statement)
 
 import Hython.ControlFlow (MonadFlow)
+import Hython.Environment (Environment, MonadEnv)
 import Hython.Name
 import Hython.Ref
 
@@ -69,16 +70,7 @@ type SetRef     = Ref (IntMap Object)
 
 type AttributeDict = HashMap Text (Ref Object)
 
-data Env = Env
-    { envModule     :: HashMap Name Binding
-    , envBuiltins   :: HashMap Name Binding
-    , envFrames     :: [HashMap Name Binding]
-    }
-
-data Binding
-    = LocalBinding ObjectRef
-    | NonlocalBinding
-    | GlobalBinding
+type Env = Environment Object
 
 data ExceptionHandler = ExceptionHandler Name ClassInfo [Statement]
 
@@ -90,15 +82,7 @@ instance HasAttributes Object where
     getObjAttrs (Class info) = Just $ classDict info
     getObjAttrs _ = Nothing
 
-class MonadIO m => MonadEnv m where
-    getEnv          :: m Env
-    putEnv          :: Env -> m ()
-    modifyEnv       :: (Env -> Env) -> m ()
-    modifyEnv action = do
-        env <- getEnv
-        putEnv $ action env
-
-class (MonadEnv m, MonadFlow Object (Object -> m ()) m, MonadIO m) => MonadInterpreter m where
+class (MonadEnv Object m, MonadFlow Object (Object -> m ()) m, MonadIO m) => MonadInterpreter m where
     evalBlock       :: [Statement] -> m ()
     invoke          :: Object -> String -> [Object] -> m Object
     new             :: String -> [Object] -> m Object

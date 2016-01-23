@@ -1,3 +1,5 @@
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies #-}
+
 module Hython.Environment
 where
 
@@ -5,16 +7,36 @@ import Prelude hiding (lookup)
 
 import Control.Applicative ((<|>))
 import Control.Monad (forM_)
+import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Maybe
+import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
 import Data.Maybe (mapMaybe)
 import Safe (headDef)
 
 import Hython.Name
 import Hython.Ref
-import Hython.Types
 
-bind :: MonadEnv m => Name -> Object -> m ()
+data Environment a = Environment
+    { envModule     :: HashMap Name (Binding a)
+    , envBuiltins   :: HashMap Name (Binding a)
+    , envFrames     :: [HashMap Name (Binding a)]
+    }
+
+data Binding a
+    = LocalBinding (Ref a)
+    | NonlocalBinding
+    | GlobalBinding
+
+class MonadIO m => MonadEnv a m | m -> a where
+    getEnv          :: m (Environment a)
+    putEnv          :: Environment a -> m ()
+    modifyEnv       :: (Environment a -> Environment a) -> m ()
+    modifyEnv action = do
+        env <- getEnv
+        putEnv $ action env
+
+bind :: MonadEnv a m => Name -> a -> m ()
 bind name obj = do
     mref <- lookupByScope
     case mref of
@@ -44,12 +66,12 @@ bind name obj = do
             Just binding    -> return $ getLocalRef binding
             Nothing         -> return Nothing
 
-bindGlobal :: MonadEnv m => Name -> m ()
+bindGlobal :: MonadEnv a m => Name -> m ()
 bindGlobal name = modifyEnv $ \env -> case envFrames env of
     (e:es)  -> env { envFrames = Map.insert name GlobalBinding e : es }
     []      -> env
 
-bindNonlocal :: MonadEnv m => Name -> m (Either String ())
+bindNonlocal :: MonadEnv a m => Name -> m (Either String ())
 bindNonlocal name = do
     env <- getEnv
     case envFrames env of
@@ -60,12 +82,12 @@ bindNonlocal name = do
             else return . Left $ "no binding for nonlocal '" ++ show name ++ "' found"
         []  -> return . Left $ "nonlocal declaration not allowed at module level"
 
-lookupName :: MonadEnv m => Name -> m (Maybe Object)
+lookupName :: MonadEnv a m => Name -> m (Maybe a)
 lookupName name = runMaybeT $ do
     ref <- MaybeT $ lookupRef name
     readRef ref
 
-lookupRef :: MonadEnv m => Name -> m (Maybe ObjectRef)
+lookupRef :: MonadEnv a m => Name -> m (Maybe (Ref a))
 lookupRef name = do
     env <- getEnv
     return $ lookupLocal (currentFrame env)
@@ -75,24 +97,24 @@ lookupRef name = do
     currentFrame env = headDef Map.empty (envFrames env)
     lookupLocal m = getLocalRef =<< Map.lookup name m
 
-getFrameDepth :: MonadEnv m => m Int
+getFrameDepth :: MonadEnv a m => m Int
 getFrameDepth = length . envFrames <$> getEnv
 
-getLocalRef :: Binding -> Maybe ObjectRef
+getLocalRef :: Binding a -> Maybe (Ref a)
 getLocalRef (LocalBinding ref) = Just ref
 getLocalRef _ = Nothing
 
-new :: [(Name, ObjectRef)] -> Env
-new builtins = Env { envBuiltins = Map.fromList refs, envFrames = [], envModule = Map.empty }
+new :: [(Name, Ref a)] -> Environment a
+new builtins = Environment { envBuiltins = Map.fromList refs, envFrames = [], envModule = Map.empty }
   where
     refs = map (\x -> (fst x, LocalBinding (snd x))) builtins
 
-pushEnvFrame :: (MonadEnv m) => [(Name, Object)] -> m ()
+pushEnvFrame :: (MonadEnv a m) => [(Name, a)] -> m ()
 pushEnvFrame bindings = do
     modifyEnv $ \env -> env { envFrames = Map.empty : envFrames env }
     forM_ bindings $ uncurry bind
 
-popEnvFrame :: (MonadEnv m) => m [(Name, ObjectRef)]
+popEnvFrame :: (MonadEnv a m) => m [(Name, Ref a)]
 popEnvFrame = do
     env <- getEnv
     case envFrames env of
@@ -105,7 +127,7 @@ popEnvFrame = do
         ref <- getLocalRef binding
         return (name, ref)
 
-unbind :: MonadEnv m => Name -> m (Either String ())
+unbind :: MonadEnv a m => Name -> m (Either String ())
 unbind name = do
     env <- getEnv
     if any (Map.member name) (searchedFrames env)
@@ -118,7 +140,7 @@ unbind name = do
   where
     searchedFrames env = envFrames env ++ [envModule env]
 
-unwindTo :: MonadEnv m => Int -> m ()
+unwindTo :: MonadEnv a m => Int -> m ()
 unwindTo 0 = modifyEnv $ \env -> env { envFrames = [] }
 unwindTo depth = modifyEnv $ \env -> env { envFrames = unwind $ envFrames env }
   where
