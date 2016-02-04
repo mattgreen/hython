@@ -6,7 +6,7 @@ import Data.Text (Text)
 
 import Hython.Call (call)
 import Hython.ControlFlow (getExceptionHandler, setCurrentException)
-import Hython.Environment (lookupName)
+import Hython.Environment (MonadEnv, lookupName)
 import Hython.Types (MonadInterpreter, newString, Object)
 import qualified Hython.Types as Types
 
@@ -17,7 +17,7 @@ raise exception = do
     setCurrentException exception
     handler exception
 
-raiseInternal :: (MonadCont m, MonadInterpreter m) => Text -> Text -> m ()
+raiseInternal :: (MonadCont m, MonadEnv Object m, MonadInterpreter m) => Text -> Text -> m ()
 raiseInternal clsName description = do
     mcls <- lookupName clsName
     case mcls of

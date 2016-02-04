@@ -1,149 +1,199 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies #-}
 
 module Hython.Environment
+    ( MonadEnv
+    , Environment
+    , bind
+    , bindNonlocal
+    , bindGlobal
+    , getClosingEnv
+    , getEnv
+    , lookupName
+    , new
+    , putEnv
+    , putEnvWithBindings
+    , restoreEnv
+    , unbind
+    )
 where
 
 import Prelude hiding (lookup)
 
-import Control.Applicative ((<|>))
+import qualified Control.Arrow as Arrow
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Trans.Maybe
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
 import Data.Maybe (mapMaybe)
-import Safe (headDef)
+import Data.Monoid
 
 import Hython.Name
 import Hython.Ref
 
-data Environment a = Environment
-    { envModule     :: HashMap Name (Binding a)
-    , envBuiltins   :: HashMap Name (Binding a)
-    , envFrames     :: [HashMap Name (Binding a)]
-    }
-
-data Binding a
-    = LocalBinding (Ref a)
-    | NonlocalBinding
-    | GlobalBinding
-
-class MonadIO m => MonadEnv a m | m -> a where
-    getEnv          :: m (Environment a)
-    putEnv          :: Environment a -> m ()
-    modifyEnv       :: (Environment a -> Environment a) -> m ()
+class MonadIO m => MonadEnv obj m | m -> obj where
+    getEnv          :: m (Environment obj)
+    putEnv          :: Environment obj -> m ()
+    modifyEnv       :: (Environment obj -> Environment obj) -> m ()
     modifyEnv action = do
         env <- getEnv
         putEnv $ action env
 
-bind :: MonadEnv a m => Name -> a -> m ()
+data Environment obj = Environment
+    { localEnv      :: Ref (EnvMap obj)
+    , enclosingEnvs :: [Ref (EnvMap obj)]
+    , moduleEnv     :: Ref (EnvMap obj)
+    , builtinEnv    :: Ref (EnvMap obj)
+    , activeEnv     :: ActiveEnv
+    }
+
+data ActiveEnv
+    = ModuleEnv
+    | LocalEnv
+    deriving Eq
+
+type EnvMap obj = HashMap Name (Binding obj)
+
+data Binding obj
+    = LocalBinding (Ref obj)
+    | NonlocalBinding
+    | ModuleBinding
+
+bind :: MonadEnv obj m => Name -> obj -> m ()
 bind name obj = do
-    mref <- lookupByScope
+    envMap  <- readRef . localEnv =<< getEnv
+    mref    <- lookupRefIn name envMap
     case mref of
         Just ref    -> writeRef ref obj
         Nothing     -> do
             ref <- newRef obj
-            modifyEnv $ insertRef ref
-  where
-    insertRef ref env = case envFrames env of
-        (e:es)  -> case Map.lookup name e of
-            Just GlobalBinding    -> env { envModule = Map.insert name (LocalBinding ref) (envModule env) }
-            Just NonlocalBinding    -> do
-                let (before, x:xs) = break (Map.member name) es
-                env { envFrames = before ++ [Map.insert name (LocalBinding ref) x] ++ xs }
-            _                   -> env { envFrames = Map.insert name (LocalBinding ref) e : es }
-        []      -> env { envModule = Map.insert name (LocalBinding ref) (envModule env) }
+            modifyLocalEnv $ Map.insert name (LocalBinding ref)
 
-    lookupByScope = do
-        env     <- getEnv
-        depth   <- getFrameDepth
+bindGlobal :: MonadEnv obj m => Name -> m ()
+bindGlobal name = do
+    env <- getEnv
+    case activeEnv env of
+        LocalEnv    -> modifyLocalEnv $ Map.insert name ModuleBinding
+        ModuleEnv   -> return ()
 
-        mbinding <- pure $ if depth == 0
-            then Map.lookup name (envModule env)
-            else Map.lookup name (headDef Map.empty (envFrames env))
-
-        case mbinding of
-            Just binding    -> return $ getLocalRef binding
-            Nothing         -> return Nothing
-
-bindGlobal :: MonadEnv a m => Name -> m ()
-bindGlobal name = modifyEnv $ \env -> case envFrames env of
-    (e:es)  -> env { envFrames = Map.insert name GlobalBinding e : es }
-    []      -> env
-
-bindNonlocal :: MonadEnv a m => Name -> m (Either String ())
+bindNonlocal :: MonadEnv obj m => Name -> m (Either String ())
 bindNonlocal name = do
     env <- getEnv
-    case envFrames env of
-        (e:es)  -> if any (Map.member name) es
-            then do
-                putEnv $ env { envFrames = Map.insert name NonlocalBinding e : es }
-                return . Right $ ()
-            else return . Left $ "no binding for nonlocal '" ++ show name ++ "' found"
-        []  -> return . Left $ "nonlocal declaration not allowed at module level"
+    case activeEnv env of
+        LocalEnv -> do
+            mref <- lookupRefInEnclosing name
+            case mref of
+                Just _  -> do
+                    modifyLocalEnv $ Map.insert name NonlocalBinding
+                    return $ Right ()
+                Nothing -> return $ Left ("no binding for nonlocal '" ++ show name ++ "' found")
 
-lookupName :: MonadEnv a m => Name -> m (Maybe a)
-lookupName name = runMaybeT $ do
-    ref <- MaybeT $ lookupRef name
-    readRef ref
+        ModuleEnv -> return $ Left "nonlocal declaration not allowed at module level"
 
-lookupRef :: MonadEnv a m => Name -> m (Maybe (Ref a))
+getClosingEnv :: MonadEnv obj m => m (Environment obj)
+getClosingEnv = do
+    env <- getEnv
+    return $ case activeEnv env of
+        LocalEnv    -> env { enclosingEnvs = localEnv env : enclosingEnvs env }
+        ModuleEnv   -> env
+
+lookupName :: MonadEnv obj m => Name -> m (Maybe obj)
+lookupName name = do
+    mref <- lookupRef name
+    case mref of
+        Just ref    -> return . Just =<< readRef ref
+        Nothing     -> return Nothing
+
+lookupRef :: MonadEnv obj m => Name -> m (Maybe (Ref obj))
 lookupRef name = do
     env <- getEnv
-    return $ lookupLocal (currentFrame env)
-         <|> lookupLocal (envModule env)
-         <|> lookupLocal (envBuiltins env)
+    search $ [localEnv env] ++ enclosingEnvs env ++ [moduleEnv env, builtinEnv env]
   where
-    currentFrame env = headDef Map.empty (envFrames env)
-    lookupLocal m = getLocalRef =<< Map.lookup name m
+    search (r:rs) = do
+        envMap  <- readRef r
+        mref    <- lookupRefIn name envMap
+        case mref of
+            Just ref    -> return $ Just ref
+            Nothing     -> search rs
+    search [] = return Nothing
 
-getFrameDepth :: MonadEnv a m => m Int
-getFrameDepth = length . envFrames <$> getEnv
-
-getLocalRef :: Binding a -> Maybe (Ref a)
-getLocalRef (LocalBinding ref) = Just ref
-getLocalRef _ = Nothing
-
-new :: [(Name, Ref a)] -> Environment a
-new builtins = Environment { envBuiltins = Map.fromList refs, envFrames = [], envModule = Map.empty }
-  where
-    refs = map (\x -> (fst x, LocalBinding (snd x))) builtins
-
-pushEnvFrame :: (MonadEnv a m) => [(Name, a)] -> m ()
-pushEnvFrame bindings = do
-    modifyEnv $ \env -> env { envFrames = Map.empty : envFrames env }
-    forM_ bindings $ uncurry bind
-
-popEnvFrame :: (MonadEnv a m) => m [(Name, Ref a)]
-popEnvFrame = do
+lookupRefIn :: MonadEnv obj m => Name -> EnvMap obj -> m (Maybe (Ref obj))
+lookupRefIn name envMap = do
     env <- getEnv
-    case envFrames env of
-        f:fs    -> do
-            putEnv $ env { envFrames = fs }
-            return . getLocals $ f
-        []      -> return []
-  where
-    getLocals f = flip mapMaybe (Map.toList f) $ \(name, binding) -> do
-        ref <- getLocalRef binding
-        return (name, ref)
+    case Map.lookup name envMap of
+        Just (LocalBinding ref) -> return $ Just ref
+        Just NonlocalBinding    -> lookupRefInEnclosing name
+        Just ModuleBinding      -> do
+            moduleMap   <- readRef $ moduleEnv env
+            lookupRefIn name moduleMap
+        Nothing                 -> return Nothing
 
-unbind :: MonadEnv a m => Name -> m (Either String ())
+lookupRefInEnclosing :: MonadEnv obj m => Name -> m (Maybe (Ref obj))
+lookupRefInEnclosing name = do
+    envMaps <- mapM readRef =<< enclosingEnvs <$> getEnv
+    results <- mapM (lookupRefIn name) envMaps
+    return . getFirst . mconcat $ map First results
+
+new :: [(Name, Ref obj)] -> IO (Environment obj)
+new builtins = do
+    moduleRef   <- newRef Map.empty
+    builtinRef  <- newRef $ Map.fromList (map (Arrow.second LocalBinding) builtins)
+
+    return Environment
+        { localEnv = moduleRef
+        , enclosingEnvs = []
+        , moduleEnv = moduleRef
+        , builtinEnv = builtinRef
+        , activeEnv = ModuleEnv
+        }
+
+restoreEnv :: MonadEnv obj m => Environment obj -> m [(Name, Ref obj)]
+restoreEnv env = do
+    bindings <- readRef . localEnv =<< getEnv
+    putEnv env
+    return $ mapMaybe unwrap (Map.toList bindings)
+  where
+    unwrap (n, LocalBinding r) = Just (n, r)
+    unwrap _ = Nothing
+
+putEnvWithBindings :: MonadEnv obj m => [(Name, obj)] -> Environment obj -> m (Environment obj)
+putEnvWithBindings bindings env = do
+    prev    <- getEnv
+    refList <- mapM wrap bindings
+    ref     <- newRef . Map.fromList $ refList
+    putEnv env { localEnv = ref, activeEnv = LocalEnv }
+    return prev
+  where
+    wrap (n, o) = do
+        r <- newRef o
+        return (n, LocalBinding r)
+
+unbind :: MonadEnv obj m => Name -> m (Either String ())
 unbind name = do
-    env <- getEnv
-    if any (Map.member name) (searchedFrames env)
-        then do
-            putEnv $ case envFrames env of
-                (e:es)  -> env { envFrames = Map.delete name e : es }
-                []      -> env { envModule = Map.delete name (envModule env) }
-            return (Right ())
-        else return . Left $ "name '" ++ show name ++ "' is not defined"
-  where
-    searchedFrames env = envFrames env ++ [envModule env]
+    envMap  <- readRef . localEnv =<< getEnv
 
-unwindTo :: MonadEnv a m => Int -> m ()
-unwindTo 0 = modifyEnv $ \env -> env { envFrames = [] }
-unwindTo depth = modifyEnv $ \env -> env { envFrames = unwind $ envFrames env }
-  where
-    unwind frames
-      | length frames > depth   = unwind $ tail frames
-      | otherwise               = frames
+    case Map.lookup name envMap of
+        Just binding    -> do
+            modifyLocalEnv $ Map.delete name
+            case binding of
+                NonlocalBinding -> modifyEnclosingEnvs $ Map.delete name
+                ModuleBinding   -> modifyModuleEnv $ Map.delete name
+                _               -> return ()
+            return $ Right ()
+        Nothing -> return . Left $ "name '" ++ show name ++ "' is not defined"
+
+modifyEnvMap :: MonadEnv obj m => (Environment obj -> Ref b) -> (b -> b) -> m ()
+modifyEnvMap f action = do
+    env <- getEnv
+    modifyRef (f env) action
+
+modifyEnclosingEnvs :: MonadEnv obj m => (EnvMap obj -> EnvMap obj) -> m ()
+modifyEnclosingEnvs action = do
+    env <- getEnv
+    forM_ (enclosingEnvs env) (`modifyRef` action)
+
+modifyModuleEnv :: MonadEnv obj m => (EnvMap obj -> EnvMap obj) -> m ()
+modifyModuleEnv = modifyEnvMap moduleEnv
+
+modifyLocalEnv :: MonadEnv obj m => (EnvMap obj -> EnvMap obj) -> m ()
+modifyLocalEnv = modifyEnvMap localEnv
+

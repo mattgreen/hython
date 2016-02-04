@@ -23,7 +23,8 @@ executable        hython
                   hlint,
                   text,
                   bytestring,
-                  haskeline
+                  haskeline,
+                  semigroups
   build-tools:    happy
   other-modules:  Language.Python.Lexer,
                   Language.Python.Parser,
@@ -46,3 +47,4 @@ executable        hython
   hs-source-dirs: src
   main-is:        Main.hs
   ghc-options:    -Wall -O2
+  extensions:     FlexibleContexts

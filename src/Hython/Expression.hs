@@ -17,7 +17,7 @@ import Hython.Environment (lookupName, MonadEnv)
 import Hython.Ref
 import Hython.Types
 
-evalExpr :: (MonadCont m, MonadEnv a m, MonadIO m, MonadInterpreter m) => Expression -> m Object
+evalExpr :: (MonadCont m, MonadEnv Object m, MonadIO m, MonadInterpreter m) => Expression -> m Object
 evalExpr (As {}) = unimplemented "as"
 
 evalExpr (Attribute expr attr) = do

@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 
 module Language.Python.Lexer

@@ -1,9 +1,7 @@
-{-# LANGUAGE FlexibleContexts #-}
-
 module Hython.Types
 where
 
-import Control.Monad (forM, forM_, zipWithM)
+import Control.Monad (forM_, zipWithM)
 import Control.Monad.IO.Class (MonadIO)
 import Data.ByteString (ByteString)
 import qualified Data.Hashable as H
@@ -20,7 +18,7 @@ import qualified Data.Text as T
 import Language.Python (Statement)
 
 import Hython.ControlFlow (MonadFlow)
-import Hython.Environment (Environment, MonadEnv)
+import Hython.Environment (Environment)
 import Hython.Name
 import Hython.Ref
 
@@ -35,8 +33,8 @@ data Object = None
             | Dict DictRef
             | Set SetRef
             | BuiltinFn Text
-            | Function Text [FnParam] [Statement]
-            | Method Text MethodBinding [FnParam] [Statement]
+            | Function Text [FnParam] [Statement] Env
+            | Method Text MethodBinding [FnParam] [Statement] Env
             | Class ClassInfo
             | Object ObjectInfo
 
@@ -82,7 +80,7 @@ instance HasAttributes Object where
     getObjAttrs (Class info) = Just $ classDict info
     getObjAttrs _ = Nothing
 
-class (MonadEnv Object m, MonadFlow Object (Object -> m ()) m, MonadIO m) => MonadInterpreter m where
+class (MonadFlow Object (Object -> m ()) m, MonadIO m) => MonadInterpreter m where
     evalBlock       :: [Statement] -> m ()
     invoke          :: Object -> String -> [Object] -> m Object
     new             :: String -> [Object] -> m Object
@@ -139,8 +137,8 @@ newDict items = do
 newFloat :: MonadInterpreter m => Double -> m Object
 newFloat d = return $ Float d
 
-newFunction :: MonadInterpreter m => Text -> [FnParam] -> [Statement] -> m Object
-newFunction name params block = return $ Function name params block
+newFunction :: MonadInterpreter m => Text -> [FnParam] -> [Statement] -> Env -> m Object
+newFunction name params block env = return $ Function name params block env
 
 newImag :: MonadInterpreter m => Complex Double -> m Object
 newImag i = return $ Imaginary i
@@ -224,7 +222,7 @@ toStr (None) = return "None"
 toStr (Bool b) = return $ if b then "True" else "False"
 toStr (Bytes _b) = return "b'??'"
 toStr (Float f) = return $ show f
-toStr (Function name _ _) = return . T.unpack $ name
+toStr (Function name _ _ _) = return . T.unpack $ name
 toStr (Imaginary i)
     | realPart i == 0   = return $ show i
     | otherwise         = return $ show i
@@ -235,14 +233,16 @@ toStr (Set ref) = do
     strItems <- mapM toStr $ IntMap.elems items
     return $ "{" ++ intercalate ", " strItems ++ "}"
 toStr (BuiltinFn name)  = return $ "<built-in function " ++ T.unpack name ++ ">"
+toStr (List _) = return "<internal listref>"
+toStr (Dict _) = return "<internal dictref>"
 toStr (Class info) = return $ "<class '" ++ T.unpack (className info) ++ "'>"
 toStr obj@(Object {}) = do
     str <- invoke obj "__str__" []
     case str of
         String s    -> return . T.unpack $ s
         _           -> toStr str
-toStr (Method name (ClassBinding clsName _) _ _) = 
+toStr (Method name (ClassBinding clsName _) _ _ _) = 
     return $ "<method '" ++ T.unpack name ++ "' of '" ++ T.unpack clsName ++ "' objects>"
-toStr (Method name (InstanceBinding clsName obj) _ _) = do
+toStr (Method name (InstanceBinding clsName obj) _ _ _) = do
     s <- toStr obj
     return $ "<bound method " ++ T.unpack clsName ++ "." ++ T.unpack name ++ " of " ++ s ++ ">"

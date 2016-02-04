@@ -15,12 +15,12 @@ import Language.Python
 
 import Hython.Builtins (isInstance, len, setAttr)
 import Hython.ControlFlow
-import Hython.Environment (bind, bindGlobal, bindNonlocal, getFrameDepth, pushEnvFrame, popEnvFrame, unbind, unwindTo)
+import Hython.Environment (MonadEnv, bind, bindGlobal, bindNonlocal, getEnv, getClosingEnv, putEnv, putEnvWithBindings, restoreEnv, unbind)
 import qualified Hython.ExceptionHandling as EH
 import Hython.Expression (evalExpr)
 import Hython.Types
 
-eval :: (MonadIO m, MonadCont m, MonadInterpreter m) => Statement -> m ()
+eval :: (MonadIO m, MonadCont m, MonadEnv Object m, MonadInterpreter m) => Statement -> m ()
 eval (Assert expr msgExpr) = do
     result  <- evalExpr expr
     msg     <- evalExpr msgExpr
@@ -76,9 +76,10 @@ eval (Break) = do
 eval (ClassDef name bases block) = do
     baseClasses <- catMaybes <$> mapM evalBase bases
 
-    pushEnvFrame []
+    env     <- getEnv
+    tempEnv <- putEnvWithBindings [] env
     evalBlock block
-    dict <- popEnvFrame
+    dict    <- restoreEnv tempEnv
 
     cls <- newClass name baseClasses dict
     bind name cls
@@ -123,8 +124,9 @@ eval s@(For target iterableExpr block elseBlock) = eval (Try clauses tryBody [] 
     clauses = [ExceptClause (Name $ T.pack "StopIteration") T.empty elseBlock]
 
 eval (FuncDef name params block) = do
-    params' <- mapM evalParam params
-    fn      <- newFunction name params' block
+    params'     <- mapM evalParam params
+    env         <- getClosingEnv
+    fn          <- newFunction name params' block env
     bind name fn
   where
     evalParam (FormalParam param) = return $ NamedParam param
@@ -165,7 +167,8 @@ eval (Return expr) = do
     handler obj
 
 eval (Try clauses block elseBlock finallyBlock) = do
-    -- Snapshot control flow state
+    -- Snapshot state
+    env             <- getEnv
     breakHandler    <- getBreakHandler
     continueHandler <- getContinueHandler
     returnHandler   <- getReturnHandler
@@ -219,7 +222,7 @@ eval (Try clauses block elseBlock finallyBlock) = do
     setReturnHandler returnHandler
 
     -- Unwind the stack to this try block's depth
-    unwindTo frameDepth
+    putEnv env
     popFramesTo frameDepth
 
     -- If we have an exception, look for exception handler in this try/except block

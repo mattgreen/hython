@@ -72,6 +72,9 @@ getCurrentException = flowCurrentException <$> getFlow
 getExceptionHandler :: MonadFlow obj cont m => m cont
 getExceptionHandler = flowExcept <$> getFlow
 
+getFrameDepth :: MonadFlow obj cont m => m Int
+getFrameDepth = length . flowFrames <$> getFlow
+
 getReturnHandler :: MonadFlow obj cont m => m cont
 getReturnHandler = frameReturn <$> currentFrame
 

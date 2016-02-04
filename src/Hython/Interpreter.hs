@@ -64,9 +64,10 @@ defaultInterpreterState = do
     objCls          <- newClass "object" [] []
     objRef          <- mkBuiltinClass "object" objCls
     builtins        <- pure $ builtinFns ++ [objRef]
+    env             <- Environment.new builtins
 
     return InterpreterState {
-        stateEnv = Environment.new builtins,
+        stateEnv = env,
         stateFlow = ControlFlow.new defaultBreakHandler defaultContinueHandler defaultReturnHandler defaultExceptionHandler,
         stateNew = True,
         stateResults = []

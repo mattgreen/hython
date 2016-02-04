@@ -50,11 +50,11 @@ getAttr attr target = runMaybeT $ do
             return Nothing
 
     case (target, obj) of
-        (Class info, Function name params body) ->
-            return $ Method name (ClassBinding (className info) target) params body
+        (Class info, Function name params body env) ->
+            return $ Method name (ClassBinding (className info) target) params body env
 
-        (Object info, Function name params body) ->
-            return $ Method name (InstanceBinding (className $ objectClass info) target) params body
+        (Object info, Function name params body env) ->
+            return $ Method name (InstanceBinding (className $ objectClass info) target) params body env
         _               -> return obj
 
 isInstance :: Object -> ClassInfo -> Bool

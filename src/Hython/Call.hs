@@ -13,10 +13,10 @@ import Safe (atDef)
 
 import Hython.Builtins (callBuiltin, getAttr, setAttr)
 import qualified Hython.ControlFlow as ControlFlow
-import Hython.Environment (lookupName, pushEnvFrame, popEnvFrame)
+import Hython.Environment hiding (new)
 import Hython.Types hiding (invoke, new)
 
-call :: (MonadCont m, MonadInterpreter m, MonadIO m) => Object -> [Object] -> [(Text, Object)] -> m Object
+call :: (MonadCont m, MonadEnv Object m, MonadInterpreter m, MonadIO m) => Object -> [Object] -> [(Text, Object)] -> m Object
 call (BuiltinFn name) args _ = callBuiltin name args
 
 call cls@(Class info) args kwargs = do
@@ -30,23 +30,23 @@ call cls@(Class info) args kwargs = do
 
     return obj
 
-call (Function fnName params statements) args kwargs = do
+call (Function fnName params statements env) args kwargs = do
     requiredParams <- pure $ takeWhile isRequiredParam params
     when (length args < length requiredParams) $
         raise "TypeError" ("not enough arguments passed to '" ++ show fnName ++ "'")
     when (length requiredParams == length params && length args > length requiredParams) $
         raise "TypeError" ("too many args passed to '" ++ show fnName ++ "'")
 
-    result <- callCC $ \returnCont -> do
-        bindings <- zipWithM getArg params [0..]
-        pushEnvFrame bindings
+    bindings    <- zipWithM getArg params [0..]
+    prev        <- putEnvWithBindings bindings env
 
+    result <- callCC $ \returnCont -> do
         ControlFlow.pushFrame returnCont
 
         evalBlock statements
         return None
 
-    _ <- popEnvFrame
+    _ <- restoreEnv prev
     ControlFlow.popFrame
 
     return result
@@ -67,16 +67,16 @@ call (Function fnName params statements) args kwargs = do
     isRequiredParam (NamedParam _) = True
     isRequiredParam _ = False
 
-call (Method name receiver params statements) args kwargs =
+call (Method name receiver params statements env) args kwargs =
     case receiver of
-        ClassBinding _ cls      -> call (Function name params statements) (cls:args) kwargs
-        InstanceBinding _ obj   -> call (Function name params statements) (obj:args) kwargs
+        ClassBinding _ cls      -> call (Function name params statements env) (cls:args) kwargs
+        InstanceBinding _ obj   -> call (Function name params statements env) (obj:args) kwargs
 
 call _ _ _ = do
     raise "TypeError" "object is not callable"
     return None
 
-invoke :: (MonadCont m, MonadInterpreter m) => Object -> String -> [Object] -> [(Text, Object)] -> m Object
+invoke :: (MonadCont m, MonadEnv Object m, MonadInterpreter m) => Object -> String -> [Object] -> [(Text, Object)] -> m Object
 invoke target methodName args kwargs = do
     mmethod <- getAttr (T.pack methodName) target
 
@@ -86,7 +86,7 @@ invoke target methodName args kwargs = do
             raise "AttributeError" ("object has no attribute '" ++ methodName ++ "'")
             return None
 
-new :: (MonadCont m, MonadInterpreter m) => String -> [Object] -> m Object
+new :: (MonadCont m, MonadEnv Object m, MonadInterpreter m) => String -> [Object] -> m Object
 new clsName args = do
     mcls <- lookupName $ T.pack clsName
     case mcls of
