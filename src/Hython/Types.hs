@@ -15,7 +15,7 @@ import Data.List (intercalate)
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Language.Python (Statement)
+import Language.Python (Statement, Expression)
 
 import Hython.ControlFlow (MonadFlow)
 import Hython.Environment (Environment)
@@ -37,6 +37,7 @@ data Object = None
             | Method Text MethodBinding [FnParam] [Statement] Env
             | Class ClassInfo
             | Object ObjectInfo
+            | Lambda [FnParam] Statement Env
 
 type ObjectRef = Ref Object
 
@@ -146,6 +147,9 @@ newImag i = return $ Imaginary i
 newInt :: MonadInterpreter m => Integer -> m Object
 newInt i = return $ Int i
 
+newLambda :: Monad m => [FnParam] -> Statement -> Env -> m Object
+newLambda params statement env = return $ Lambda params statement env
+
 newList :: (MonadInterpreter m, MonadIO m) => [Object] -> m Object
 newList items = do
     list <- new "list" []
@@ -236,6 +240,7 @@ toStr (BuiltinFn name)  = return $ "<built-in function " ++ T.unpack name ++ ">"
 toStr (List _) = return "<internal listref>"
 toStr (Dict _) = return "<internal dictref>"
 toStr (Class info) = return $ "<class '" ++ T.unpack (className info) ++ "'>"
+toStr (Lambda {}) = return "<function <lambda>>"
 toStr obj@(Object {}) = do
     str <- invoke obj "__str__" []
     case str of

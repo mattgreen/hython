@@ -1,4 +1,8 @@
-module Hython.Expression (evalExpr) where
+module Hython.Expression
+    ( evalExpr
+    , evalParam
+    )
+where
 
 import Control.Monad (forM)
 import Control.Monad.Cont.Class (MonadCont)
@@ -13,7 +17,7 @@ import Language.Python
 
 import Hython.Builtins (getAttr)
 import Hython.Call (call)
-import Hython.Environment (lookupName, MonadEnv)
+import Hython.Environment (MonadEnv, getClosingEnv, lookupName)
 import Hython.Ref
 import Hython.Types
 
@@ -187,7 +191,10 @@ evalExpr (From {}) = unimplemented "from"
 
 evalExpr (Glob {}) = unimplemented "glob"
 
-evalExpr (LambdaExpr {}) = unimplemented "lambda"
+evalExpr (LambdaExpr params expr) = do
+    env <- getClosingEnv
+    p   <- mapM evalParam params
+    newLambda p (Return expr) env
 
 evalExpr (ListDef exprs) = do
     items <- mapM evalExpr exprs
@@ -248,6 +255,14 @@ evalExpr (UnaryOp op expr) = do
             return None
 
 evalExpr (Yield {}) = unimplemented "yield"
+
+evalParam :: (MonadEnv Object m, MonadInterpreter m, MonadCont m) => Param -> m FnParam
+evalParam (FormalParam param) = return $ NamedParam param
+evalParam (DefaultParam param expr) = do
+    obj <- evalExpr expr
+    return $ DefParam param obj
+evalParam (SplatParam param) = return $ SParam param
+evalParam (DoubleSplatParam param) = return $ DSParam param
 
 unimplemented :: (MonadInterpreter m) => String -> m Object
 unimplemented expr = do

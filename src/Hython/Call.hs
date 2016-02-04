@@ -67,6 +67,10 @@ call (Function fnName params statements env) args kwargs = do
     isRequiredParam (NamedParam _) = True
     isRequiredParam _ = False
 
+call (Lambda params statement env) args kwargs = call f args kwargs
+  where
+    f = Function "<lambda>" params [statement] env
+
 call (Method name receiver params statements env) args kwargs =
     case receiver of
         ClassBinding _ cls      -> call (Function name params statements env) (cls:args) kwargs

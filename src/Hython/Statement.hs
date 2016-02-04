@@ -15,9 +15,9 @@ import Language.Python
 
 import Hython.Builtins (isInstance, len, setAttr)
 import Hython.ControlFlow
-import Hython.Environment (MonadEnv, bind, bindGlobal, bindNonlocal, getEnv, getClosingEnv, putEnv, putEnvWithBindings, restoreEnv, unbind)
+import Hython.Environment
 import qualified Hython.ExceptionHandling as EH
-import Hython.Expression (evalExpr)
+import Hython.Expression (evalExpr, evalParam)
 import Hython.Types
 
 eval :: (MonadIO m, MonadCont m, MonadEnv Object m, MonadInterpreter m) => Statement -> m ()
@@ -128,13 +128,6 @@ eval (FuncDef name params block) = do
     env         <- getClosingEnv
     fn          <- newFunction name params' block env
     bind name fn
-  where
-    evalParam (FormalParam param) = return $ NamedParam param
-    evalParam (DefaultParam param expr) = do
-        obj <- evalExpr expr
-        return $ DefParam param obj
-    evalParam (SplatParam param) = return $ SParam param
-    evalParam (DoubleSplatParam param) = return $ DSParam param
 
 eval (Global names) = mapM_ bindGlobal names
 
