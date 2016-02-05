@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Hython.Builtins where
 
 import Control.Monad.Trans.Maybe
@@ -42,10 +44,11 @@ callBuiltin name args = case (T.unpack name, args) of
 
 getAttr :: (MonadInterpreter m) => Text -> Object -> m (Maybe Object)
 getAttr attr target = runMaybeT $ do
-    obj <- MaybeT $ case target of
-        (Class info)    -> Class.lookup attr info
-        (Object info)   -> Object.lookup attr info
-        _               -> do
+    obj <- MaybeT $ case (attr, target) of
+        ("__name__", Class info)    -> return . Just =<< newString (className info)
+        (_, Class info)             -> Class.lookup attr info
+        (_, Object info)            -> Object.lookup attr info
+        _ -> do
             raise "TypeError" "object does not have attributes"
             return Nothing
 
