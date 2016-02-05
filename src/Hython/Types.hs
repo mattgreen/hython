@@ -15,7 +15,7 @@ import Data.List (intercalate)
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Language.Python (Statement, Expression)
+import Language.Python (Statement)
 
 import Hython.ControlFlow (MonadFlow)
 import Hython.Environment (Environment)
