@@ -113,6 +113,10 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
         (GreaterThan, Int l, Int r)         -> newBool (l > r)
         (GreaterThanEq, Int l, Int r)       -> newBool (l >= r)
         (GreaterThanEq, Float l, Float r)   -> newBool (l >= r)
+        (Is, l, None)                       -> newBool $ isNone l
+        (Is, None, r)                       -> newBool $ isNone r
+        (IsNot, l, None)                    -> newBool . not . isNone $ l
+        (IsNot, None, r)                    -> newBool . not . isNone $ r
         (_, Float _, Int r)                 -> evalExpr (BinOp (CompOp op) leftExpr (constantF r))
         (_, Int l, Float _)                 -> evalExpr (BinOp (CompOp op) (constantF l) rightExpr)
         (In, l, r@(Object {}))              -> invoke r "__contains__" [l]
