@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Hython.Statement (eval)
 where
 
@@ -277,5 +279,28 @@ eval (While condition block elseBlock) = do
 
     setContinueHandler continueHandler
     setBreakHandler breakHandler
+
+eval s@(With (WithExpression expr name) block) = evalBlock desugared
+  where
+    target
+      | T.null name = T.pack ("__hython_with_" ++ (show . H.hash . show $ s))
+      | otherwise   = name
+    desugared =
+        [ Assignment (Name target) (Call (Attribute expr "__enter__") [])
+        , Try clauses block elseBlock []
+        ]
+    clauses =
+        [ ExceptClause (Name "BaseException") exceptName
+            [ If
+                [IfClause (callExit [Arg exceptClass, Arg $ Name exceptName, Arg traceback]) [Pass]]
+                [Reraise]
+            ]
+        ]
+    elseBlock = [Expression $ callExit [Arg none, Arg none, Arg none]]
+    callExit = Call (Attribute (Name target) "__exit__")
+    exceptName = T.pack $ "__hython_except__" ++ (show . H.hash . show $ s)
+    exceptClass = Attribute (Name exceptName) "__class__"
+    traceback = Call (Name "traceback") []
+    none = Constant ConstantNone
 
 eval _ = raise "SystemError" "statement not implemented"
