@@ -3,7 +3,7 @@
 module Hython.Statement (eval)
 where
 
-import Control.Monad (forM, unless, when, void, zipWithM_)
+import Control.Monad (forM, forM_, unless, when, void, zipWithM_)
 import Control.Monad.Cont (callCC)
 import Control.Monad.Fix (fix)
 import Control.Monad.Cont.Class (MonadCont)
@@ -20,6 +20,7 @@ import Hython.ControlFlow
 import Hython.Environment
 import qualified Hython.ExceptionHandling as EH
 import Hython.Expression (evalExpr, evalParam)
+import qualified Hython.Module as Module
 import Hython.Types
 
 eval :: (MonadIO m, MonadCont m, MonadEnv Object m, MonadInterpreter m) => Statement -> m ()
@@ -140,6 +141,15 @@ eval (If clauses elseBlock) = case clauses of
             then evalBlock block
             else eval (If rest elseBlock)
     [] -> evalBlock elseBlock
+
+eval (Import exprs) = forM_ exprs $ \expr -> do
+    case expr of
+        Name name   -> do
+            minfo <- Module.load name (T.unpack name)
+            case minfo of
+                Right info  -> bind name (Module info)
+                Left _      -> raise "SystemError" "oops"
+        _           -> undefined
 
 eval (Nonlocal names) = mapM_ bindNonlocal names
 

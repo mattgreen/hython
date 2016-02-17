@@ -9,7 +9,7 @@ import Hython.Interpreter (defaultInterpreterState, runInterpreter)
 
 runREPL :: IO ()
 runREPL = do
-    state <- defaultInterpreterState
+    state <- defaultInterpreterState "<repl>"
     runInputT settings (loop state)
   where
     loop state = do

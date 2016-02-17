@@ -5,11 +5,12 @@ where
 
 import Prelude hiding (readFile)
 
-import Control.Monad (filterM, forM_, when)
+import Control.Monad (filterM, forM_, unless, when)
 import Control.Monad.Cont.Class (MonadCont)
 import Control.Monad.Cont (ContT, runContT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (StateT, gets, modify, runStateT)
+import Data.List (find)
 import Data.Text (Text)
 import Data.Text.IO (readFile)
 import qualified Data.Text as T
@@ -26,6 +27,7 @@ import Hython.ControlFlow (Flow, MonadFlow)
 import qualified Hython.ControlFlow as ControlFlow
 import qualified Hython.Environment as Environment
 import qualified Hython.ExceptionHandling as ExceptionHandling
+import qualified Hython.Module as Module
 import Hython.Ref
 import Hython.Types
 import qualified Hython.Statement as Statement
@@ -37,6 +39,8 @@ data InterpreterState = InterpreterState
     { stateEnv          :: Env
     , stateFlow         :: Flow Object Continuation
     , stateNew          :: Bool
+    , stateCurModule    :: ModuleInfo
+    , stateModules      :: [ModuleInfo]
     , stateResults      :: [String]
     }
 
@@ -56,19 +60,33 @@ instance MonadInterpreter Interpreter where
     invoke obj method args = Call.invoke obj method args []
     new = Call.new
     raise clsName desc = ExceptionHandling.raiseInternal (T.pack clsName) (T.pack desc)
+    getCurrentModule = Interpreter . gets $ stateCurModule
+    getModuleByPath path = do
+        modules <- Interpreter . gets $ stateModules
+        return $ find (\m -> modulePath m == path) modules
+    setCurrentModule info = do
+        modules <- Interpreter . gets $ stateModules
 
-defaultInterpreterState :: IO InterpreterState
-defaultInterpreterState = do
+        Interpreter . modify $ \s -> s { stateCurModule = info }
+        unless (info `elem` modules) $
+            Interpreter . modify $ \s -> s { stateModules = info : stateModules s }
+
+defaultInterpreterState :: FilePath -> IO InterpreterState
+defaultInterpreterState path = do
     builtinFns      <- mapM mkBuiltin builtinFunctions
 
     objCls          <- newClass "object" [] []
     objRef          <- mkBuiltinClass "object" objCls
     builtins        <- pure $ builtinFns ++ [objRef]
     env             <- Environment.new builtins
+    fullPath        <- canonicalizePath path
+    (Module main)   <- newModule "__main__" fullPath
 
     return InterpreterState {
         stateEnv = env,
         stateFlow = ControlFlow.new defaultBreakHandler defaultContinueHandler defaultReturnHandler defaultExceptionHandler,
+        stateCurModule = main,
+        stateModules = [main],
         stateNew = True,
         stateResults = []
     }
@@ -121,7 +139,6 @@ loadBuiltinModules = do
 
         filterM doesFileExist $ map (libDir </>) entries
 
-runInterpreter :: InterpreterState -> Text -> IO (Either String [String], InterpreterState)
 runInterpreter state code = case parse code of
     Left msg    -> return (Left msg, state)
     Right stmts -> do
@@ -132,8 +149,9 @@ runInterpreter state code = case parse code of
         return (Right results, newState { stateNew = False, stateResults = [] })
   where
     run firstTime stmts = do
-        when firstTime
+        when firstTime $ do
             loadBuiltinModules
+            Environment.moveLocalsToBuiltins
 
         evalBlock stmts
         return None

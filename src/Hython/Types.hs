@@ -38,6 +38,7 @@ data Object = None
             | Class ClassInfo
             | Object ObjectInfo
             | Lambda [FnParam] Statement Env
+            | Module ModuleInfo
 
 type ObjectRef = Ref Object
 
@@ -63,6 +64,12 @@ data ObjectInfo = ObjectInfo
                 , objectDict :: Ref AttributeDict
                 }
 
+data ModuleInfo = ModuleInfo
+                { moduleName    :: Text
+                , modulePath    :: FilePath
+                , moduleDict    :: Ref AttributeDict
+                }
+
 type DictRef    = Ref (IntMap (Object, Object))
 type ListRef    = Ref [Object]
 type SetRef     = Ref (IntMap Object)
@@ -73,20 +80,27 @@ type Env = Environment Object
 
 data ExceptionHandler = ExceptionHandler Name ClassInfo [Statement]
 
+instance Eq ModuleInfo where
+    l == r = modulePath l == modulePath r
+
 class HasAttributes a where
     getObjAttrs :: a -> Maybe (Ref AttributeDict)
 
 instance HasAttributes Object where
-    getObjAttrs (Object info) = Just $ objectDict info
-    getObjAttrs (Class info) = Just $ classDict info
+    getObjAttrs (Object info)   = Just $ objectDict info
+    getObjAttrs (Class info)    = Just $ classDict info
+    getObjAttrs (Module info)   = Just $ moduleDict info
     getObjAttrs _ = Nothing
 
 class (MonadFlow Object (Object -> m ()) m, MonadIO m) => MonadInterpreter m where
-    evalBlock       :: [Statement] -> m ()
-    invoke          :: Object -> String -> [Object] -> m Object
-    new             :: String -> [Object] -> m Object
-    pushEvalResult  :: String -> m ()
-    raise           :: String -> String -> m ()
+    evalBlock           :: [Statement] -> m ()
+    invoke              :: Object -> String -> [Object] -> m Object
+    new                 :: String -> [Object] -> m Object
+    pushEvalResult      :: String -> m ()
+    raise               :: String -> String -> m ()
+    getCurrentModule    :: m ModuleInfo
+    getModuleByPath     :: FilePath -> m (Maybe ModuleInfo)
+    setCurrentModule    :: ModuleInfo -> m ()
 
 hash :: MonadInterpreter m => Object -> m Int
 hash obj = case obj of
@@ -155,6 +169,13 @@ newList items = do
     list <- new "list" []
     mapM_ (\item -> invoke list "append" [item]) items
     return list
+
+newModule :: MonadIO m => Text -> FilePath -> m Object
+newModule name path = do
+    return . Module $ ModuleInfo
+        { moduleName = name
+        , modulePath = path
+        }
 
 newObject :: (MonadIO m) => ClassInfo -> m Object
 newObject cls = do
@@ -251,3 +272,4 @@ toStr (Method name (ClassBinding clsName _) _ _ _) =
 toStr (Method name (InstanceBinding clsName obj) _ _ _) = do
     s <- toStr obj
     return $ "<bound method " ++ T.unpack clsName ++ "." ++ T.unpack name ++ " of " ++ s ++ ">"
+toStr (Module info) = return $ "<module '" ++ T.unpack (moduleName info) ++ "'"

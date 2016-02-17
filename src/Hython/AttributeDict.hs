@@ -13,6 +13,9 @@ lookup attr dict = case HashMap.lookup attr dict of
                        Just ref -> Just <$> readRef ref
                        Nothing  -> return Nothing
 
+fromList :: [(Text, Ref Object)] -> AttributeDict
+fromList = HashMap.fromList
+
 new :: AttributeDict
 new = HashMap.empty
 

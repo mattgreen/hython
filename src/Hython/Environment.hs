@@ -8,8 +8,10 @@ module Hython.Environment
     , bindGlobal
     , getClosingEnv
     , getEnv
+    , moveLocalsToBuiltins
     , lookupName
     , new
+    , pushModuleEnv
     , putEnv
     , putEnvWithBindings
     , restoreEnv
@@ -20,7 +22,7 @@ where
 import Prelude hiding (lookup)
 
 import qualified Control.Arrow as Arrow
-import Control.Monad (forM_)
+import Control.Monad (forM_, void)
 import Control.Monad.IO.Class (MonadIO)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
@@ -96,6 +98,13 @@ getClosingEnv = do
         LocalEnv    -> env { enclosingEnvs = localEnv env : enclosingEnvs env }
         ModuleEnv   -> env
 
+moveLocalsToBuiltins :: (MonadIO m, MonadEnv obj m) => m ()
+moveLocalsToBuiltins = do
+    locals <- readRef =<< localEnv <$> getEnv
+
+    modifyBuiltinEnv $ Map.union locals
+    modifyLocalEnv $ const Map.empty
+
 lookupName :: MonadEnv obj m => Name -> m (Maybe obj)
 lookupName name = do
     mref <- lookupRef name
@@ -145,6 +154,13 @@ new builtins = do
         , builtinEnv = builtinRef
         , activeEnv = ModuleEnv
         }
+
+pushModuleEnv action = do
+    prev    <- getEnv
+    ref     <- newRef Map.empty
+    modifyEnv $ \env -> env { localEnv = ref, moduleEnv = ref, activeEnv = ModuleEnv }
+    action
+    restoreEnv prev
 
 restoreEnv :: MonadEnv obj m => Environment obj -> m [(Name, Ref obj)]
 restoreEnv env = do
@@ -196,4 +212,7 @@ modifyModuleEnv = modifyEnvMap moduleEnv
 
 modifyLocalEnv :: MonadEnv obj m => (EnvMap obj -> EnvMap obj) -> m ()
 modifyLocalEnv = modifyEnvMap localEnv
+
+modifyBuiltinEnv :: MonadEnv obj m => (EnvMap obj -> EnvMap obj) -> m ()
+modifyBuiltinEnv = modifyEnvMap builtinEnv
 

@@ -26,10 +26,10 @@ main = do
             putStrLn "Usage: hython <filename>"
             exitFailure
 
-runScript :: String -> IO ()
-runScript filename = do
-    code <- readFile filename `catch` errorHandler filename
-    state <- defaultInterpreterState
+runScript :: FilePath -> IO ()
+runScript path = do
+    code <- readFile path `catch` errorHandler path
+    state <- defaultInterpreterState path
 
     (result, _) <- runInterpreter state code
     case result of
@@ -39,6 +39,6 @@ runScript filename = do
   where
     errorHandler :: String -> IOError -> IO Text
     errorHandler _ err = do
-        putStrLn $ printf "Unable to open '%s': file %s" filename (ioeGetErrorString err)
+        putStrLn $ printf "Unable to open '%s': file %s" path (ioeGetErrorString err)
         _ <- exitFailure
         return ""

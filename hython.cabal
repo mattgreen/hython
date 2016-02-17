@@ -43,7 +43,8 @@ executable        hython
                   Hython.Object,
                   Hython.Primitive,
                   Hython.BuiltinTypes.Dict,
-                  Hython.BuiltinTypes.List
+                  Hython.BuiltinTypes.List,
+                  Hython.Module
   hs-source-dirs: src
   main-is:        Main.hs
   ghc-options:    -Wall -O2
