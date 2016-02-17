@@ -7,8 +7,6 @@ import Data.ByteString (ByteString)
 import qualified Data.Hashable as H
 import qualified Data.ByteString.Char8 as B
 import Data.Complex (Complex, realPart, imagPart)
-import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HashMap
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap as IntMap
 import Data.List (intercalate)
@@ -17,6 +15,7 @@ import qualified Data.Text as T
 
 import Language.Python (Statement)
 
+import qualified Hython.AttributeDict as AD
 import Hython.ControlFlow (MonadFlow)
 import Hython.Environment (Environment)
 import Hython.Name
@@ -74,7 +73,7 @@ type DictRef    = Ref (IntMap (Object, Object))
 type ListRef    = Ref [Object]
 type SetRef     = Ref (IntMap Object)
 
-type AttributeDict = HashMap Text (Ref Object)
+type AttributeDict = AD.AttributeDict Object
 
 type Env = Environment Object
 
@@ -134,7 +133,7 @@ newBytes b = return $ Bytes (B.pack b)
 
 newClass :: (MonadIO m) => Text -> [ClassInfo] -> [(Text, ObjectRef)] -> m Object
 newClass name bases dict = do
-    ref <- newRef $ HashMap.fromList dict
+    ref <- newRef $ AD.fromList dict
 
     return . Class $ ClassInfo {
         className = name,
