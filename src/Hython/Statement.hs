@@ -150,6 +150,11 @@ eval (Import exprs) = forM_ exprs $ \expr -> do
             case minfo of
                 Right info  -> bind name (Module info)
                 Left _      -> raise "SystemError" "oops"
+        (As (Name path) (Name name))    -> do
+            minfo <- Module.load name (T.unpack path)
+            case minfo of
+                Right info  -> bind name (Module info)
+                Left msg      -> raise "SystemError" ""
         _           -> undefined
 
 eval (Nonlocal names) = mapM_ bindNonlocal names
