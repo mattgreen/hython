@@ -252,7 +252,7 @@ toStr (Bytes _b) = return "b'??'"
 toStr (Float f) = return $ show f
 toStr (Function name _ _ _) = return . T.unpack $ name
 toStr (Imaginary i)
-    | realPart i == 0   = return $ show i
+    | realPart i == 0   = return $ show (imagPart i) ++ "j"
     | otherwise         = return $ show i
 toStr (Int i) = return $ show i
 toStr (String s) = return $ T.unpack s
