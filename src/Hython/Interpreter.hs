@@ -27,7 +27,6 @@ import Hython.ControlFlow (Flow, MonadFlow)
 import qualified Hython.ControlFlow as ControlFlow
 import qualified Hython.Environment as Environment
 import qualified Hython.ExceptionHandling as ExceptionHandling
-import qualified Hython.Module as Module
 import Hython.Ref
 import Hython.Types
 import qualified Hython.Statement as Statement
@@ -139,6 +138,7 @@ loadBuiltinModules = do
 
         filterM doesFileExist $ map (libDir </>) entries
 
+runInterpreter :: InterpreterState -> Text -> IO (Either String [String], InterpreterState)
 runInterpreter state code = case parse code of
     Left msg    -> return (Left msg, state)
     Right stmts -> do
