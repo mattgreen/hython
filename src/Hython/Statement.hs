@@ -151,12 +151,12 @@ eval (Import exprs) = forM_ exprs $ \expr ->
             minfo <- Module.load (T.unpack name)
             case minfo of
                 Right info  -> bind name (Module info)
-                Left _      -> raise "SystemError" "oops"
+                Left err    -> importError err
         (As (Name path) (Name name))    -> do
             minfo <- Module.load (T.unpack path)
             case minfo of
                 Right info  -> bind name (Module info)
-                Left msg      -> raise "SystemError" ""
+                Left err    -> importError err
         _           -> raise "SystemError" "unhandled import statement"
 
 eval (ImportFrom (RelativeImport _ (Name path)) [Glob]) = do
@@ -165,7 +165,7 @@ eval (ImportFrom (RelativeImport _ (Name path)) [Glob]) = do
         Right info  -> do
             vars <- readRef $ moduleDict info
             bindMany (Map.toList vars)
-        Left _      -> raise "SystemError" "unable to load module"
+        Left err    -> importError err
 
 eval (Nonlocal names) = mapM_ bindNonlocal names
 
@@ -330,3 +330,7 @@ eval s@(With (WithExpression expr name) block) = evalBlock desugared
     none = Constant ConstantNone
 
 eval _ = raise "SystemError" "statement not implemented"
+
+importError :: MonadInterpreter m => Module.LoadError -> m ()
+importError (Module.SyntaxError msg) = raise "SyntaxError" msg
+importError (Module.IOError msg) = raise "SystemError" msg

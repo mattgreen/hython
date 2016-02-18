@@ -1,5 +1,11 @@
 module Hython.Module
+    ( load
+    , lookup
+    , LoadError (..)
+    )
 where
+
+import Prelude hiding (lookup)
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Loops (firstM)
@@ -18,11 +24,11 @@ import Hython.Environment
 import Hython.Ref
 import Hython.Types
 
-data ModuleLoadError
+data LoadError
     = SyntaxError String
     | IOError String
 
-load :: (MonadEnv Object m, MonadInterpreter m) => FilePath -> m (Either ModuleLoadError ModuleInfo)
+load :: (MonadEnv Object m, MonadInterpreter m) => FilePath -> m (Either LoadError ModuleInfo)
 load path = do
     currentModulePath   <- takeDirectory . modulePath <$> getCurrentModule
     mpath               <- resolveModulePath path currentModulePath
@@ -34,7 +40,7 @@ load path = do
                 Nothing     -> loadFromFile canonicalPath
         Nothing -> return . Left $ IOError "not found"
 
-loadFromFile :: (MonadEnv Object m, MonadInterpreter m) => FilePath -> m (Either ModuleLoadError ModuleInfo)
+loadFromFile :: (MonadEnv Object m, MonadInterpreter m) => FilePath -> m (Either LoadError ModuleInfo)
 loadFromFile path = do
     code <- liftIO . TIO.readFile $ path
     case parse code of
