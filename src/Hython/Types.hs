@@ -1,6 +1,8 @@
 module Hython.Types
 where
 
+import Prelude hiding (mod)
+
 import Control.Monad (forM_, zipWithM)
 import Control.Monad.IO.Class (MonadIO)
 import Data.ByteString (ByteString)

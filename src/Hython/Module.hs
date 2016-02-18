@@ -40,7 +40,7 @@ loadFromFile path = do
     case parse code of
         Left err    -> return . Left . SyntaxError $ err
         Right stmts -> do
-            (Module info)   <- newModule moduleName path
+            (Module info)   <- newModule modName path
 
             current <- getCurrentModule
             setCurrentModule info
@@ -50,7 +50,7 @@ loadFromFile path = do
 
             return . Right $ info
   where
-    moduleName = T.pack . takeBaseName $ path
+    modName = T.pack . takeBaseName $ path
 
 lookup :: (MonadIO m) => Text -> ModuleInfo -> m (Maybe Object)
 lookup attr info = do
@@ -65,12 +65,12 @@ getLibPath = do
 resolveModulePath :: MonadIO m => FilePath -> FilePath -> m (Maybe FilePath)
 resolveModulePath path currentModulePath = do
     libPath         <- getLibPath
-    filename        <- pure $ (takeBaseName path) ++ ".py"
+    filename        <- pure $ takeBaseName path ++ ".py"
     possiblePaths   <- pure $ map (`combine` filename) [currentModulePath, libPath]
     mpath           <- firstM (liftIO . doesFileExist) possiblePaths
     case mpath of
-        Just path   -> do
-            fullPath <- liftIO . canonicalizePath $ path
+        Just p      -> do
+            fullPath <- liftIO . canonicalizePath $ p
             return . Just $ fullPath
         Nothing     -> return Nothing
 

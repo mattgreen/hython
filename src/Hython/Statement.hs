@@ -145,7 +145,7 @@ eval (If clauses elseBlock) = case clauses of
             else eval (If rest elseBlock)
     [] -> evalBlock elseBlock
 
-eval (Import exprs) = forM_ exprs $ \expr -> do
+eval (Import exprs) = forM_ exprs $ \expr ->
     case expr of
         Name name   -> do
             minfo <- Module.load (T.unpack name)

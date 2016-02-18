@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies #-}
+{-# LANGUAGE RankNTypes, KindSignatures, MultiParamTypeClasses, FunctionalDependencies #-}
 
 module Hython.Environment
     ( MonadEnv
@@ -22,7 +22,6 @@ where
 
 import Prelude hiding (lookup)
 
-import qualified Control.Arrow as Arrow
 import Control.Monad (forM_, void)
 import Control.Monad.IO.Class (MonadIO)
 import Data.HashMap.Strict (HashMap)
@@ -126,7 +125,7 @@ lookupName name = do
 lookupRef :: MonadEnv obj m => Name -> m (Maybe (Ref obj))
 lookupRef name = do
     env <- getEnv
-    mresult <- searchLocals $ [localEnv env] ++ enclosingEnvs env
+    mresult <- searchLocals $ localEnv env : enclosingEnvs env
     case mresult of
         r@(Just _)  -> return r
         Nothing     -> search [moduleEnv env, builtinEnv env]
@@ -178,12 +177,14 @@ new builtins = do
         , activeEnv = ModuleEnv
         }
 
+pushModuleEnv :: forall (m :: * -> *) obj a . MonadEnv obj m => Ref (AttributeDict obj) -> m a -> m ()
 pushModuleEnv moduleRef action = do
     prev    <- getEnv
     ref     <- newRef Map.empty
     modifyEnv $ \env -> env { localEnv = ref, enclosingEnvs = [], moduleEnv = moduleRef, activeEnv = ModuleEnv }
-    action
-    restoreEnv prev
+    void action
+    void $ restoreEnv prev
+    return ()
 
 restoreEnv :: MonadEnv obj m => Environment obj -> m [(Name, Ref obj)]
 restoreEnv env = do

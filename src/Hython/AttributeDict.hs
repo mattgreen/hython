@@ -14,7 +14,7 @@ empty :: AttributeDict obj
 empty = HashMap.empty
 
 insertRef :: Text -> Ref obj -> AttributeDict obj -> AttributeDict obj
-insertRef name ref dict = HashMap.insert name ref dict
+insertRef = HashMap.insert
 
 lookup :: (MonadIO m) => Text -> AttributeDict obj -> m (Maybe obj)
 lookup attr dict = case lookupRef attr dict of
@@ -22,7 +22,7 @@ lookup attr dict = case lookupRef attr dict of
    Nothing  -> return Nothing
 
 lookupRef :: Text -> AttributeDict obj -> Maybe (Ref obj)
-lookupRef attr dict = HashMap.lookup attr dict
+lookupRef = HashMap.lookup
 
 fromList :: [(Text, Ref obj)] -> AttributeDict obj
 fromList = HashMap.fromList
