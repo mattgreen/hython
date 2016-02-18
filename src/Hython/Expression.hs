@@ -113,10 +113,8 @@ evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
         (GreaterThan, Int l, Int r)         -> newBool (l > r)
         (GreaterThanEq, Int l, Int r)       -> newBool (l >= r)
         (GreaterThanEq, Float l, Float r)   -> newBool (l >= r)
-        (Is, l, None)                       -> newBool $ isNone l
-        (Is, None, r)                       -> newBool $ isNone r
-        (IsNot, l, None)                    -> newBool . not . isNone $ l
-        (IsNot, None, r)                    -> newBool . not . isNone $ r
+        (Is, l, r)                          -> newBool $ l `is` r
+        (IsNot, l, r)                       -> newBool . not $ l `is` r
         (_, Float _, Int r)                 -> evalExpr (BinOp (CompOp op) leftExpr (constantF r))
         (_, Int l, Float _)                 -> evalExpr (BinOp (CompOp op) (constantF l) rightExpr)
         (In, l, r@(Object {}))              -> invoke r "__contains__" [l]
@@ -267,6 +265,14 @@ evalParam (DefaultParam param expr) = do
     return $ DefParam param obj
 evalParam (SplatParam param) = return $ SParam param
 evalParam (DoubleSplatParam param) = return $ DSParam param
+
+is :: Object -> Object -> Bool
+is None None                = True
+is (Bool l) (Bool r)        = l == r
+is (Class l) (Class r)      = classId l == classId r
+is (Object l) (Object r)    = objectId l == objectId r
+is (Module l) (Module r)    = moduleId l == moduleId r
+is _ _ = False
 
 unimplemented :: (MonadInterpreter m) => String -> m Object
 unimplemented expr = do

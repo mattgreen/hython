@@ -24,7 +24,8 @@ executable        hython
                   text,
                   bytestring,
                   haskeline,
-                  semigroups
+                  semigroups,
+                  uuid
   build-tools:    happy
   other-modules:  Language.Python.Lexer,
                   Language.Python.Parser,

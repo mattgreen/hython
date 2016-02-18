@@ -4,7 +4,7 @@ where
 import Prelude hiding (mod)
 
 import Control.Monad (forM_, zipWithM)
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.ByteString (ByteString)
 import qualified Data.Hashable as H
 import qualified Data.ByteString.Char8 as B
@@ -14,6 +14,8 @@ import qualified Data.IntMap as IntMap
 import Data.List (intercalate)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.UUID (UUID)
+import Data.UUID.V4 (nextRandom)
 
 import Language.Python (Statement)
 
@@ -52,7 +54,8 @@ data FnParam = NamedParam Text
              | DSParam Text
 
 data ClassInfo = ClassInfo
-               { className      :: Text
+               { classId        :: UUID
+               , className      :: Text
                , classModule    :: ModuleInfo
                , classBases     :: [ClassInfo]
                , classDict      :: Ref AttributeDict
@@ -62,12 +65,14 @@ instance Eq ClassInfo where
     l == r = className l == className r
 
 data ObjectInfo = ObjectInfo
-                { objectClass :: ClassInfo
-                , objectDict :: Ref AttributeDict
+                { objectId      :: UUID
+                , objectClass   :: ClassInfo
+                , objectDict    :: Ref AttributeDict
                 }
 
 data ModuleInfo = ModuleInfo
-                { moduleName    :: Text
+                { moduleId      :: UUID
+                , moduleName    :: Text
                 , modulePath    :: FilePath
                 , moduleDict    :: Ref AttributeDict
                 }
@@ -136,9 +141,11 @@ newBytes b = return $ Bytes (B.pack b)
 
 newClass :: (MonadIO m) => Text -> [ClassInfo] -> [(Text, ObjectRef)] -> ModuleInfo -> m Object
 newClass name bases dict mod = do
-    ref <- newRef $ AD.fromList dict
+    ref     <- newRef $ AD.fromList dict
+    clsid   <- liftIO nextRandom
 
     return . Class $ ClassInfo {
+        classId = clsid,
         className = name,
         classBases = bases,
         classDict = ref,
@@ -175,9 +182,12 @@ newList items = do
 
 newModule :: MonadIO m => Text -> FilePath -> m Object
 newModule name path = do
-    ref <- newRef AD.empty
+    ref     <- newRef AD.empty
+    modid   <- liftIO nextRandom
+
     return . Module $ ModuleInfo
-        { moduleName = name
+        { moduleId = modid
+        , moduleName = name
         , modulePath = path
         , moduleDict = ref
         }
@@ -185,13 +195,14 @@ newModule name path = do
 newObject :: (MonadIO m) => ClassInfo -> m Object
 newObject cls = do
     clsDict <- readRef . classDict $ cls
-    dict <- newRef clsDict
-    info <- pure ObjectInfo {
-        objectClass = cls,
-        objectDict = dict
-    }
+    dict    <- newRef clsDict
+    objid   <- liftIO nextRandom
 
-    return $ Object info
+    return . Object $ ObjectInfo
+        { objectId = objid
+        , objectClass = cls
+        , objectDict = dict
+        }
 
 newSet :: MonadInterpreter m => [Object] -> m Object
 newSet items = do

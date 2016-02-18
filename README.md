@@ -32,8 +32,8 @@ It's finally done! Or at least, I'm declaring it that way.
  * [x] Exception handling via `try`, with support for handlers, frame unwinding, `finally` handlers, and `else`, along with some built-in exception classes
  * [x] Basic support for loading modules with the `import` statement
  * [x] Simple REPL
+ * [x] Support for the `is` operator
  * [ ] Support for generators and `yield`
- * [ ] Support for the `is` operator
  * [ ] Support for decorators / metaclasses
 
 ## Code Metrics
