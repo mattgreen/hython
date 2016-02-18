@@ -118,7 +118,9 @@ eval (Del _) = raise "SystemError" "invalid del statement"
 
 eval (Expression e) = do
     result <- evalExpr e
-    pushEvalResult =<< toStr result
+
+    unless (isNone result) $
+        pushEvalResult =<< toStr result
 
 eval s@(For target iterableExpr block elseBlock) = eval (Try clauses tryBody [] [])
   where
