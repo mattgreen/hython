@@ -74,7 +74,7 @@ defaultInterpreterState :: FilePath -> IO InterpreterState
 defaultInterpreterState path = do
     builtinFns      <- mapM mkBuiltin builtinFunctions
 
-    fullPath        <- canonicalizePath path
+    fullPath        <- getModulePath
     (Module main)   <- newModule "__main__" fullPath
     objCls          <- newClass "object" [] [] main
     objRef          <- mkBuiltinClass "object" objCls
@@ -97,6 +97,10 @@ defaultInterpreterState path = do
     mkBuiltinClass name cls = do
         ref <- newRef cls
         return (T.pack name, ref)
+
+    getModulePath
+      | path == "<repl>"    = return "<repl>"
+      | otherwise           = canonicalizePath path
 
 defaultBreakHandler :: Object -> Interpreter ()
 defaultBreakHandler _ = raise "SyntaxError" "'break' outside loop"
