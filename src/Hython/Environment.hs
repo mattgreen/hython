@@ -29,6 +29,8 @@ import qualified Data.HashMap.Strict as Map
 import Data.Maybe (mapMaybe)
 import Data.Monoid
 
+import Hython.AttributeDict (AttributeDict)
+import qualified Hython.AttributeDict as AttributeDict
 import Hython.Name
 import Hython.Ref
 
@@ -41,10 +43,10 @@ class MonadIO m => MonadEnv obj m | m -> obj where
         putEnv $ action env
 
 data Environment obj = Environment
-    { localEnv      :: Ref (EnvMap obj)
-    , enclosingEnvs :: [Ref (EnvMap obj)]
-    , moduleEnv     :: Ref (EnvMap obj)
-    , builtinEnv    :: Ref (EnvMap obj)
+    { localEnv      :: Ref (LocalEnv obj)
+    , enclosingEnvs :: [Ref (LocalEnv obj)]
+    , moduleEnv     :: Ref (AttributeDict obj)
+    , builtinEnv    :: Ref (AttributeDict obj)
     , activeEnv     :: ActiveEnv
     }
 
@@ -53,7 +55,7 @@ data ActiveEnv
     | LocalEnv
     deriving Eq
 
-type EnvMap obj = HashMap Name (Binding obj)
+type LocalEnv obj = HashMap Name (Binding obj)
 
 data Binding obj
     = LocalBinding (Ref obj)
@@ -62,13 +64,16 @@ data Binding obj
 
 bind :: MonadEnv obj m => Name -> obj -> m ()
 bind name obj = do
-    envMap  <- readRef . localEnv =<< getEnv
+    env     <- getEnv
+    envMap  <- readRef . localEnv $ env
     mref    <- lookupRefIn name envMap
     case mref of
         Just ref    -> writeRef ref obj
         Nothing     -> do
             ref <- newRef obj
-            modifyLocalEnv $ Map.insert name (LocalBinding ref)
+            case activeEnv env of
+                ModuleEnv   -> modifyModuleEnv $ AttributeDict.insertRef name ref
+                LocalEnv    -> modifyLocalEnv $ Map.insert name (LocalBinding ref)
 
 bindGlobal :: MonadEnv obj m => Name -> m ()
 bindGlobal name = do
@@ -100,10 +105,10 @@ getClosingEnv = do
 
 moveLocalsToBuiltins :: (MonadIO m, MonadEnv obj m) => m ()
 moveLocalsToBuiltins = do
-    locals <- readRef =<< localEnv <$> getEnv
+    moduleVars <- readRef =<< moduleEnv <$> getEnv
 
-    modifyBuiltinEnv $ Map.union locals
-    modifyLocalEnv $ const Map.empty
+    modifyBuiltinEnv $ Map.union moduleVars
+    modifyModuleEnv $ const Map.empty
 
 lookupName :: MonadEnv obj m => Name -> m (Maybe obj)
 lookupName name = do
@@ -115,17 +120,28 @@ lookupName name = do
 lookupRef :: MonadEnv obj m => Name -> m (Maybe (Ref obj))
 lookupRef name = do
     env <- getEnv
-    search $ [localEnv env] ++ enclosingEnvs env ++ [moduleEnv env, builtinEnv env]
+    mresult <- searchLocals $ [localEnv env] ++ enclosingEnvs env
+    case mresult of
+        r@(Just _)  -> return r
+        Nothing     -> search [moduleEnv env, builtinEnv env]
   where
-    search (r:rs) = do
+    searchLocals (r:rs) = do
         envMap  <- readRef r
         mref    <- lookupRefIn name envMap
         case mref of
             Just ref    -> return $ Just ref
+            Nothing     -> searchLocals rs
+    searchLocals [] = return Nothing
+
+    search (r:rs) = do
+        envMap  <- readRef r
+        case AttributeDict.lookupRef name envMap of
+            Just ref    -> return $ Just ref
             Nothing     -> search rs
+
     search [] = return Nothing
 
-lookupRefIn :: MonadEnv obj m => Name -> EnvMap obj -> m (Maybe (Ref obj))
+lookupRefIn :: MonadEnv obj m => Name -> LocalEnv obj -> m (Maybe (Ref obj))
 lookupRefIn name envMap = do
     env <- getEnv
     case Map.lookup name envMap of
@@ -133,7 +149,7 @@ lookupRefIn name envMap = do
         Just NonlocalBinding    -> lookupRefInEnclosing name
         Just ModuleBinding      -> do
             moduleMap   <- readRef $ moduleEnv env
-            lookupRefIn name moduleMap
+            return $ AttributeDict.lookupRef name moduleMap
         Nothing                 -> return Nothing
 
 lookupRefInEnclosing :: MonadEnv obj m => Name -> m (Maybe (Ref obj))
@@ -144,21 +160,22 @@ lookupRefInEnclosing name = do
 
 new :: [(Name, Ref obj)] -> IO (Environment obj)
 new builtins = do
-    moduleRef   <- newRef Map.empty
-    builtinRef  <- newRef $ Map.fromList (map (Arrow.second LocalBinding) builtins)
+    ref         <- newRef Map.empty
+    moduleRef   <- newRef AttributeDict.empty
+    builtinRef  <- newRef $ AttributeDict.fromList builtins
 
     return Environment
-        { localEnv = moduleRef
+        { localEnv = ref
         , enclosingEnvs = []
         , moduleEnv = moduleRef
         , builtinEnv = builtinRef
         , activeEnv = ModuleEnv
         }
 
-pushModuleEnv action = do
+pushModuleEnv moduleRef action = do
     prev    <- getEnv
     ref     <- newRef Map.empty
-    modifyEnv $ \env -> env { localEnv = ref, moduleEnv = ref, activeEnv = ModuleEnv }
+    modifyEnv $ \env -> env { localEnv = ref, enclosingEnvs = [], moduleEnv = moduleRef, activeEnv = ModuleEnv }
     action
     restoreEnv prev
 
@@ -185,34 +202,46 @@ putEnvWithBindings bindings env = do
 
 unbind :: MonadEnv obj m => Name -> m (Either String ())
 unbind name = do
-    envMap  <- readRef . localEnv =<< getEnv
-
-    case Map.lookup name envMap of
-        Just binding    -> do
-            modifyLocalEnv $ Map.delete name
-            case binding of
-                NonlocalBinding -> modifyEnclosingEnvs $ Map.delete name
-                ModuleBinding   -> modifyModuleEnv $ Map.delete name
-                _               -> return ()
-            return $ Right ()
-        Nothing -> return . Left $ "name '" ++ show name ++ "' is not defined"
-
-modifyEnvMap :: MonadEnv obj m => (Environment obj -> Ref b) -> (b -> b) -> m ()
-modifyEnvMap f action = do
     env <- getEnv
-    modifyRef (f env) action
+    case activeEnv env of
+        LocalEnv -> do
+            envMap  <- readRef . localEnv $ env
 
-modifyEnclosingEnvs :: MonadEnv obj m => (EnvMap obj -> EnvMap obj) -> m ()
+            case Map.lookup name envMap of
+                Just binding    -> do
+                    modifyLocalEnv $ Map.delete name
+                    case binding of
+                        NonlocalBinding -> modifyEnclosingEnvs $ Map.delete name
+                        ModuleBinding   -> modifyModuleEnv $ Map.delete name
+                        _               -> return ()
+                    return $ Right ()
+                Nothing -> return . Left $ "name '" ++ show name ++ "' is not defined"
+        ModuleEnv -> do
+            envMap  <- readRef . moduleEnv $ env
+
+            case AttributeDict.lookupRef name envMap of
+                Just _  -> do
+                    modifyModuleEnv $ Map.delete name
+                    return $ Right ()
+                Nothing -> return . Left $ "name '" ++ show name ++ "' is not defined"
+
+modifyEnclosingEnvs :: MonadEnv obj m => (LocalEnv obj -> LocalEnv obj) -> m ()
 modifyEnclosingEnvs action = do
     env <- getEnv
     forM_ (enclosingEnvs env) (`modifyRef` action)
 
-modifyModuleEnv :: MonadEnv obj m => (EnvMap obj -> EnvMap obj) -> m ()
-modifyModuleEnv = modifyEnvMap moduleEnv
+modifyModuleEnv :: MonadEnv obj m => (AttributeDict obj -> AttributeDict obj) -> m ()
+modifyModuleEnv action = do
+    env <- getEnv
+    modifyRef (moduleEnv env) action
 
-modifyLocalEnv :: MonadEnv obj m => (EnvMap obj -> EnvMap obj) -> m ()
-modifyLocalEnv = modifyEnvMap localEnv
+modifyLocalEnv :: MonadEnv obj m => (LocalEnv obj -> LocalEnv obj) -> m ()
+modifyLocalEnv action = do
+    env <- getEnv
+    modifyRef (localEnv env) action
 
-modifyBuiltinEnv :: MonadEnv obj m => (EnvMap obj -> EnvMap obj) -> m ()
-modifyBuiltinEnv = modifyEnvMap builtinEnv
+modifyBuiltinEnv :: MonadEnv obj m => (AttributeDict obj -> AttributeDict obj) -> m ()
+modifyBuiltinEnv action = do
+    env <- getEnv
+    modifyRef (builtinEnv env) action
 

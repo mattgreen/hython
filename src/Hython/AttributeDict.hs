@@ -10,10 +10,19 @@ import Hython.Ref
 
 type AttributeDict obj = HashMap Text (Ref obj)
 
+empty :: AttributeDict obj
+empty = HashMap.empty
+
+insertRef :: Text -> Ref obj -> AttributeDict obj -> AttributeDict obj
+insertRef name ref dict = HashMap.insert name ref dict
+
 lookup :: (MonadIO m) => Text -> AttributeDict obj -> m (Maybe obj)
-lookup attr dict = case HashMap.lookup attr dict of
-                       Just ref -> Just <$> readRef ref
-                       Nothing  -> return Nothing
+lookup attr dict = case lookupRef attr dict of
+   Just ref -> Just <$> readRef ref
+   Nothing  -> return Nothing
+
+lookupRef :: Text -> AttributeDict obj -> Maybe (Ref obj)
+lookupRef attr dict = HashMap.lookup attr dict
 
 fromList :: [(Text, Ref obj)] -> AttributeDict obj
 fromList = HashMap.fromList

@@ -10,6 +10,7 @@ import qualified Data.Text as T
 
 import qualified Hython.AttributeDict as AttributeDict
 import qualified Hython.Class as Class
+import qualified Hython.Module as Module
 import qualified Hython.Object as Object
 import Hython.Primitive (callPrimitive)
 import Hython.Ref
@@ -48,6 +49,7 @@ getAttr attr target = runMaybeT $ do
         ("__name__", Class info)    -> return . Just =<< newString (className info)
         (_, Class info)             -> Class.lookup attr info
         (_, Object info)            -> Object.lookup attr info
+        (_, Module info)            -> Module.lookup attr info
         _ -> do
             raise "TypeError" "object does not have attributes"
             return Nothing

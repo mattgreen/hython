@@ -44,11 +44,16 @@ loadFromFile name path = do
 
             current <- getCurrentModule
             setCurrentModule info
-            pushModuleEnv $
+            pushModuleEnv (moduleDict info) $
                 evalBlock stmts
             setCurrentModule current
 
             return . Right $ info
+
+lookup :: (MonadIO m) => Text -> ModuleInfo -> m (Maybe Object)
+lookup attr info = do
+    dict <- readRef $ moduleDict info
+    AttributeDict.lookup attr dict
 
 getLibPath :: MonadIO m => m String
 getLibPath = do

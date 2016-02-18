@@ -171,9 +171,11 @@ newList items = do
 
 newModule :: MonadIO m => Text -> FilePath -> m Object
 newModule name path = do
+    ref <- newRef AD.empty
     return . Module $ ModuleInfo
         { moduleName = name
         , modulePath = path
+        , moduleDict = ref
         }
 
 newObject :: (MonadIO m) => ClassInfo -> m Object
