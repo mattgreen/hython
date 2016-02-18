@@ -1,85 +1,53 @@
 #hython
 
-A Python 3 interpreter implemented in Haskell.
+A toy Python 3 interpreter implemented in Haskell.
 
-The goal of this project is to become more familiar with Haskell. It is not to produce a replacement for CPython or PyPy. I would like to implement as much of the core language as I can. While I list features out below, they're more for me to remember what I have remaining in each part of the project.
+## Introduction
+
+I wanted to learn Haskell, and I wanted a big project, so I decided to write a Python 3 interpreter. The result was extremely educational and easily the coolest project I've ever worked on. Because it's implemented in a naive fashion, it won't ever be a replacement for real Python implementations.
+
+**Note:** Hython only implements most of the Python3 _language_. It doesn't contain much of a standard library, which is a big part of what makes Python pleasant to use. Adding all of the necessary machinery needed for the existing Python 3 standard library to function is an enormous undertaking that I'm not interested in.
+
+## Status
+
+It's finally done! Have some cleanup to do, but it's time to move onto something else.
 
 ## Features
 
-### Lexical Analysis
+ * [x] Lexer
+ * [x] Parser
+ * [x] Most built-in data types, including `int`, `bool`, `string`, `list` and `dict`
+ * [x] Common unary and binary operators on common data types
+ * [x] A few built-in functions, including `print`
+ * [x] Variable assignment and lookup, with support for `nonlocal` and `global` keywords
+ * [x] Conditional expressions with `if` and `else`
+ * [x] All loop constructs: `for` and `while` with support for `break` and `continue` within them
+ * [x] Support for the `with` statement
+ * [x] Destructuring (`(a,b) = [1,2]`)
+ * [x] Functions, including nested functions, default parameters, and keyword parameters
+ * [x] Splat (`*` and `**`) operators in caller argument lists
+ * [x] Lambda expressions, with proper environment capture
+ * [x] Classes, including inheritance and proper method resolution order
+ * [x] Objects
+ * [x] Exception handling via `try`, with support for handlers, frame unwinding, `finally` handlers, and `else`, along with some built-in exception classes
+ * [x] Basic support for loading modules with the `import` statement
+ * [x] Simple REPL
+ * [ ] Support for generators and `yield`
+ * [ ] Support for the `is` operator
+ * [ ] Support for decorators / metaclasses
 
- * [x] Line comments
- * [x] Significant indentation
- * [x] Integer literals
- * [x] Floating point literals
- * [x] Imaginary literals
- * [x] Single quoted string literals
- * [x] Double quoted string literals
- * [x] Triple quoted string literals
- * [x] String escape sequences
- * [x] Byte literals
- * [x] All operators, delimiters, and keywords
- * [x] Implicit line joining in collections
- * [x] Explicit line joining via `\\`
+## Code Metrics
+`sloccount` output as of 2/17/16:
 
-### Parsing
+    Totals grouped by language (dominant language first):
+    haskell:       2084 (78.02%)
+    yacc:           587 (21.98%) # Parser
 
- * [x] Scalar literals
- * [x] Adjacent string literal concatenation
- * [x] Function calls
- * [x] Attribute access
- * [x] Tuples
- * [x] List literals
- * [x] List comprehensions
- * [x] Dictionary literals
- * [x] Decorators
- * [x] Subscript operators
- * [x] Set literals
- * [x] All arithmetic operators
- * [x] All bitwise operators
- * [x] All boolean operators
- * [x] All comparison operators
- * [x] `assert` statement
- * [x] `break` statement
- * [x] `class` statement
- * [x] `def` statement
- * [x] `del` statement
- * [x] `for` statement
- * [x] `global` statement
- * [x] `if`/`elif`/`else` statements
- * [x] `import` statement (and friends)
- * [x] `lambda` statement
- * [x] `nonlocal` statement
- * [x] `pass` statement
- * [x] `raise` statement
- * [x] `return` statement
- * [x] `try` statement
- * [x] `while` statement
- * [x] `with` statement
- * [x] `yield` statement
- * [x] Keyword arguments to functions
- * [x] Default arguments to functions
+## Examples
 
-### Interpreter
+See the [test](https://github.com/mattgreen/hython/tree/master/test) directory for example code that works
 
- * [x] `print` built-in function
- * [x] Variable assignment and retrieval
- * [x] Loop control flow
- * [x] Function control flow
- * [x] Scoping (basic)
- * [x] Functions
- * [x] Classes
- * [x] `global` statement
- * [x] `nonlocal` statement
- * [x] `lambda` expressions
- * [ ] Inheritance
- * [ ] Modules
- * [x] Exception handling
- * [ ] Generators
- * [ ] Standard built-in functions
- * [ ] Built-in exception types
-
-## Running
+## Building and running
 
 1. Install [Stack](https://github.com/commercialhaskell/stack)
 
@@ -92,11 +60,25 @@ The goal of this project is to become more familiar with Haskell. It is not to p
 
         $ make
 
-4. Run automated test suite:
+4. Run a file:
 
-        $ make test
+        $ ./hython test/fib.py
 
-## Reference
+## REPL
+
+Hython includes a simple REPL, which you can play around with:
+
+    $ ./hython
+
+## Test Suite
+
+Hython's test suite is rather simple: it ensures the output of Hython matches that of the system's `python3` for each test file.
+
+To run the automated test suite:
+
+    $ make test
+
+## Reference Information
  * [Python 3.4 Language Reference](https://docs.python.org/3.4/reference/)
  * [Alex + Happy Whitespace Handling](https://github.com/jmoy/alexhappy)
  * [berp](https://github.com/bjpop/berp)
