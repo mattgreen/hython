@@ -10,7 +10,7 @@ I wanted to learn Haskell, and I wanted a big project, so I decided to write a P
 
 ## Status
 
-It's finally done! Have some cleanup to do, but it's time to move onto something else.
+It's finally done! Or at least, I'm declaring it that way.
 
 ## Features
 
