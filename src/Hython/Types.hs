@@ -50,9 +50,10 @@ data FnParam = NamedParam Text
              | DSParam Text
 
 data ClassInfo = ClassInfo
-               { className  :: Text
-               , classBases :: [ClassInfo]
-               , classDict  :: Ref AttributeDict
+               { className      :: Text
+               , classModule    :: ModuleInfo
+               , classBases     :: [ClassInfo]
+               , classDict      :: Ref AttributeDict
                }
 
 instance Eq ClassInfo where
@@ -131,14 +132,15 @@ newBool b = return $ Bool b
 newBytes :: MonadInterpreter m => String -> m Object
 newBytes b = return $ Bytes (B.pack b)
 
-newClass :: (MonadIO m) => Text -> [ClassInfo] -> [(Text, ObjectRef)] -> m Object
-newClass name bases dict = do
+newClass :: (MonadIO m) => Text -> [ClassInfo] -> [(Text, ObjectRef)] -> ModuleInfo -> m Object
+newClass name bases dict mod = do
     ref <- newRef $ AD.fromList dict
 
     return . Class $ ClassInfo {
         className = name,
         classBases = bases,
-        classDict = ref
+        classDict = ref,
+        classModule = mod
     }
 
 newDict :: MonadInterpreter m => [(Object, Object)] -> m Object
@@ -261,7 +263,7 @@ toStr (Set ref) = do
 toStr (BuiltinFn name)  = return $ "<built-in function " ++ T.unpack name ++ ">"
 toStr (List _) = return "<internal listref>"
 toStr (Dict _) = return "<internal dictref>"
-toStr (Class info) = return $ "<class '" ++ T.unpack (className info) ++ "'>"
+toStr (Class info) = return $ "<class '" ++ T.unpack (moduleName . classModule $ info) ++ "." ++ T.unpack (className info) ++ "'>"
 toStr (Lambda {}) = return "<function <lambda>>"
 toStr obj@(Object {}) = do
     str <- invoke obj "__str__" []

@@ -79,12 +79,13 @@ eval (Break) = do
 eval (ClassDef name bases block) = do
     baseClasses <- catMaybes <$> mapM evalBase bases
 
-    env     <- getEnv
-    tempEnv <- putEnvWithBindings [] env
+    env             <- getEnv
+    tempEnv         <- putEnvWithBindings [] env
     evalBlock block
-    dict    <- restoreEnv tempEnv
+    dict            <- restoreEnv tempEnv
+    currentModule   <- getCurrentModule
 
-    cls <- newClass name baseClasses dict
+    cls <- newClass name baseClasses dict currentModule
     bind name cls
   where
     evalBase baseName = do

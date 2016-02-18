@@ -75,12 +75,12 @@ defaultInterpreterState :: FilePath -> IO InterpreterState
 defaultInterpreterState path = do
     builtinFns      <- mapM mkBuiltin builtinFunctions
 
-    objCls          <- newClass "object" [] []
+    fullPath        <- canonicalizePath path
+    (Module main)   <- newModule "__main__" fullPath
+    objCls          <- newClass "object" [] [] main
     objRef          <- mkBuiltinClass "object" objCls
     builtins        <- pure $ builtinFns ++ [objRef]
     env             <- Environment.new builtins
-    fullPath        <- canonicalizePath path
-    (Module main)   <- newModule "__main__" fullPath
 
     return InterpreterState {
         stateEnv = env,
