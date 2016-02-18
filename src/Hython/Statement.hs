@@ -11,6 +11,7 @@ import Control.Monad.IO.Class (MonadIO)
 import qualified Data.Hashable as H
 import Data.List (find)
 import Data.Maybe (catMaybes)
+import qualified Data.HashMap.Strict as Map
 import qualified Data.Text as T
 
 import Language.Python
@@ -21,6 +22,7 @@ import Hython.Environment
 import qualified Hython.ExceptionHandling as EH
 import Hython.Expression (evalExpr, evalParam)
 import qualified Hython.Module as Module
+import Hython.Ref
 import Hython.Types
 
 eval :: (MonadIO m, MonadCont m, MonadEnv Object m, MonadInterpreter m) => Statement -> m ()
@@ -146,16 +148,24 @@ eval (If clauses elseBlock) = case clauses of
 eval (Import exprs) = forM_ exprs $ \expr -> do
     case expr of
         Name name   -> do
-            minfo <- Module.load name (T.unpack name)
+            minfo <- Module.load (T.unpack name)
             case minfo of
                 Right info  -> bind name (Module info)
                 Left _      -> raise "SystemError" "oops"
         (As (Name path) (Name name))    -> do
-            minfo <- Module.load name (T.unpack path)
+            minfo <- Module.load (T.unpack path)
             case minfo of
                 Right info  -> bind name (Module info)
                 Left msg      -> raise "SystemError" ""
-        _           -> undefined
+        _           -> raise "SystemError" "unhandled import statement"
+
+eval (ImportFrom (RelativeImport _ (Name path)) [Glob]) = do
+    minfo <- Module.load (T.unpack path)
+    case minfo of
+        Right info  -> do
+            vars <- readRef $ moduleDict info
+            bindMany (Map.toList vars)
+        Left _      -> raise "SystemError" "unable to load module"
 
 eval (Nonlocal names) = mapM_ bindNonlocal names
 

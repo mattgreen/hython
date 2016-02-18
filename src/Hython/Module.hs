@@ -22,8 +22,8 @@ data ModuleLoadError
     = SyntaxError String
     | IOError String
 
-load :: (MonadEnv Object m, MonadInterpreter m) => Text -> FilePath -> m (Either ModuleLoadError ModuleInfo)
-load name path = do
+load :: (MonadEnv Object m, MonadInterpreter m) => FilePath -> m (Either ModuleLoadError ModuleInfo)
+load path = do
     currentModulePath   <- takeDirectory . modulePath <$> getCurrentModule
     mpath               <- resolveModulePath path currentModulePath
     case mpath of
@@ -31,16 +31,16 @@ load name path = do
             mmodule <- getModuleByPath canonicalPath
             case mmodule of
                 Just info   -> return $ Right info
-                Nothing     -> loadFromFile name canonicalPath
+                Nothing     -> loadFromFile canonicalPath
         Nothing -> return . Left $ IOError "not found"
 
-loadFromFile :: (MonadEnv Object m, MonadInterpreter m) => Text -> FilePath -> m (Either ModuleLoadError ModuleInfo)
-loadFromFile name path = do
+loadFromFile :: (MonadEnv Object m, MonadInterpreter m) => FilePath -> m (Either ModuleLoadError ModuleInfo)
+loadFromFile path = do
     code <- liftIO . TIO.readFile $ path
     case parse code of
         Left err    -> return . Left . SyntaxError $ err
         Right stmts -> do
-            (Module info)   <- newModule name path
+            (Module info)   <- newModule moduleName path
 
             current <- getCurrentModule
             setCurrentModule info
@@ -49,6 +49,8 @@ loadFromFile name path = do
             setCurrentModule current
 
             return . Right $ info
+  where
+    moduleName = T.pack . takeBaseName $ path
 
 lookup :: (MonadIO m) => Text -> ModuleInfo -> m (Maybe Object)
 lookup attr info = do

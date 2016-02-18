@@ -6,6 +6,7 @@ module Hython.Environment
     , bind
     , bindNonlocal
     , bindGlobal
+    , bindMany
     , getClosingEnv
     , getEnv
     , moveLocalsToBuiltins
@@ -74,6 +75,11 @@ bind name obj = do
             case activeEnv env of
                 ModuleEnv   -> modifyModuleEnv $ AttributeDict.insertRef name ref
                 LocalEnv    -> modifyLocalEnv $ Map.insert name (LocalBinding ref)
+
+bindMany :: MonadEnv obj m => [(Name, Ref obj)] -> m ()
+bindMany vars = forM_ vars $ \(name, ref) -> do
+    obj <- readRef ref
+    bind name obj
 
 bindGlobal :: MonadEnv obj m => Name -> m ()
 bindGlobal name = do
