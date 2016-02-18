@@ -311,3 +311,9 @@ class tuple(object):
 
 class traceback(object):
     pass
+
+def pow(n, exp, z=None):
+    if z is None:
+        return n ** exp
+    else:
+        return (n ** exp) % z
