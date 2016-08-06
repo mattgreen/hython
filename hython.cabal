@@ -29,6 +29,7 @@ executable        hython
   build-tools:    happy
   other-modules:  Language.Python.Lexer,
                   Language.Python.Parser,
+                  Language.Python,
                   REPL,
                   Hython.Interpreter,
                   Hython.Statement,
@@ -36,6 +37,8 @@ executable        hython
                   Hython.Types,
                   Hython.Expression,
                   Hython.Builtins,
+                  Hython.Name,
+                  Hython.ExceptionHandling
                   Hython.ControlFlow,
                   Hython.Call,
                   Hython.Ref,
