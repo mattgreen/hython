@@ -263,8 +263,7 @@ except BaseException:
 try:
     raise Exception("test")
 except Exception as e:
-    if e != None:           # Test that e exists since we don't implement __str__
-        print("Exists!")
+    print(e)
 
 # Test that the correct handler is located, even if it exists in outer scopes
 def test_caught_by_outside_handlers():
