@@ -7,7 +7,7 @@ import Prelude hiding (readFile)
 
 import Control.Monad (filterM, forM_, unless, when)
 import Control.Monad.Cont.Class (MonadCont)
-import Control.Monad.Cont (ContT, runContT)
+import Control.Monad.Cont (ContT, runContT, callCC)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (StateT, gets, modify, runStateT)
 import Data.List (find)
@@ -15,7 +15,6 @@ import Data.Text (Text)
 import Data.Text.IO (readFile)
 import qualified Data.Text as T
 import System.Directory (canonicalizePath, doesFileExist, getDirectoryContents)
-import System.Exit (exitFailure)
 import System.Environment.Executable (splitExecutablePath)
 import System.FilePath
 
@@ -109,7 +108,7 @@ defaultContinueHandler :: Object -> Interpreter ()
 defaultContinueHandler _ = raise "SyntaxError" "'continue' not properly in loop"
 
 defaultExceptionHandler :: Object -> Interpreter ()
-defaultExceptionHandler ex = do
+defaultExceptionHandler ex =
     case ex of
         Object info -> do
             msg <- toStr =<< invoke ex "__str__" []
@@ -119,8 +118,6 @@ defaultExceptionHandler ex = do
                 putStr ": "
                 putStrLn msg
         _ -> liftIO $ putStrLn "o_O: raised a non-object exception"
-
-    liftIO exitFailure
 
 defaultReturnHandler :: Object -> Interpreter ()
 defaultReturnHandler _ = raise "SyntaxError" "'return' outside function"
@@ -157,5 +154,9 @@ runInterpreter state code = case parse code of
             loadBuiltinModules
             Environment.moveLocalsToBuiltins
 
-        evalBlock stmts
-        return None
+        callCC $ \done -> do
+            ControlFlow.setExceptionHandler (\ex -> do
+                defaultExceptionHandler ex
+                done ex)
+            evalBlock stmts
+            return None
