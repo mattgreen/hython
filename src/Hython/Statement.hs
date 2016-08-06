@@ -19,7 +19,7 @@ import Language.Python
 import Hython.Builtins (isInstance, len, setAttr)
 import Hython.ControlFlow
 import Hython.Environment
-import qualified Hython.ExceptionHandling as EH
+import Hython.ExceptionHandling (raiseExternal)
 import Hython.Expression (evalExpr, evalParam)
 import qualified Hython.Module as Module
 import Hython.Ref
@@ -173,7 +173,7 @@ eval (Nonlocal names) = mapM_ bindNonlocal names
 
 eval (Pass) = return ()
 
-eval (Raise expr _from) = EH.raise =<< evalExpr expr
+eval (Raise expr _from) = raiseExternal =<< evalExpr expr
 
 eval (Reraise) = do
     mexception  <- getCurrentException

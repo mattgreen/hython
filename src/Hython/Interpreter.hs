@@ -118,7 +118,7 @@ defaultExceptionHandler ex = do
                 putStr . T.unpack . className . objectClass $ info
                 putStr ": "
                 putStrLn msg
-        _ -> liftIO $ putStrLn "o_O: raised a non-object exception"
+        _ -> liftIO $ putStrLn "SystemError: uncaught non-object exception"
 
     liftIO exitFailure
 
