@@ -499,29 +499,25 @@ star_expr
     : '*' expr      { undefined }
 
 -- expr: xor_expr ('|' xor_expr)*
--- TODO: implement 0-n handling
 expr
     : xor_expr                      { $1 }
-    | xor_expr '|' xor_expr         { BinOp (BitOp BitOr) $1 $3 }
+    | expr '|' xor_expr             { BinOp (BitOp BitOr) $1 $3 }
 
 -- xor_expr: and_expr ('^' and_expr)*
--- TODO: implement 0-n handling
 xor_expr
     : and_expr                      { $1 }
-    | and_expr '^' and_expr         { BinOp (BitOp BitXor) $1 $3 }
+    | xor_expr '^' and_expr         { BinOp (BitOp BitXor) $1 $3 }
 
 -- and_expr: shift_expr ('&' shift_expr)*
--- TODO: implement 0-n handling
 and_expr
     : shift_expr                    { $1 }
-    | shift_expr '&' shift_expr     { BinOp (BitOp BitAnd) $1 $3 }
+    | and_expr '&' shift_expr       { BinOp (BitOp BitAnd) $1 $3 }
 
 -- shift_expr: arith_expr (('<<'|'>>') arith_expr)*
--- TODO: implement 0-n handling
 shift_expr
     : arith_expr                    { $1 }
-    | arith_expr '<<' arith_expr    { BinOp (BitOp LShift) $1 $3 }
-    | arith_expr '>>' arith_expr    { BinOp (BitOp RShift) $1 $3 }
+    | shift_expr '<<' arith_expr    { BinOp (BitOp LShift) $1 $3 }
+    | shift_expr '>>' arith_expr    { BinOp (BitOp RShift) $1 $3 }
 
 -- arith_expr: term (('+'|'-') term)*
 arith_expr
