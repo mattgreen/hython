@@ -32,7 +32,9 @@ runScript path = do
 
     (result, _) <- runInterpreter state code
     case result of
-        Left msg    -> putStrLn msg
+        Left msg    -> do
+            putStrLn msg
+            exitFailure
         Right _     -> return ()
 
   where
