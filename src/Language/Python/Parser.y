@@ -693,7 +693,7 @@ parse :: Text -> Either String [Statement]
 parse code = do
     case L.lex code of
         Right tokens    -> parseTokens tokens
-        Left err        -> Left $ show err
+        Left err        -> Left $ "SyntaxError: " ++ show err
 
 parseRepl :: Text -> Either String [Statement]
 parseRepl code = do
@@ -701,6 +701,6 @@ parseRepl code = do
         Right tokens    -> parseLine tokens
         Left err        -> Left $ show err
 
-parseError t = Left $ "Parse error: " ++ show t
+parseError t = Left $ "SyntaxError: at " ++ show t
 
 }
