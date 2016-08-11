@@ -37,6 +37,7 @@ data InterpreterState = InterpreterState
     { stateEnv          :: Env
     , stateFlow         :: Flow Object Continuation
     , stateNew          :: Bool
+    , stateErrorMsg     :: Maybe String
     , stateCurModule    :: ModuleInfo
     , stateModules      :: [ModuleInfo]
     , stateResults      :: [String]
@@ -86,6 +87,7 @@ defaultInterpreterState path = do
         stateCurModule = main,
         stateModules = [main],
         stateNew = True,
+        stateErrorMsg = Nothing,
         stateResults = []
     }
   where
@@ -108,16 +110,14 @@ defaultContinueHandler :: Object -> Interpreter ()
 defaultContinueHandler _ = raise "SyntaxError" "'continue' not properly in loop"
 
 defaultExceptionHandler :: Object -> Interpreter ()
-defaultExceptionHandler ex =
-    case ex of
+defaultExceptionHandler ex = do
+    message <- case ex of
         Object info -> do
+            let cls = T.unpack . className . objectClass $ info
             msg <- toStr =<< invoke ex "__str__" []
-
-            liftIO $ do
-                putStr . T.unpack . className . objectClass $ info
-                putStr ": "
-                putStrLn msg
-        _ -> liftIO $ putStrLn "o_O: raised a non-object exception"
+            return $ cls ++ ": " ++ msg
+        _ -> return "o_O: raised a non-object exception"
+    Interpreter $ modify (\s -> s { stateErrorMsg = Just message })
 
 defaultReturnHandler :: Object -> Interpreter ()
 defaultReturnHandler _ = raise "SyntaxError" "'return' outside function"
@@ -146,8 +146,13 @@ runInterpreter state code = case parse code of
         let firstTime = stateNew state
 
         (_, newState) <- runStateT (runContT (unwrap $ run firstTime stmts) return) state
-        let results = stateResults newState
-        return (Right results, newState { stateNew = False, stateResults = [] })
+        let results = case stateErrorMsg newState of
+                          Just msg -> Left msg
+                          Nothing  -> Right $ stateResults newState
+        return (results, newState
+            { stateNew = False
+            , stateErrorMsg = Nothing
+            , stateResults = [] })
   where
     run firstTime stmts = do
         when firstTime $ do
