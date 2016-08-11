@@ -11,7 +11,6 @@ import Data.Text.IO (readFile)
 import System.Environment
 import System.Exit (exitFailure)
 import System.IO.Error
-import Text.Printf
 
 import Hython.Interpreter (defaultInterpreterState, runInterpreter)
 import REPL (runREPL)
@@ -39,6 +38,5 @@ runScript path = do
   where
     errorHandler :: String -> IOError -> IO Text
     errorHandler _ err = do
-        putStrLn $ printf "Unable to open '%s': file %s" path (ioeGetErrorString err)
-        _ <- exitFailure
-        return ""
+        putStrLn $ "Unable to open '" ++ path ++ "': " ++ ioeGetErrorString err
+        exitFailure
