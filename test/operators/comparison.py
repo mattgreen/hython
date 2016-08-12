@@ -63,6 +63,32 @@ for a in elements:
             print("TypeError")
 
 
+# Chaining comparison operators
+print("chained")
+print(3 == 3 != 3)
+print(4 == 4 > 2)
+print(1 < 2 < 3 < 4)
+print(2 > 3 > -1)
+print(3 <= 10 > 17)
+print(-3 < 10 >= 10)
+
+# Mixed with other operators
+print(3 < 2 * 2 < 5)
+print(4 // 2 == 2 < 3)
+print(7 > 6 > 7 - 1 and (True and False) < True)
+
+def p(n):
+    print(n)
+    return n
+
+# Only evaluate each element once
+print(p(1) < p(2) < p(3) < p(4))
+
+# Stop after first wrong comparison
+print(p(7) < p(6) < p(8) < p(9))
+
+
+
 # TODO: is
 # TODO: Chained comparison operators
 # TODO: Comparison of lists, tuples
