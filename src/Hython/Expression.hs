@@ -82,21 +82,13 @@ evalExpr (BinOp (BitOp op) leftExpr rightExpr) = do
             return None
 
 evalExpr (BinOp (BoolOp op) leftExpr rightExpr) = do
-    [lhs, rhs] <- mapM evalExpr [leftExpr, rightExpr]
-    case (op, lhs, rhs) of
-        (And, Bool l, Bool r)   -> newBool (l && r)
-        (And, l, r)             -> do
-            left    <- isTruthy l
-            right   <- isTruthy r
-            return $ if left && right
-                         then r
-                         else l
-        (Or, Bool l, Bool r)    -> newBool (l || r)
-        (Or, l, r)              -> do
-            left    <- isTruthy l
-            return $ if left
-                         then l
-                         else r
+    lhs <- evalExpr leftExpr
+    lTruthy <- isTruthy lhs
+    case (op, lTruthy) of
+        (And, False) -> return lhs
+        (And, True)  -> evalExpr rightExpr
+        (Or,  False) -> evalExpr rightExpr
+        (Or,  True)  -> return lhs
 
 evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
     [lhs, rhs] <- mapM evalExpr [leftExpr, rightExpr]
