@@ -92,32 +92,7 @@ evalExpr (BinOp (BoolOp op) leftExpr rightExpr) = do
 
 evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
     [lhs, rhs] <- mapM evalExpr [leftExpr, rightExpr]
-    case (op, lhs, rhs) of
-        (Eq, l, r) -> newBool =<< equal l r
-        (NotEq, l, r) -> do
-            b <- equal l r
-            newBool $ not b
-        (LessThan, Float l, Float r)        -> newBool (l < r)
-        (LessThan, Int l, Int r)            -> newBool (l < r)
-        (LessThanEq, Float l, Float r)      -> newBool (l <= r)
-        (LessThanEq, Int l, Int r)          -> newBool (l <= r)
-        (GreaterThan, Float l, Float r)     -> newBool (l > r)
-        (GreaterThan, Int l, Int r)         -> newBool (l > r)
-        (GreaterThanEq, Int l, Int r)       -> newBool (l >= r)
-        (GreaterThanEq, Float l, Float r)   -> newBool (l >= r)
-        (Is, l, r)                          -> newBool $ l `is` r
-        (IsNot, l, r)                       -> newBool . not $ l `is` r
-        (_, Float _, Int r)                 -> evalExpr (BinOp (CompOp op) leftExpr (constantF r))
-        (_, Int l, Float _)                 -> evalExpr (BinOp (CompOp op) (constantF l) rightExpr)
-        (In, l, r@(Object {}))              -> invoke r "__contains__" [l]
-        (NotIn, _, _)                       -> do
-            (Bool b) <- evalExpr (BinOp (CompOp In) leftExpr rightExpr)
-            newBool (not b)
-        _ -> do
-            raise "SystemError" ("unsupported operand type " ++ show op)
-            return None
-  where
-    constantF i = Constant $ ConstantFloat $ fromIntegral i
+    compareObjs op lhs rhs
 
 evalExpr (Call expr argExprs) = do
     target      <- evalExpr expr
@@ -257,6 +232,44 @@ evalParam (DefaultParam param expr) = do
     return $ DefParam param obj
 evalParam (SplatParam param) = return $ SParam param
 evalParam (DoubleSplatParam param) = return $ DSParam param
+
+
+compareObjs :: MonadInterpreter m => ComparisonOperator -> Object -> Object -> m Object
+compareObjs op lhs rhs = case (op, lhs, rhs) of
+    -- equality
+    (Eq,    l, r)             -> newBool =<< equal l r
+    (NotEq, l, r)             -> newBool . not =<< equal l r
+    -- "is", "is not", "in", "not in"
+    (Is,    l, r)             -> newBool $ l `is` r
+    (IsNot, l, r)             -> newBool . not $ l `is` r
+    (In,    l, r)             -> invoke r "__contains__" [l]
+    (NotIn, l, r)             -> do
+        Bool b <- invoke r "__contains__" [l]
+        newBool (not b)
+    -- conversion
+    (_, Bool l, _)          -> compareObjs op (Float (boolToFloat l)) rhs
+    (_, Int  l, _)          -> compareObjs op (Float (fromIntegral l)) rhs
+    (_, _, Bool r)          -> compareObjs op lhs (Float (boolToFloat r))
+    (_, _, Int  r)          -> compareObjs op lhs (Float (fromIntegral r))
+    -- comparison
+    (_, Bytes  l, Bytes  r)   -> applyOp op l r
+    (_, Float  l, Float  r)   -> applyOp op l r
+    (_, String l, String r)   -> applyOp op l r
+    -- error cases
+    _ -> do
+        raise "TypeError" "unorderable types"
+        return None
+  where
+    boolToFloat True  = 1
+    boolToFloat False = 0
+    applyOp :: (Ord a, MonadInterpreter m) => ComparisonOperator -> a -> a -> m Object
+    applyOp c a b = newBool $ compOp c a b
+    compOp LessThan = (<)
+    compOp LessThanEq = (<=)
+    compOp GreaterThan = (>)
+    compOp GreaterThanEq = (>=)
+    compOp _ = error "compOp: Eq, NotEq, Is, IsNot, In, NotIn should be handled"
+
 
 is :: Object -> Object -> Bool
 is None None                = True
