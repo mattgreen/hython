@@ -29,3 +29,44 @@ print(4.0 < 1)
 print(5.0 >= 5)
 print(4.0 <= 4)
 
+
+# On strings
+print("test" == "test")
+print("" == "test")
+print("a" < "b")
+print("b" < "a")
+print("abc" < "abcde")
+
+
+# On bytes
+print(b'test' == b'test')
+print(b'' == b'test')
+print(b'a' < b'b')
+print(b'b' < b'a')
+print(b'abc' < b'abcde')
+
+
+# Mixed
+print("mixed!")
+elements = [-3, -0.00001, 0, 0.0, 1, 1.0, 32, "", "foo", b'fo', b'foo', False, True, None]
+for a in elements:
+    for b in elements:
+        try:
+            print("comparison")
+            print(a == b)
+            print(a != b)
+            print(a < b)
+            print(a > b)
+            print(a <= b)
+            print(a >= b)
+        except TypeError:
+            print("TypeError")
+
+
+# TODO: is
+# TODO: Chained comparison operators
+# TODO: Comparison of lists, tuples
+# TODO: Equality of sets, dicts
+# TODO: Imaginary
+# TODO: objects with __eq__() etc.
+
