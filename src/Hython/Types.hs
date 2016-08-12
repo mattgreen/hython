@@ -223,27 +223,34 @@ isNone (None) = True
 isNone _ = False
 
 equal :: MonadInterpreter m => Object -> Object -> m Bool
-equal (Bool l) (Bool r)             = return $ l == r
-equal (Bytes l) (Bytes r)           = return $ l == r
-equal (Float l) (Float r)           = return $ l == r
-equal (Imaginary l) (Imaginary r)   = return $ l == r
-equal (Int l) (Int r)               = return $ l == r
-equal (String l) (String r)         = return $ l == r
-equal (BuiltinFn l) (BuiltinFn r)   = return $ l == r
-equal (Dict l) (Dict r) = do
-    left    <- readRef l
-    right   <- readRef r
-    if IntMap.size left /= IntMap.size right
-        then return False
-        else do
-            results <- zipWithM pairEqual (IntMap.elems left) (IntMap.elems right)
-            return $ all (== True) results
+equal lhs rhs = case (lhs, rhs) of
+    -- conversion
+    (Bool l, _) -> equal (Float (boolToFloat  l)) rhs
+    (Int  l, _) -> equal (Float (fromIntegral l)) rhs
+    (_, Bool r) -> equal lhs (Float (boolToFloat  r))
+    (_, Int  r) -> equal lhs (Float (fromIntegral r))
+    (None,        None       ) -> return True
+    (Bytes     l, Bytes     r) -> return $ l == r
+    (Float     l, Float     r) -> return $ l == r
+    (Imaginary l, Imaginary r) -> return $ l == r
+    (String    l, String    r) -> return $ l == r
+    (BuiltinFn l, BuiltinFn r) -> return $ l == r
+    (Dict      l, Dict      r) -> do
+        left    <- readRef l
+        right   <- readRef r
+        if IntMap.size left /= IntMap.size right
+            then return False
+            else do
+                results <- zipWithM pairEqual (IntMap.elems left) (IntMap.elems right)
+                return $ all (== True) results
+    (_, _) -> return False
   where
+    boolToFloat False = 0.0
+    boolToFloat True  = 1.0
     pairEqual (lk, lv) (rk, rv) = do
         k <- equal lk rk
         v <- equal lv rv
         return $ k && v
-equal _ _                           = return False
 
 isTruthy :: MonadInterpreter m => Object -> m Bool
 isTruthy (None) = return False
