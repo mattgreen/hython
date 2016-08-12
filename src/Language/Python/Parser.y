@@ -457,19 +457,16 @@ lambdef_nocond
     : LAMBDA varargslist ':' test_nocond    { LambdaExpr $2 $4 }
 
 -- or_test: and_test ('or' and_test)*
--- TODO: implement 0-n clauses
 or_test
     : and_test              { $1 }
-    | or_test OR and_test  { BinOp (BoolOp Or) $1 $3 }
+    | or_test OR and_test   { BinOp (BoolOp Or) $1 $3 }
 
 -- and_test: not_test ('and' not_test)*
--- TODO: implement 0-n clauses
 and_test
     : not_test              { $1 }
     | and_test AND not_test { BinOp (BoolOp And) $1 $3 }
 
 -- not_test: 'not' not_test | comparison
--- TODO: implement 0-n clauses
 not_test
     : NOT not_test          { UnaryOp Not $2 }
     | comparison            { $1 }
