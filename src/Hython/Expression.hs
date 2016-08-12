@@ -90,9 +90,22 @@ evalExpr (BinOp (BoolOp op) leftExpr rightExpr) = do
         (Or,  False) -> evalExpr rightExpr
         (Or,  True)  -> return lhs
 
-evalExpr (BinOp (CompOp op) leftExpr rightExpr) = do
-    [lhs, rhs] <- mapM evalExpr [leftExpr, rightExpr]
-    compareObjs op lhs rhs
+evalExpr (BinOp (CompOp operator) leftExpression rightExpression) = do
+    lhs <- evalExpr leftExpression
+    go operator lhs rightExpression
+  where
+    go :: (MonadCont m, MonadEnv Object m, MonadIO m, MonadInterpreter m)
+          => ComparisonOperator -> Object -> Expression -> m Object
+    -- for chained comparison, e.g. 1 < 2 < 3
+    go op lhs (BinOp (CompOp rop) rl rr) = do
+        rlhs <- evalExpr rl
+        comp <- compareObjs op lhs rlhs
+        case comp of
+            Bool True -> go rop rlhs rr
+            _         -> newBool False
+    go op lhs rightExpr = do
+        rhs <- evalExpr rightExpr
+        compareObjs op lhs rhs
 
 evalExpr (Call expr argExprs) = do
     target      <- evalExpr expr

@@ -472,10 +472,10 @@ not_test
     | comparison            { $1 }
 
 -- comparison: expr (comp_op expr)*
--- TODO: implement 0-n clauses
+-- NOTE: right-recursive, because of 1 < 2 < 3 etc.
 comparison
-    : expr                  { $1 }
-    | expr comp_op expr     { BinOp (CompOp $2) $1 $3 }
+    : expr                     { $1 }
+    | expr comp_op comparison  { BinOp (CompOp $2) $1 $3 }
 
 -- comp_op: '<'|'>'|'=='|'>='|'<='|'<>'|'!='|'in'|'not' 'in'|'is'|'is' 'not'
 comp_op
