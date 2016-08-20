@@ -13,6 +13,7 @@ import qualified Language.Python.Lexer as L
 
 %tokentype  {L.Token}
 %error      { parseError }
+%monad { Either String } { (>>=) } { return }
 
 %name parseTokens file_input
 %name parseLine single_input
@@ -691,15 +692,15 @@ mkName s = Name . T.pack $ s
 parse :: Text -> Either String [Statement]
 parse code = do
     case L.lex code of
-        Right tokens    -> Right $ parseTokens tokens
-        Left err        -> Left $ show err
+        Right tokens    -> parseTokens tokens
+        Left err        -> Left $ "SyntaxError: " ++ show err
 
 parseRepl :: Text -> Either String [Statement]
 parseRepl code = do
     case L.lex code of
-        Right tokens    -> Right $ parseLine tokens
+        Right tokens    -> parseLine tokens
         Left err        -> Left $ show err
 
-parseError :: [L.Token] -> a
-parseError t = error $ "Parse error: " ++ show t
+parseError t = Left $ "SyntaxError: at " ++ show t
+
 }

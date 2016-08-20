@@ -10,8 +10,8 @@ import Data.Text.IO (readFile)
 
 import System.Environment
 import System.Exit (exitFailure)
+import System.IO (hPutStrLn, stderr)
 import System.IO.Error
-import Text.Printf
 
 import Hython.Interpreter (defaultInterpreterState, runInterpreter)
 import REPL (runREPL)
@@ -23,7 +23,8 @@ main = do
         []          -> runREPL
         [filename]  -> runScript filename
         _           -> do
-            putStrLn "Usage: hython <filename>"
+            progName <- getProgName
+            hPutStrLn stderr $ "Usage: " ++ progName ++ " [filename]"
             exitFailure
 
 runScript :: FilePath -> IO ()
@@ -33,12 +34,13 @@ runScript path = do
 
     (result, _) <- runInterpreter state code
     case result of
-        Left msg    -> putStrLn msg
+        Left msg    -> do
+            hPutStrLn stderr msg
+            exitFailure
         Right _     -> return ()
 
   where
     errorHandler :: String -> IOError -> IO Text
     errorHandler _ err = do
-        putStrLn $ printf "Unable to open '%s': file %s" path (ioeGetErrorString err)
-        _ <- exitFailure
-        return ""
+        putStrLn $ "Unable to open '" ++ path ++ "': " ++ ioeGetErrorString err
+        exitFailure
