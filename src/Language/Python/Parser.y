@@ -458,28 +458,25 @@ lambdef_nocond
     : LAMBDA varargslist ':' test_nocond    { LambdaExpr $2 $4 }
 
 -- or_test: and_test ('or' and_test)*
--- TODO: implement 0-n clauses
 or_test
     : and_test              { $1 }
-    | or_test OR and_test  { BinOp (BoolOp Or) $1 $3 }
+    | or_test OR and_test   { BinOp (BoolOp Or) $1 $3 }
 
 -- and_test: not_test ('and' not_test)*
--- TODO: implement 0-n clauses
 and_test
     : not_test              { $1 }
     | and_test AND not_test { BinOp (BoolOp And) $1 $3 }
 
 -- not_test: 'not' not_test | comparison
--- TODO: implement 0-n clauses
 not_test
     : NOT not_test          { UnaryOp Not $2 }
     | comparison            { $1 }
 
 -- comparison: expr (comp_op expr)*
--- TODO: implement 0-n clauses
+-- NOTE: right-recursive, because of 1 < 2 < 3 etc.
 comparison
-    : expr                  { $1 }
-    | expr comp_op expr     { BinOp (CompOp $2) $1 $3 }
+    : expr                     { $1 }
+    | expr comp_op comparison  { BinOp (CompOp $2) $1 $3 }
 
 -- comp_op: '<'|'>'|'=='|'>='|'<='|'<>'|'!='|'in'|'not' 'in'|'is'|'is' 'not'
 comp_op
@@ -500,29 +497,25 @@ star_expr
     : '*' expr      { undefined }
 
 -- expr: xor_expr ('|' xor_expr)*
--- TODO: implement 0-n handling
 expr
     : xor_expr                      { $1 }
-    | xor_expr '|' xor_expr         { BinOp (BitOp BitOr) $1 $3 }
+    | expr '|' xor_expr             { BinOp (BitOp BitOr) $1 $3 }
 
 -- xor_expr: and_expr ('^' and_expr)*
--- TODO: implement 0-n handling
 xor_expr
     : and_expr                      { $1 }
-    | and_expr '^' and_expr         { BinOp (BitOp BitXor) $1 $3 }
+    | xor_expr '^' and_expr         { BinOp (BitOp BitXor) $1 $3 }
 
 -- and_expr: shift_expr ('&' shift_expr)*
--- TODO: implement 0-n handling
 and_expr
     : shift_expr                    { $1 }
-    | shift_expr '&' shift_expr     { BinOp (BitOp BitAnd) $1 $3 }
+    | and_expr '&' shift_expr       { BinOp (BitOp BitAnd) $1 $3 }
 
 -- shift_expr: arith_expr (('<<'|'>>') arith_expr)*
--- TODO: implement 0-n handling
 shift_expr
     : arith_expr                    { $1 }
-    | arith_expr '<<' arith_expr    { BinOp (BitOp LShift) $1 $3 }
-    | arith_expr '>>' arith_expr    { BinOp (BitOp RShift) $1 $3 }
+    | shift_expr '<<' arith_expr    { BinOp (BitOp LShift) $1 $3 }
+    | shift_expr '>>' arith_expr    { BinOp (BitOp RShift) $1 $3 }
 
 -- arith_expr: term (('+'|'-') term)*
 arith_expr
