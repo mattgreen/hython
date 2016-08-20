@@ -17,9 +17,10 @@ import qualified Data.Text as T
 import Language.Python
 
 import Hython.Builtins (isInstance, len, setAttr)
+import Hython.Class (isSubClass)
 import Hython.ControlFlow
 import Hython.Environment
-import qualified Hython.ExceptionHandling as EH
+import Hython.ExceptionHandling (raiseExternal)
 import Hython.Expression (evalExpr, evalParam)
 import qualified Hython.Module as Module
 import Hython.Ref
@@ -173,7 +174,7 @@ eval (Nonlocal names) = mapM_ bindNonlocal names
 
 eval (Pass) = return ()
 
-eval (Raise expr _from) = EH.raise =<< evalExpr expr
+eval (Raise expr _from) = raiseExternal =<< evalExpr expr
 
 eval (Reraise) = do
     mexception  <- getCurrentException
@@ -201,13 +202,14 @@ eval (Try clauses block elseBlock finallyBlock) = do
     -- Evaluate exception handler clauses
     handlers <- forM clauses $ \(ExceptClause expr name handlerBlock) -> do
         mcls <- evalExpr expr
-        case mcls of
-            (Class cls) -> return . Just $ ExceptionHandler name cls handlerBlock
-            _           -> do
-                raise "SyntaxError" "invalid class in except block header"
+        mBaseClass <- lookupName (T.pack "BaseException")
+        case (mcls, mBaseClass) of
+            (Class cls, Just (Class baseClass)) | isSubClass cls baseClass ->
+                return . Just $ ExceptionHandler name cls handlerBlock
+            _ -> do
+                raise "TypeError" "catching classes that do not inherit from BaseException is not allowed"
                 return Nothing
 
-    --
     exception <- callCC $ \handler -> do
         setExceptionHandler handler
 
