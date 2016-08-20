@@ -263,8 +263,7 @@ except BaseException:
 try:
     raise Exception("test")
 except Exception as e:
-    if e != None:           # Test that e exists since we don't implement __str__
-        print("Exists!")
+    print(e)
 
 # Test that the correct handler is located, even if it exists in outer scopes
 def test_caught_by_outside_handlers():
@@ -341,3 +340,30 @@ try:
     print(test_return_in_while())
 finally:
     print("OK!")
+
+# Test that only objects can be raised
+try:
+    raise 3
+except TypeError as e:
+    print("TypeError1")
+
+# Test that only classes derived from BaseException can be raised
+class T:
+    def __str__(self):
+        return "T"
+
+try:
+    raise T("e")
+except TypeError:
+    print("TypeError2")
+
+# Test that only classes derived from BaseException can be caught
+try:
+    try:
+        raise Exception("test")
+    except T:
+        pass
+except TypeError:
+    print("TypeError3")
+except:
+    print("caught something else")

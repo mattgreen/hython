@@ -17,6 +17,7 @@ import qualified Data.Text as T
 import System.Directory (canonicalizePath, doesFileExist, getDirectoryContents)
 import System.Environment.Executable (splitExecutablePath)
 import System.FilePath
+import System.Exit (exitFailure)
 
 import Language.Python.Parser (parse)
 
@@ -115,9 +116,13 @@ defaultExceptionHandler ex = do
         Object info -> do
             let cls = T.unpack . className . objectClass $ info
             msg <- toStr =<< invoke ex "__str__" []
-            return $ cls ++ ": " ++ msg
-        _ -> return "o_O: raised a non-object exception"
-    Interpreter $ modify (\s -> s { stateErrorMsg = Just message })
+            liftIO $ do
+                putStr . T.unpack . className . objectClass $ info
+                putStr ": "
+                putStrLn msg
+        _ -> liftIO $ putStrLn "SystemError: uncaught non-object exception"
+
+    liftIO exitFailure
 
 defaultReturnHandler :: Object -> Interpreter ()
 defaultReturnHandler _ = raise "SyntaxError" "'return' outside function"
