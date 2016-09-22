@@ -42,5 +42,5 @@ runScript path = do
   where
     errorHandler :: String -> IOError -> IO Text
     errorHandler _ err = do
-        putStrLn $ "Unable to open '" ++ path ++ "': " ++ ioeGetErrorString err
+        hPutStrLn stderr $ "Unable to open '" ++ path ++ "': " ++ ioeGetErrorString err
         exitFailure
