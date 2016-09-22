@@ -167,10 +167,7 @@ class list(object):
 
     def __getitem__(self, index):
         if index < 0:
-            index = self.__len__() - index
-        if index >= self.__len__():
-            raise IndexError("list index out of range")
-
+            index += len(self)
         return __hython_primitive__("list-get", self._list, index)
 
     def __len__(self):
@@ -185,6 +182,11 @@ class list(object):
 
     def __rawitems__(self):
         return self._list
+
+    def __setitem__(self, index, value):
+        if index < 0:
+            index += len(self)
+        return __hython_primitive__("list-set", self._list, index, value)
 
     def __str__(self):
         s = "["

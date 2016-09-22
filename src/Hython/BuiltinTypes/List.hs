@@ -1,7 +1,7 @@
 module Hython.BuiltinTypes.List
 where
 
-import Safe (atMay)
+import Control.Monad (when)
 
 import Hython.Ref
 import Hython.Types
@@ -29,17 +29,10 @@ listConcat left right = do
     return None
 
 listGet :: MonadInterpreter m => ListRef -> Object -> m Object
-listGet ref (Int i) = do
+listGet ref iObj = do
     l <- readRef ref
-    case atMay l (fromIntegral i) of
-        Just obj    -> return obj
-        Nothing     -> do
-            raise "IndexError" "list index out of range"
-            return None
-listGet ref (Bool b) = listGet ref (Int . toInteger . fromEnum $ b)
-listGet _ _ = do
-    raise "TypeError" "list indices must be integers"
-    return None
+    i <- convertAndCheckIndex iObj l
+    return $ l !! i
 
 listLength :: MonadInterpreter m => ListRef -> m Object
 listLength ref = do
@@ -50,3 +43,26 @@ listNew :: MonadInterpreter m => m Object
 listNew = do
     r <- newRef []
     return $ List r
+
+listSet :: MonadInterpreter m => ListRef -> Object -> Object -> m Object
+listSet ref iObj v = do
+    l <- readRef ref
+    i <- convertAndCheckIndex iObj l
+    modifyRef ref $ \list -> take i list ++ [v] ++ drop (i + 1) list
+    return None
+
+
+-- returns the converted index if valid, raises (Python) exception otherwise
+convertAndCheckIndex :: MonadInterpreter m => Object -> [a] -> m Int
+convertAndCheckIndex (Int i) l = do
+    let index = fromIntegral i
+    when (index < 0 || index >= length l)
+        (raise "IndexError" "list index out of range")
+    return index
+
+convertAndCheckIndex (Bool b) l = convertAndCheckIndex int l
+  where int = Int . toInteger . fromEnum $ b
+
+convertAndCheckIndex _ _ = do
+    raise "TypeError" "list indices must be integers"
+    return $ error "irrelevant after raising exception"
