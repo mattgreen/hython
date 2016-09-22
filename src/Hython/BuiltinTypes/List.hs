@@ -36,9 +36,9 @@ listGet ref (Int i) = do
         Nothing     -> do
             raise "IndexError" "list index out of range"
             return None
-
+listGet ref (Bool b) = listGet ref (Int . toInteger . fromEnum $ b)
 listGet _ _ = do
-    raise "TypeError" "list indicies must be integers"
+    raise "TypeError" "list indices must be integers"
     return None
 
 listLength :: MonadInterpreter m => ListRef -> m Object

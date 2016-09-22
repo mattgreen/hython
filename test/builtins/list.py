@@ -5,6 +5,10 @@ print([1,2,])
 print([1,2,3][0])
 print([1,2,3][1])
 
+# indexing by booleans
+print([1,2,3][False])
+print([1,2,3][True])
+
 l = list()
 print(l.__len__())
 
