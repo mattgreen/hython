@@ -5,7 +5,7 @@ where
 
 import Prelude hiding (readFile)
 
-import Control.Monad (filterM, forM_, unless, when)
+import Control.Monad (filterM, forM_, unless, void)
 import Control.Monad.Except (ExceptT, runExceptT, throwError, MonadError)
 import Control.Monad.Cont.Class (MonadCont)
 import Control.Monad.Cont (ContT, runContT)
@@ -31,13 +31,12 @@ import Hython.Ref
 import Hython.Types
 import qualified Hython.Statement as Statement
 
-newtype Interpreter a = Interpreter { unwrap :: ExceptT String (ContT (Either String Object) (StateT InterpreterState IO)) a }
+newtype Interpreter a = Interpreter { unwrap :: ExceptT String (ContT (Either String ()) (StateT InterpreterState IO)) a }
                             deriving (Functor, Applicative, Monad, MonadIO, MonadCont, MonadError String)
 
 data InterpreterState = InterpreterState
     { stateEnv          :: Env
     , stateFlow         :: Flow Object Continuation
-    , stateNew          :: Bool
     , stateCurModule    :: ModuleInfo
     , stateModules      :: [ModuleInfo]
     , stateResults      :: [String]
@@ -73,7 +72,6 @@ instance MonadInterpreter Interpreter where
 defaultInterpreterState :: FilePath -> IO InterpreterState
 defaultInterpreterState path = do
     builtinFns      <- mapM mkBuiltin builtinFunctions
-
     fullPath        <- getModulePath
     (Module main)   <- newModule "__main__" fullPath
     objCls          <- newClass "object" [] [] main
@@ -81,15 +79,23 @@ defaultInterpreterState path = do
     builtins        <- pure $ builtinFns ++ [objRef]
     env             <- Environment.new builtins
 
-    return InterpreterState {
+    let state = InterpreterState {
         stateEnv = env,
-        stateFlow = ControlFlow.new defaultBreakHandler defaultContinueHandler defaultReturnHandler defaultExceptionHandler,
+        stateFlow = ControlFlow.new
+                        defaultBreakHandler
+                        defaultContinueHandler
+                        defaultReturnHandler
+                        defaultExceptionHandler,
         stateCurModule = main,
         stateModules = [main],
-        stateNew = True,
         stateResults = []
     }
+    snd <$> runInterpreter initialize state
   where
+    initialize = do
+        loadBuiltinModules
+        Environment.moveLocalsToBuiltins
+
     mkBuiltin name = do
         ref <- newRef $ BuiltinFn name
         return (name, ref)
@@ -138,22 +144,14 @@ loadBuiltinModules = do
 
         filterM doesFileExist $ map (libDir </>) entries
 
-runInterpreter :: InterpreterState -> Text -> IO (Either String [String], InterpreterState)
-runInterpreter state code = case parse code of
+runInterpreter :: Interpreter a -> InterpreterState -> IO (Either String (), InterpreterState)
+runInterpreter i = runStateT (runContT (runExceptT (unwrap i)) (return . void))
+
+interpret :: InterpreterState -> Text -> IO (Either String [String], InterpreterState)
+interpret state code = case parse code of
     Left msg    -> return (Left msg, state)
     Right stmts -> do
-        let firstTime = stateNew state
+        (success, newState) <- runInterpreter (evalBlock stmts) state
+        let result = fmap (const $ stateResults newState) success
+        return (result, newState { stateResults = [] })
 
-        (result, newState) <- runStateT (runContT (runExceptT (unwrap $ run firstTime stmts)) return) state
-        case result of
-            Left msg -> return (Left msg, state)
-            Right _ -> do
-                let res = Right $ stateResults newState
-                return (res, newState { stateNew = False, stateResults = [] })
-  where
-    run firstTime stmts = do
-        when firstTime $ do
-            loadBuiltinModules
-            Environment.moveLocalsToBuiltins
-        evalBlock stmts
-        return None
