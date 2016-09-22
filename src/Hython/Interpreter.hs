@@ -6,8 +6,9 @@ where
 import Prelude hiding (readFile)
 
 import Control.Monad (filterM, forM_, unless, when)
+import Control.Monad.Except (ExceptT, runExceptT, throwError, MonadError)
 import Control.Monad.Cont.Class (MonadCont)
-import Control.Monad.Cont (ContT, runContT, callCC)
+import Control.Monad.Cont (ContT, runContT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (StateT, gets, modify, runStateT)
 import Data.List (find)
@@ -30,14 +31,13 @@ import Hython.Ref
 import Hython.Types
 import qualified Hython.Statement as Statement
 
-newtype Interpreter a = Interpreter { unwrap :: ContT Object (StateT InterpreterState IO) a }
-                            deriving (Functor, Applicative, Monad, MonadIO, MonadCont)
+newtype Interpreter a = Interpreter { unwrap :: ExceptT String (ContT (Either String Object) (StateT InterpreterState IO)) a }
+                            deriving (Functor, Applicative, Monad, MonadIO, MonadCont, MonadError String)
 
 data InterpreterState = InterpreterState
     { stateEnv          :: Env
     , stateFlow         :: Flow Object Continuation
     , stateNew          :: Bool
-    , stateErrorMsg     :: Maybe String
     , stateCurModule    :: ModuleInfo
     , stateModules      :: [ModuleInfo]
     , stateResults      :: [String]
@@ -87,7 +87,6 @@ defaultInterpreterState path = do
         stateCurModule = main,
         stateModules = [main],
         stateNew = True,
-        stateErrorMsg = Nothing,
         stateResults = []
     }
   where
@@ -117,7 +116,7 @@ defaultExceptionHandler ex = do
             msg <- toStr =<< invoke ex "__str__" []
             return $ cls ++ ": " ++ msg
         _ -> return "o_O: raised a non-object exception"
-    Interpreter $ modify (\s -> s { stateErrorMsg = Just message })
+    throwError message
 
 defaultReturnHandler :: Object -> Interpreter ()
 defaultReturnHandler _ = raise "SyntaxError" "'return' outside function"
@@ -145,23 +144,16 @@ runInterpreter state code = case parse code of
     Right stmts -> do
         let firstTime = stateNew state
 
-        (_, newState) <- runStateT (runContT (unwrap $ run firstTime stmts) return) state
-        let results = case stateErrorMsg newState of
-                          Just msg -> Left msg
-                          Nothing  -> Right $ stateResults newState
-        return (results, newState
-            { stateNew = False
-            , stateErrorMsg = Nothing
-            , stateResults = [] })
+        (result, newState) <- runStateT (runContT (runExceptT (unwrap $ run firstTime stmts)) return) state
+        case result of
+            Left msg -> return (Left msg, state)
+            Right _ -> do
+                let res = Right $ stateResults newState
+                return (res, newState { stateNew = False, stateResults = [] })
   where
     run firstTime stmts = do
         when firstTime $ do
             loadBuiltinModules
             Environment.moveLocalsToBuiltins
-
-        callCC $ \done -> do
-            ControlFlow.setExceptionHandler (\ex -> do
-                defaultExceptionHandler ex
-                done ex)
-            evalBlock stmts
-            return None
+        evalBlock stmts
+        return None
