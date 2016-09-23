@@ -52,6 +52,17 @@ print(1 in l)
 print(8 in l)
 print(8 not in l)
 
+# construct list from iterable
+l1 = list([3,4,5])
+print(len(l1))
+print(l1)
+l2 = list("test")
+print(len(l2))
+
+# iterate over list
+for e in l2:
+    print(e)
+
 # assignment
 l[0] = 99
 l[-1] = -1

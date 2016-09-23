@@ -138,8 +138,11 @@ class dict(object):
 
 
 class list(object):
-    def __init__(self):
+    def __init__(self, iterable=None):
         self._list = __hython_primitive__("list-new")
+        if iterable != None:
+            for e in iterable:
+                self.append(e)
 
     def __add__(self, r):
         result = list()
