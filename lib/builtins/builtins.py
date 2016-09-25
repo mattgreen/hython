@@ -322,3 +322,14 @@ def pow(n, exp, z=None):
         return n ** exp
     else:
         return (n ** exp) % z
+
+def abs(x):
+    return x if x >= 0 else -x
+
+# TODO: not for iterables, no custom key function yet
+def min(a, b):
+    return a if a <= b else b
+
+# TODO: not for iterables, no custom key function yet
+def max(a, b):
+    return a if a >= b else b
