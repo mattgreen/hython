@@ -5,9 +5,10 @@ where
 
 import Prelude hiding (readFile)
 
-import Control.Monad (filterM, forM_, unless, when)
+import Control.Monad (filterM, forM_, unless, void)
+import Control.Monad.Except (ExceptT, runExceptT, throwError, MonadError)
 import Control.Monad.Cont.Class (MonadCont)
-import Control.Monad.Cont (ContT, runContT, callCC)
+import Control.Monad.Cont (ContT, runContT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (StateT, gets, modify, runStateT)
 import Data.List (find)
@@ -17,7 +18,6 @@ import qualified Data.Text as T
 import System.Directory (canonicalizePath, doesFileExist, getDirectoryContents)
 import System.Environment.Executable (splitExecutablePath)
 import System.FilePath
-import System.Exit (exitFailure)
 
 import Language.Python.Parser (parse)
 
@@ -31,14 +31,12 @@ import Hython.Ref
 import Hython.Types
 import qualified Hython.Statement as Statement
 
-newtype Interpreter a = Interpreter { unwrap :: ContT Object (StateT InterpreterState IO) a }
-                            deriving (Functor, Applicative, Monad, MonadIO, MonadCont)
+newtype Interpreter a = Interpreter { unwrap :: ExceptT String (ContT (Either String ()) (StateT InterpreterState IO)) a }
+                            deriving (Functor, Applicative, Monad, MonadIO, MonadCont, MonadError String)
 
 data InterpreterState = InterpreterState
     { stateEnv          :: Env
     , stateFlow         :: Flow Object Continuation
-    , stateNew          :: Bool
-    , stateErrorMsg     :: Maybe String
     , stateCurModule    :: ModuleInfo
     , stateModules      :: [ModuleInfo]
     , stateResults      :: [String]
@@ -74,7 +72,6 @@ instance MonadInterpreter Interpreter where
 defaultInterpreterState :: FilePath -> IO InterpreterState
 defaultInterpreterState path = do
     builtinFns      <- mapM mkBuiltin builtinFunctions
-
     fullPath        <- getModulePath
     (Module main)   <- newModule "__main__" fullPath
     objCls          <- newClass "object" [] [] main
@@ -82,16 +79,23 @@ defaultInterpreterState path = do
     builtins        <- pure $ builtinFns ++ [objRef]
     env             <- Environment.new builtins
 
-    return InterpreterState {
+    let state = InterpreterState {
         stateEnv = env,
-        stateFlow = ControlFlow.new defaultBreakHandler defaultContinueHandler defaultReturnHandler defaultExceptionHandler,
+        stateFlow = ControlFlow.new
+                        defaultBreakHandler
+                        defaultContinueHandler
+                        defaultReturnHandler
+                        defaultExceptionHandler,
         stateCurModule = main,
         stateModules = [main],
-        stateNew = True,
-        stateErrorMsg = Nothing,
         stateResults = []
     }
+    snd <$> runInterpreter initialize state
   where
+    initialize = do
+        loadBuiltinModules
+        Environment.moveLocalsToBuiltins
+
     mkBuiltin name = do
         ref <- newRef $ BuiltinFn name
         return (name, ref)
@@ -116,13 +120,9 @@ defaultExceptionHandler ex = do
         Object info -> do
             let cls = T.unpack . className . objectClass $ info
             msg <- toStr =<< invoke ex "__str__" []
-            liftIO $ do
-                putStr . T.unpack . className . objectClass $ info
-                putStr ": "
-                putStrLn msg
-        _ -> liftIO $ putStrLn "SystemError: uncaught non-object exception"
-
-    liftIO exitFailure
+            return $ cls ++ ": " ++ msg
+        _ -> return "o_O: raised a non-object exception"
+    throwError message
 
 defaultReturnHandler :: Object -> Interpreter ()
 defaultReturnHandler _ = raise "SyntaxError" "'return' outside function"
@@ -144,29 +144,14 @@ loadBuiltinModules = do
 
         filterM doesFileExist $ map (libDir </>) entries
 
-runInterpreter :: InterpreterState -> Text -> IO (Either String [String], InterpreterState)
-runInterpreter state code = case parse code of
+runInterpreter :: Interpreter a -> InterpreterState -> IO (Either String (), InterpreterState)
+runInterpreter i = runStateT (runContT (runExceptT (unwrap i)) (return . void))
+
+interpret :: InterpreterState -> Text -> IO (Either String [String], InterpreterState)
+interpret state code = case parse code of
     Left msg    -> return (Left msg, state)
     Right stmts -> do
-        let firstTime = stateNew state
+        (success, newState) <- runInterpreter (evalBlock stmts) state
+        let result = fmap (const $ stateResults newState) success
+        return (result, newState { stateResults = [] })
 
-        (_, newState) <- runStateT (runContT (unwrap $ run firstTime stmts) return) state
-        let results = case stateErrorMsg newState of
-                          Just msg -> Left msg
-                          Nothing  -> Right $ stateResults newState
-        return (results, newState
-            { stateNew = False
-            , stateErrorMsg = Nothing
-            , stateResults = [] })
-  where
-    run firstTime stmts = do
-        when firstTime $ do
-            loadBuiltinModules
-            Environment.moveLocalsToBuiltins
-
-        callCC $ \done -> do
-            ControlFlow.setExceptionHandler (\ex -> do
-                defaultExceptionHandler ex
-                done ex)
-            evalBlock stmts
-            return None

@@ -13,7 +13,7 @@ import System.Exit (exitFailure)
 import System.IO (hPutStrLn, stderr)
 import System.IO.Error
 
-import Hython.Interpreter (defaultInterpreterState, runInterpreter)
+import Hython.Interpreter (defaultInterpreterState, interpret)
 import REPL (runREPL)
 
 main :: IO ()
@@ -32,7 +32,7 @@ runScript path = do
     code <- readFile path `catch` errorHandler path
     state <- defaultInterpreterState path
 
-    (result, _) <- runInterpreter state code
+    (result, _) <- interpret state code
     case result of
         Left msg    -> do
             hPutStrLn stderr msg
@@ -42,5 +42,5 @@ runScript path = do
   where
     errorHandler :: String -> IOError -> IO Text
     errorHandler _ err = do
-        putStrLn $ "Unable to open '" ++ path ++ "': " ++ ioeGetErrorString err
+        hPutStrLn stderr $ "Unable to open '" ++ path ++ "': " ++ ioeGetErrorString err
         exitFailure

@@ -5,7 +5,7 @@ import Data.Text (pack)
 
 import System.Console.Haskeline
 
-import Hython.Interpreter (defaultInterpreterState, runInterpreter)
+import Hython.Interpreter (defaultInterpreterState, interpret)
 
 runREPL :: IO ()
 runREPL = do
@@ -18,7 +18,7 @@ runREPL = do
             Nothing         -> return ()
             Just "quit()"   -> return ()
             Just line -> do
-                (result, newState) <- liftIO $ runInterpreter state (pack line)
+                (result, newState) <- liftIO $ interpret state (pack line)
                 case result of
                     Left s      -> outputStrLn s
                     Right strs  -> mapM_ outputStrLn strs
