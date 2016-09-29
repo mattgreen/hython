@@ -1,10 +1,23 @@
 name:             hython
 version:          1.0
 build-type:       Simple
-cabal-version:    >= 1.2
+cabal-version:    >= 1.6
+category:         Interpreter
+synopsis:         A toy Python 3 interpreter
+description:
+    This project is mainly educational and aims to be simple.
+    The implementation is naive, does not contain a real standard library
+    and is not optimized for performance.
+license:          GPL-3
+license-file:     LICENSE.md
+maintainer:       matt_p_green@hotmail.com
+
+source-repository head
+  type:           git
+  location:       https://github.com/mattgreen/hython.git
 
 executable        hython
-  build-depends:  base,
+  build-depends:  base < 5.0,
                   containers,
                   mtl,
                   array,
@@ -51,5 +64,5 @@ executable        hython
                   Hython.Module
   hs-source-dirs: src
   main-is:        Main.hs
-  ghc-options:    -Wall -O2
+  ghc-options:    -Wall
   extensions:     FlexibleContexts
