@@ -88,11 +88,7 @@ print(p(1) < p(2) < p(3) < p(4))
 print(p(7) < p(6) < p(8) < p(9))
 
 
-
-# TODO: is
-# TODO: Chained comparison operators
 # TODO: Comparison of lists, tuples
 # TODO: Equality of sets, dicts
 # TODO: Imaginary
-# TODO: objects with __eq__() etc.
-
+# TODO: custom objects with __eq__() etc.
