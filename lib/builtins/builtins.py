@@ -138,8 +138,11 @@ class dict(object):
 
 
 class list(object):
-    def __init__(self):
+    def __init__(self, iterable=None):
         self._list = __hython_primitive__("list-new")
+        if iterable != None:
+            for e in iterable:
+                self.append(e)
 
     def __add__(self, r):
         result = list()
@@ -167,10 +170,7 @@ class list(object):
 
     def __getitem__(self, index):
         if index < 0:
-            index = self.__len__() - index
-        if index >= self.__len__():
-            raise IndexError("list index out of range")
-
+            index += len(self)
         return __hython_primitive__("list-get", self._list, index)
 
     def __len__(self):
@@ -185,6 +185,11 @@ class list(object):
 
     def __rawitems__(self):
         return self._list
+
+    def __setitem__(self, index, value):
+        if index < 0:
+            index += len(self)
+        return __hython_primitive__("list-set", self._list, index, value)
 
     def __str__(self):
         s = "["

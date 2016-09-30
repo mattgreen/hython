@@ -22,9 +22,10 @@ callPrimitive prim args = case (prim, args) of
     ("list-clear", [List ref])          -> listClear ref
     ("list-concat", [List l, List r])   -> listConcat l r
     ("list-contains", [List l, obj])    -> listContains l obj
-    ("list-get", [List l, obj])         -> listGet l obj
+    ("list-get", [List l, idx])         -> listGet l idx
     ("list-length", [List l])           -> listLength l
     ("list-new", [])                    -> listNew
+    ("list-set", [List l, idx, val])    -> listSet l idx val
     ("print", _)                        -> do
         strs <- mapM toStr args
         liftIO . putStrLn . unwords $ strs

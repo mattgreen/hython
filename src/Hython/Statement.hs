@@ -69,9 +69,9 @@ eval (Assignment (TupleDef targetExprs) expr) = do
     targetLen = length targetExprs
 
 eval (Assignment (Subscript targetExpr keyExpr) expr) = do
+    value   <- evalExpr expr
     target  <- evalExpr targetExpr
     key     <- evalExpr keyExpr
-    value   <- evalExpr expr
 
     void $ invoke target "__setitem__" [key, value]
 
