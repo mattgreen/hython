@@ -16,7 +16,7 @@ It's finally done! Or at least, I'm declaring it that way.
 
  * [x] Lexer
  * [x] Parser
- * [x] Most built-in data types, including `int`, `bool`, `string`, `list` and `dict`
+ * [x] Most built-in data types, including `int`, `bool`, `string`, `list`, `dict` and `range`
  * [x] Common unary and binary operators on common data types
  * [x] A few built-in functions, including `print`
  * [x] Variable assignment and lookup, with support for `nonlocal` and `global` keywords
@@ -34,14 +34,18 @@ It's finally done! Or at least, I'm declaring it that way.
  * [x] Simple REPL
  * [x] Support for the `is` operator
  * [ ] Support for generators and `yield`
+ * [ ] List/generator/dict/set comprehensions
+ * [ ] Index slicing
  * [ ] Support for decorators / metaclasses
+ * [ ] Multi-line input for the REPL
 
 ## Code Metrics
-`sloccount` output as of 2/17/16:
+`sloccount` output as of 10/1/16:
 
     Totals grouped by language (dominant language first):
-    haskell:       2084 (78.02%)
-    yacc:           587 (21.98%) # Parser
+    haskell:       2159 (70.83%)
+    yacc:           580 (19.03%) # parser
+    python:         309 (10.14%) # lib
 
 ## Examples
 
