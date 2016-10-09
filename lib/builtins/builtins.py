@@ -219,26 +219,42 @@ class list(object):
 
 class range(object):
     def __init__(self, startOrStop, stop=None, step=None):
+        # TODO: check if arguments are ints (or bool...)
+        if step == 0:
+            raise ValueError("range() arg 3 must not be zero")
         if stop is None:
             self.start = 0
             self.stop = startOrStop
         else:
             self.start = startOrStop
             self.stop = stop
+        self.step = 1 if step is None else step
 
-        if step is None:
-            step = 1
+    def __contains__(self, item):
+        is_multiple = (item - self.start) % self.step == 0
+        if self.step > 0:
+            in_range = self.start <= item < self.stop
+        else:
+            in_range = self.start >= item > self.stop
+        return is_multiple and in_range
 
-        self.step = 1
+    def __getitem__(self, index):
+        if index < 0:
+            index += len(self)
+        if not 0 <= index < len(self):
+            raise IndexError("range object index out of range")
+        return self.start + index * self.step
 
-        self.values = []
+    def __len__(self):
+        sign = 1 if self.step > 0 else -1
+        length = (self.stop - self.start - sign) // self.step + 1
+        return max(length, 0)
 
-        i = self.start
-        while i < self.stop:
-            self.values = self.values + [i]
-            i = i + self.step
-
-        print(self.values)
+    def __str__(self):
+        s = "range(" + str(self.start) + ", " + str(self.stop)
+        if self.step != 1:
+            s += ", " + str(self.step)
+        return s + ")"
 
 
 class set(object):
@@ -322,3 +338,14 @@ def pow(n, exp, z=None):
         return n ** exp
     else:
         return (n ** exp) % z
+
+def abs(x):
+    return x if x >= 0 else -x
+
+# TODO: not for iterables, no custom key function yet
+def min(a, b):
+    return a if a <= b else b
+
+# TODO: not for iterables, no custom key function yet
+def max(a, b):
+    return a if a >= b else b
