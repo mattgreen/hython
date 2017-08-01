@@ -1,4 +1,4 @@
-#hython
+# hython
 
 A toy Python 3 interpreter implemented in Haskell.
 
